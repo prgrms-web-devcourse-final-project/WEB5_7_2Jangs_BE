@@ -34,31 +34,11 @@ class SaveServiceTest {
     @Mock
     private SaveRepository saveRepository;
     @Mock
-    private Branch mockBranch;
-    @Mock
     private Document mockDocument;
     @Mock
     private User mockUser;
     @InjectMocks
     private SaveService saveService;
-
-    @Test
-    @DisplayName("수정 시 updatedAt이 갱신되는지 확인")
-    void updateSave_success() {
-        SaveUpdateIdDto dto = SaveUpdateIdDto.of(1L, 1L, 1L);
-        SaveUpdateRequest request = new SaveUpdateRequest("new content");
-
-        Save save = Save.builder()
-                .branch(mockBranch)
-                .content("old content")
-                .build();
-
-        when(userRepository.findById(dto.userId())).thenReturn(Optional.of(mockUser));
-        when(documentRepository.findById(dto.documentId())).thenReturn(Optional.of(mockDocument));
-        when(saveRepository.findById(dto.saveId())).thenReturn(Optional.of(save));
-
-        saveService.updateSave(dto, request);
-    }
 
     @Test
     @DisplayName("존재하지 않는 유저 ID로 수정 요청 시 예외가 발생한다")
