@@ -1,4 +1,4 @@
-package io.ejangs.docsa.document.unit;
+package io.ejangs.docsa.domain.document.unit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -45,16 +45,16 @@ class DocumentControllerUnitTests {
 
         //when, then
         when(documentService.create(any(DocumentCreateRequest.class), anyLong()))
-            .thenReturn(new DocumentCreateResponse(documentId));
+                .thenReturn(new DocumentCreateResponse(documentId));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
-                .param("userId", "1")
-                .content(objectMapper.writeValueAsString(request))
-                .contentType("application/json")
-                .with(csrf()))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value(documentId))
-            .andDo(print());
+                        .param("userId", "1")
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType("application/json")
+                        .with(csrf()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(documentId))
+                .andDo(print());
     }
 
     @Test
@@ -63,12 +63,12 @@ class DocumentControllerUnitTests {
         DocumentCreateRequest request = new DocumentCreateRequest("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
-                .param("userId", "1")
-                .contentType("application/json")
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."))
-            .andDo(print());
+                        .param("userId", "1")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."))
+                .andDo(print());
     }
 }
 

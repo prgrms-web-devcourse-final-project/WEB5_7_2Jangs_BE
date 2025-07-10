@@ -21,8 +21,8 @@ public class DocumentController {
 
     @PostMapping
     public ResponseEntity<DocumentCreateResponse> create(@RequestParam Long userId,
-        @Valid @RequestBody DocumentCreateRequest request) {
+            @Valid @RequestBody DocumentCreateRequest request) {
         return ResponseEntity.status(201)
-            .body(documentService.create(request, userId));
+                .body(documentService.create(request, userId));
     }
 }

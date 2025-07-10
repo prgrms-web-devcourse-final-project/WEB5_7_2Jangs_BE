@@ -10,7 +10,6 @@ import io.ejangs.docsa.domain.user.entity.dao.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.transaction.Transactional;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,12 +26,12 @@ public class DocumentService {
     public DocumentCreateResponse create(DocumentCreateRequest request, Long userId) {
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
         Document document = Document.builder()
-            .title(request.title())
-            .user(user)
-            .build();
+                .title(request.title())
+                .user(user)
+                .build();
 
         Document saved = documentRepository.save(document);
         return DocumentMapper.toCreateResponse(saved);

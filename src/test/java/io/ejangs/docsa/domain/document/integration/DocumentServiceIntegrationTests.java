@@ -1,4 +1,4 @@
-package io.ejangs.docsa.document.integration;
+package io.ejangs.docsa.domain.document.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,10 +36,10 @@ public class DocumentServiceIntegrationTests {
     void 문서_정상_저장_통합테스트() throws Exception {
         // given - 테스트용 사용자 먼저 저장
         User user = User.builder()
-            .name("배문성")
-            .email("test@docsa.io")
-            .password("password")
-            .build();
+                .name("배문성")
+                .email("test@docsa.io")
+                .password("password")
+                .build();
 
         user = userRepository.save(user); // 실제 DB에 저장되고 ID 생성됨
 
@@ -63,7 +63,7 @@ public class DocumentServiceIntegrationTests {
 
         // when & then
         CustomException ex = assertThrows(CustomException.class, () ->
-            documentService.create(request, nonexistentUserId)
+                documentService.create(request, nonexistentUserId)
         );
 
         assertEquals(UserErrorCode.USER_NOT_FOUND, ex.getErrorCode());
