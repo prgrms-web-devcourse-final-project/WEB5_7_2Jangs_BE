@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,7 +44,7 @@ class SaveServiceTest {
 
     @Test
     @DisplayName("수정 시 updatedAt이 갱신되는지 확인")
-    void updateSave_updatedAtChangeTest() {
+    void updateSave_success() {
         SaveUpdateIdDto dto = SaveUpdateIdDto.of(1L, 1L, 1L);
         SaveUpdateRequest request = new SaveUpdateRequest("new content");
 
@@ -61,7 +62,7 @@ class SaveServiceTest {
 
     @Test
     @DisplayName("존재하지 않는 유저 ID로 수정 요청 시 예외가 발생한다")
-    void updateSave_invalidUser_throwsException() {
+    void updateSave_fail_invalidUser() {
         // given
         SaveUpdateIdDto dto = SaveUpdateIdDto.of(1L, 1L, -1L);
         SaveUpdateRequest request = new SaveUpdateRequest("content");
@@ -73,8 +74,8 @@ class SaveServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 유저 ID로 수정 요청 시 예외가 발생한다")
-    void updateSave_invalidDocument_throwsException() {
+    @DisplayName("존재하지 않는 문서 ID로 수정 요청 시 예외가 발생한다")
+    void updateSave_fail_invalidDocument() {
         // given
         SaveUpdateIdDto dto = SaveUpdateIdDto.of(-1L, 1L, 1L);
         SaveUpdateRequest request = new SaveUpdateRequest("content");
@@ -89,7 +90,7 @@ class SaveServiceTest {
 
     @Test
     @DisplayName("존재하지 않는 저장 ID로 수정 요청 시 예외가 발생한다")
-    void updateSave_invalidSave_throwsException() {
+    void updateSave_fail_invalidSave() {
         // given
         SaveUpdateIdDto dto = SaveUpdateIdDto.of(1L, -1L, 1L);
         SaveUpdateRequest request = new SaveUpdateRequest("content");
