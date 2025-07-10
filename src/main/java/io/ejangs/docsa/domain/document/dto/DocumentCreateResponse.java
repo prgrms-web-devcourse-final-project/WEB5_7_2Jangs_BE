@@ -6,7 +6,4 @@ public record DocumentCreateResponse(
     Long id
 ) {
 
-    public static DocumentCreateResponse of(Document document) {
-        return new DocumentCreateResponse(document.getId());
-    }
 }
