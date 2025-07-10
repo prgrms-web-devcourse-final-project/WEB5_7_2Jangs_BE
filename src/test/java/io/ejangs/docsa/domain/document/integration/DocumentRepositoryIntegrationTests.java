@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.ejangs.docsa.domain.document.app.DocumentService;
 import io.ejangs.docsa.domain.document.dao.DocumentRepository;
-import io.ejangs.docsa.domain.document.dto.DocumentListSidebarResponse;
+import io.ejangs.docsa.domain.document.dto.DocumentListSimpleResponse;
 import io.ejangs.docsa.domain.document.entity.Document;
 import io.ejangs.docsa.domain.document.util.DocumentTestUtils;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -30,7 +30,7 @@ public class DocumentRepositoryIntegrationTests {
 
     @Test
     @DisplayName("사이드바 문서리스트 조회")
-    void 사이드바_문서리스트_조회() throws Exception {
+    void getSimpleDocumentList() throws Exception {
         //given
         User user = DocumentTestUtils.createUser();
         userRepository.save(user);
@@ -39,7 +39,7 @@ public class DocumentRepositoryIntegrationTests {
         documentRepository.saveAll(documentList);
 
         //when
-        List<DocumentListSidebarResponse> results = documentService.getSimpleDocumentList(
+        List<DocumentListSimpleResponse> results = documentService.getSimpleDocumentList(
                 user.getId());
 
         //then

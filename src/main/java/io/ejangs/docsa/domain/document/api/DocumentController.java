@@ -3,7 +3,7 @@ package io.ejangs.docsa.domain.document.api;
 import io.ejangs.docsa.domain.document.app.DocumentService;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateRequest;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateResponse;
-import io.ejangs.docsa.domain.document.dto.DocumentListSidebarResponse;
+import io.ejangs.docsa.domain.document.dto.DocumentListSimpleResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class DocumentController {
     }
 
     @GetMapping("/sidebar")
-    public ResponseEntity<List<DocumentListSidebarResponse>> readListSidebar(
+    public ResponseEntity<List<DocumentListSimpleResponse>> readListSidebar(
             @RequestParam Long userId) {
         return ResponseEntity
                 .status(HttpStatus.OK)

@@ -13,6 +13,9 @@ import io.ejangs.docsa.domain.document.api.DocumentController;
 import io.ejangs.docsa.domain.document.app.DocumentService;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateRequest;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateResponse;
+import io.ejangs.docsa.domain.document.dto.DocumentListSimpleResponse;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +57,39 @@ class DocumentControllerUnitTests {
                         .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(documentId))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("문서 리스트 조회 컨트롤러 테스트 - 사이드바")
+    void getSimpleDocumentList() throws Exception {
+        // given
+        Long userId = 1L;
+
+        List<DocumentListSimpleResponse> responseList = List.of(
+                new DocumentListSimpleResponse(
+                        1L,
+                        "마이크로소프트",
+                        LocalDateTime.now(),
+                        LocalDateTime.now().plusDays(1)
+                ),
+                new DocumentListSimpleResponse(
+                        2L,
+                        "구글",
+                        LocalDateTime.now(),
+                        LocalDateTime.now().plusDays(2)
+                )
+        );
+
+        when(documentService.getSimpleDocumentList(anyLong())).thenReturn(responseList);
+
+        //when, then
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar")
+                        .param("userId", String.valueOf(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].title").value("마이크로소프트"))
+                .andExpect(jsonPath("$.[1].title").value("구글"))
                 .andDo(print());
     }
 

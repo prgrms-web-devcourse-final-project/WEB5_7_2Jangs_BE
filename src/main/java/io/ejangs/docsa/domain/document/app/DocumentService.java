@@ -3,7 +3,7 @@ package io.ejangs.docsa.domain.document.app;
 import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateRequest;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateResponse;
-import io.ejangs.docsa.domain.document.dto.DocumentListSidebarResponse;
+import io.ejangs.docsa.domain.document.dto.DocumentListSimpleResponse;
 import io.ejangs.docsa.domain.document.entity.Document;
 import io.ejangs.docsa.domain.document.util.DocumentMapper;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -42,7 +42,7 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentListSidebarResponse> getSimpleDocumentList(Long userId) {
+    public List<DocumentListSimpleResponse> getSimpleDocumentList(Long userId) {
         //추후 Principal에서 추출 예정
         User user = getUserOrThrow(userId);
         return documentRepository.getSimpleDocumentList(user.getId());

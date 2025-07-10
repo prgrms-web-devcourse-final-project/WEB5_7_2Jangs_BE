@@ -34,7 +34,8 @@ public class DocumentServiceIntegrationTests {
     private UserRepository userRepository;
 
     @Test
-    void 문서_정상_저장_통합테스트() throws Exception {
+    @DisplayName("문서 저장 성공 테스트")
+    void documentCreateSuccess() throws Exception {
         // given
         User user = userRepository.save(DocumentTestUtils.createUser());
 
@@ -51,7 +52,7 @@ public class DocumentServiceIntegrationTests {
 
     @Test
     @DisplayName("문서 생성 실패 - 존재하지 않는 사용자 ID")
-    void 문서_생성_실패_유저없음() {
+    void documentCreateFailTestNotFoundUser() {
         // given
         Long nonexistentUserId = 9999L; // 실제 DB에 없는 ID
         DocumentCreateRequest request = new DocumentCreateRequest("없는 유저 문서");
