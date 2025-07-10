@@ -4,7 +4,9 @@ import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
+import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.save.utils.SaveMapper;
 import io.ejangs.docsa.domain.user.dao.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
@@ -24,7 +26,7 @@ public class SaveService {
     private final UserRepository userRepository;
 
     @Transactional
-    public LocalDateTime updateSave(SaveUpdateIdDto dto, SaveUpdateRequest request) {
+    public SaveUpdateResponse updateSave(SaveUpdateIdDto dto, SaveUpdateRequest request) {
         userRepository.findById(dto.userId())
                 .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
@@ -36,6 +38,6 @@ public class SaveService {
 
         findSave.updateContent(request.content());
         saveRepository.flush(); // flush 을 통해 updatedAt 필드를 갱신해야 하므로 명시적으로 flush
-        return findSave.getUpdatedAt();
+        return SaveMapper.toSaveUpdateResponse(findSave);
     }
 }

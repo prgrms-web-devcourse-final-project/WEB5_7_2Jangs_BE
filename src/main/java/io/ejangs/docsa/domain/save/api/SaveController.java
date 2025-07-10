@@ -24,9 +24,8 @@ public class SaveController {
             @PathVariable Long documentId,
             @PathVariable Long saveId,
             @RequestBody SaveUpdateRequest saveUpdateRequest) {
-        LocalDateTime updatedAt = saveService.updateSave(
+        SaveUpdateResponse response = saveService.updateSave(
                 SaveUpdateIdDto.of(documentId, saveId, userId), saveUpdateRequest);
-        SaveUpdateResponse response = SaveUpdateResponse.from(updatedAt);
         return ResponseEntity.ok(response);
     }
 }
