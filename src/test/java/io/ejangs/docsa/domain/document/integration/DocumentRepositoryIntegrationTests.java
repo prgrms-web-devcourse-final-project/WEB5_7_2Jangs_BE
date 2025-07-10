@@ -25,6 +25,7 @@ public class DocumentRepositoryIntegrationTests {
 
     @Autowired
     private UserRepository userRepository;
+
     @Autowired
     private DocumentService documentService;
 
