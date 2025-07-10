@@ -8,6 +8,7 @@ import io.ejangs.docsa.domain.document.entity.Document;
 import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
+import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -47,19 +48,19 @@ class SaveServiceIntegrationTest {
                 .title("title")
                 .user(user)
                 .build());
-        Save save = saveRepository.save(Save.builder().content("원래 내용").build());
+        Save oldSave = saveRepository.save(Save.builder().content("원래 내용").build());
 
-        LocalDateTime beforeUpdate = save.getUpdatedAt();
+        LocalDateTime beforeUpdate = oldSave.getUpdatedAt();
 
         // When
-        SaveUpdateIdDto dto = SaveUpdateIdDto.of(document.getId(), save.getId(), user.getId());
+        SaveUpdateIdDto dto = SaveUpdateIdDto.of(document.getId(), oldSave.getId(), user.getId());
         SaveUpdateRequest request = new SaveUpdateRequest("수정된 내용");
-        LocalDateTime updatedAt = saveService.updateSave(dto, request);
+        SaveUpdateResponse response = saveService.updateSave(dto, request);
 
         // Then
-        Save updated = saveRepository.findById(save.getId()).orElseThrow();
-        assertEquals("수정된 내용", updated.getContent());
-        assertTrue(updated.getUpdatedAt().isAfter(beforeUpdate));
-        assertEquals(updated.getUpdatedAt(), updatedAt);
+        Save updatedSave = saveRepository.findById(oldSave.getId()).orElseThrow();
+        assertEquals("수정된 내용", updatedSave.getContent());
+        assertTrue(updatedSave.getUpdatedAt().isAfter(beforeUpdate));
+        assertEquals(updatedSave.getUpdatedAt(), response.updatedAt());
     }
 }

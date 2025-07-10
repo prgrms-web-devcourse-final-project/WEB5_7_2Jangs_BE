@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
+import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ class SaveControllerTest {
         SaveUpdateIdDto dto = SaveUpdateIdDto.of(documentId, saveId, userId);
         SaveUpdateRequest request = new SaveUpdateRequest(content);
 
-        when(saveService.updateSave(dto, request)).thenReturn(LocalDateTime.now());
+        when(saveService.updateSave(dto, request)).thenReturn(new SaveUpdateResponse(LocalDateTime.now()));
 
         mockMvc.perform(
                         put("/api/document/{documentId}/save/{saveId}", documentId, saveId)
