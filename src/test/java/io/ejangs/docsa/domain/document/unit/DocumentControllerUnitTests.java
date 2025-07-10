@@ -61,6 +61,20 @@ class DocumentControllerUnitTests {
     }
 
     @Test
+    @DisplayName("문서 제목이 빈값이면 400반환")
+    void throwExCusOfBlankTitle() throws Exception {
+        DocumentCreateRequest request = new DocumentCreateRequest("");
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
+                        .param("userId", "1")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."))
+                .andDo(print());
+    }
+
+    @Test
     @DisplayName("문서 리스트 조회 컨트롤러 테스트 - 사이드바")
     void getSimpleDocumentList() throws Exception {
         // given
@@ -90,20 +104,6 @@ class DocumentControllerUnitTests {
                 .andExpect(jsonPath("$.size()").value(2))
                 .andExpect(jsonPath("$[0].title").value("마이크로소프트"))
                 .andExpect(jsonPath("$.[1].title").value("구글"))
-                .andDo(print());
-    }
-
-    @Test
-    @DisplayName("문서 제목이 빈값이면 400반환")
-    void throwExCusOfBlankTitle() throws Exception {
-        DocumentCreateRequest request = new DocumentCreateRequest("");
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
-                        .param("userId", "1")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."))
                 .andDo(print());
     }
 }
