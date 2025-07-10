@@ -5,13 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.document.entity.Document;
 import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
-import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -21,11 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SaveServiceTest {
+class SaveServiceUnitTest {
 
     @Mock
     private UserRepository userRepository;
