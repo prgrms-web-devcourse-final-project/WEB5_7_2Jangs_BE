@@ -8,6 +8,7 @@ import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateRequest;
 import io.ejangs.docsa.domain.document.dto.DocumentCreateResponse;
 import io.ejangs.docsa.domain.document.entity.Document;
+import io.ejangs.docsa.domain.document.util.DocumentTestUtils;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.entity.dao.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -34,14 +35,8 @@ public class DocumentServiceIntegrationTests {
 
     @Test
     void 문서_정상_저장_통합테스트() throws Exception {
-        // given - 테스트용 사용자 먼저 저장
-        User user = User.builder()
-                .name("배문성")
-                .email("test@docsa.io")
-                .password("password")
-                .build();
-
-        user = userRepository.save(user); // 실제 DB에 저장되고 ID 생성됨
+        // given
+        User user = userRepository.save(DocumentTestUtils.createUser());
 
         DocumentCreateRequest request = new DocumentCreateRequest("테스트 문서");
 

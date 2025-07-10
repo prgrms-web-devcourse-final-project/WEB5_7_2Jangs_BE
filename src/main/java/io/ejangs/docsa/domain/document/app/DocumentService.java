@@ -42,10 +42,10 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentListSidebarResponse> readSidebar(Long userId) {
+    public List<DocumentListSidebarResponse> getSimpleDocumentList(Long userId) {
         //추후 Principal에서 추출 예정
         User user = getUserOrThrow(userId);
-        return documentRepository.findDocumentSidebarByUserId(user.getId());
+        return documentRepository.getSimpleDocumentList(user.getId());
     }
 
     private User getUserOrThrow(Long userId) {

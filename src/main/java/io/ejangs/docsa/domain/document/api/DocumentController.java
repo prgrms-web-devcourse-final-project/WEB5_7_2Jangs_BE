@@ -36,7 +36,7 @@ public class DocumentController {
             @RequestParam Long userId) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(documentService.readSidebar(userId));
+                .body(documentService.getSimpleDocumentList(userId));
     }
 
 }

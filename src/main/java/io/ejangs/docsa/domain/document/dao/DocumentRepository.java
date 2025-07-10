@@ -17,5 +17,5 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
                 WHERE d.user.id = :userId
                 ORDER BY d.updatedAt DESC
             """)
-    List<DocumentListSidebarResponse> findDocumentSidebarByUserId(@Param("userId") Long userId);
+    List<DocumentListSidebarResponse> getSimpleDocumentList(@Param("userId") Long userId);
 }
