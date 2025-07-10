@@ -9,10 +9,10 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.entity.dao.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -25,8 +25,7 @@ public class DocumentService {
     @Transactional
     public DocumentCreateResponse create(DocumentCreateRequest request, Long userId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+        User user = getUserOrThrow(userId);
 
         Document document = Document.builder()
                 .title(request.title())
@@ -34,6 +33,15 @@ public class DocumentService {
                 .build();
 
         Document saved = documentRepository.save(document);
+
+        user.addDocument(saved);
+
         return DocumentMapper.toCreateResponse(saved);
     }
+
+    private User getUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+    }
+
 }

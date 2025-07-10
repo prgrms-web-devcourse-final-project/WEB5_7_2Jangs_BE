@@ -25,4 +25,5 @@ public class DocumentController {
         return ResponseEntity.status(201)
                 .body(documentService.create(request, userId));
     }
+
 }
