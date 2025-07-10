@@ -6,9 +6,8 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum UserErrorCode implements ErrorCode {
-
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자를 찾을 수 없습니다.", "USER_NOT_FOUND");
+public enum DocumentErrorCode implements ErrorCode {
+    DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 문서를 찾을 수 없습니다.", "DOCUMENT_NOT_FOUND");
 
     private final HttpStatus status;
     private final String message;
