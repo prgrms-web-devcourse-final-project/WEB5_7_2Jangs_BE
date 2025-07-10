@@ -12,6 +12,7 @@ import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.commit.dao.CommitRepository;
 import io.ejangs.docsa.domain.branch.dao.BranchRepository;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -36,17 +37,17 @@ public class BranchService {
         Long fromId = request.fromCommitId();
         if (fromId != null) {
             Commit fromCommit = commitRepository.findById(fromId)
-                    .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
+                    .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
 
             if (!fromCommit.getBranch().getDocument().getId().equals(documentId)) {
-                throw new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+                throw new CustomException(DocumentErrorCode.COMMIT_NOT_IN_DOCUMENT);
             }
 
             // fromCommit 브랜치의 leaf가 본인이면 최신 커밋
             boolean isLeaf = fromCommit.getBranch().getLeafCommit() != null
                     && fromCommit.getBranch().getLeafCommit().getId().equals(fromId);
 
-            // 최신커밋이면 있던 브랜치에 저장 만들기, 아니면 개로운 브랜치에 저장 만들기
+            // 최신커밋이면 있던 브랜치에 저장 만들기, 아니면 새로운 브랜치에 저장 만들기
             if (isLeaf) return createSaveAndResponse(fromCommit.getBranch(),commitContentAssembler.assemble(fromCommit));
             else {
                 Branch newBranch = branchRepository.save(BranchMapper.toEntity(request, document, fromCommit));
