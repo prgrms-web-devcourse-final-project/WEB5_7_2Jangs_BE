@@ -35,7 +35,7 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
 
         findSave.updateContent(request.content());
-        saveRepository.flush();
+        saveRepository.flush(); // flush 을 통해 updatedAt 필드를 갱신해야 하므로 명시적으로 flush
         return findSave.getUpdatedAt();
     }
 }
