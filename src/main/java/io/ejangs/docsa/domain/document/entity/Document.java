@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.document.entity;
 
-import io.ejangs.docsa.domain.document.dto.DocumentCreateRequest;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.Column;
@@ -16,7 +15,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
@@ -28,7 +26,7 @@ public class Document extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(length = 50, nullable = false)
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)
