@@ -31,7 +31,8 @@ public class SecurityConfig {
                                 .maximumSessions(1)
                                 .maxSessionsPreventsLogin(false))
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/api/user/signup", "/api/user/login", "/api/auth/code/signup-email").permitAll()
+                        .requestMatchers("/api/user/signup", "/api/user/login",
+                                "/api/auth/code/signup-email").anonymous()
                         .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin.disable())
@@ -54,8 +55,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://localhost:3000");
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(
+                List.of("http://localhost:3000", "https://web5-7-2jangs-fe.pages.dev/"));
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

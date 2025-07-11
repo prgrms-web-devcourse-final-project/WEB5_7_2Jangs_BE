@@ -7,6 +7,7 @@ import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import jakarta.mail.MessagingException;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +19,8 @@ public class AuthService {
     private final MailService mailService;
     private final CacheManager cacheManager;
 
-    private static final String SIGNUP_CACHE_NAME = "signupCodeCache";
+    @Value("${auth.signup-code-cache-name}")
+    private String signupCacheName;
 
     public void sendSignupCode(SignupCodeRequest request) throws MessagingException {
 
@@ -27,7 +29,7 @@ public class AuthService {
         }
 
         String code = generateVerifyCode();
-        cacheManager.getCache(SIGNUP_CACHE_NAME).put(request.email(), code);
+        cacheManager.getCache(signupCacheName).put(request.email(), code);
         mailService.sendSignupAuthCode(request.email(), code);
     }
 
