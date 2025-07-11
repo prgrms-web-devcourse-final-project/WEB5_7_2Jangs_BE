@@ -24,9 +24,11 @@ public class Block {
     private String type;
 
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String data;
 
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String tunes;
 
     @ManyToOne(fetch = FetchType.LAZY)
