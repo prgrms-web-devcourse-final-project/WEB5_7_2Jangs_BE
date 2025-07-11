@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.block.entity;
 
 import io.ejangs.docsa.domain.document.entity.Document;
+import jakarta.persistence.*;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
