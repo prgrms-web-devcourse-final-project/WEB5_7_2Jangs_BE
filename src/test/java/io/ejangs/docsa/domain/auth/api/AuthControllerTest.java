@@ -5,6 +5,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -13,7 +14,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.auth.app.AuthService;
+import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
+import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -125,5 +128,81 @@ class AuthControllerTest {
                 .andDo(print());
 
         verify(authService).sendSignupCode(request);
+    }
+
+    @Test
+    @DisplayName("정상적인 인증코드 검증 성공")
+    void checkCode_Success() throws Exception {
+        // given
+        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "ABC123");
+        CodeCheckResponse response = new CodeCheckResponse("generatedPass123");
+
+        when(authService.checkCode(request)).thenReturn(response);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.passCode").value("generatedPass123"))
+                .andDo(print());
+
+        verify(authService).checkCode(request);
+    }
+
+    @Test
+    @DisplayName("만료된 인증코드로 요청 시 400 에러 발생")
+    void checkCode_Expired() throws Exception {
+        // given
+        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "ABC123");
+        doThrow(new CustomException(AuthErrorCode.EXPIRED_CODE))
+                .when(authService).checkCode(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("EXPIRED_CODE"))
+                .andExpect(jsonPath("$.message").value("인증 코드가 만료되었습니다."))
+                .andDo(print());
+
+        verify(authService).checkCode(request);
+    }
+
+    @Test
+    @DisplayName("잘못된 인증코드로 요청 시 400 에러 발생")
+    void checkCode_Invalid() throws Exception {
+        // given
+        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "WRONG123");
+        doThrow(new CustomException(AuthErrorCode.INVALID_CODE))
+                .when(authService).checkCode(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_CODE"))
+                .andExpect(jsonPath("$.message").value("인증 코드가 일치하지 않습니다."))
+                .andDo(print());
+
+        verify(authService).checkCode(request);
+    }
+
+    @Test
+    @DisplayName("이메일 또는 코드가 비어있는 경우 400 에러 발생")
+    void checkCode_EmptyFields() throws Exception {
+        // given
+        CodeCheckRequest request = new CodeCheckRequest("", "");
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+
+        verify(authService, never()).checkCode(any());
     }
 }
