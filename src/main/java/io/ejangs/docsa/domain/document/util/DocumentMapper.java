@@ -8,5 +8,4 @@ public class DocumentMapper {
     public static DocumentCreateResponse toCreateResponse(Document document) {
         return new DocumentCreateResponse(document.getId());
     }
-
 }
