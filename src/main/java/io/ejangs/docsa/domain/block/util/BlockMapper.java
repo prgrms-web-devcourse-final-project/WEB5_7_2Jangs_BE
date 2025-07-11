@@ -13,6 +13,7 @@ public class BlockMapper {
                 .uniqueId(blockDto.id())
                 .type(blockDto.type())
                 .data(JsonUtil.jsonToString(blockDto.data()))
+                .tunes(JsonUtil.jsonToString(blockDto.tunes()))
                 .build();
     }
 }

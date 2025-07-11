@@ -33,15 +33,18 @@ public class Block {
 
     private String data;
 
+    private String tunes;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id")
     private Document document;
 
     @Builder
-    private Block(String uniqueId, String type, String data, Document document) {
+    private Block(String uniqueId, String type, String data, String tunes, Document document) {
         this.uniqueId = uniqueId;
         this.type = type;
         this.data = data;
+        this.tunes = tunes;
         this.document = document;
     }
 }
