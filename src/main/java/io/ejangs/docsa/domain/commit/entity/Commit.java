@@ -38,19 +38,17 @@ public class Commit extends BaseEntity {
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
-    @OneToMany(mappedBy = "commit", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "commit", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CommitBlockSequence> commitBlocks;
 
     @Builder
-    private Commit(String title, String description, Branch branch,
-            List<CommitBlockSequence> commitBlocks) {
+    private Commit(String title, String description, Branch branch) {
         this.title = title;
         this.description = description;
         this.branch = branch;
-        this.commitBlocks = commitBlocks;
     }
 
-    public void updateCommitBlocks(List<CommitBlockSequence> commitBlocks) {
+    public void initializeCommitBlocks(List<CommitBlockSequence> commitBlocks) {
         this.commitBlocks = commitBlocks;
     }
 }

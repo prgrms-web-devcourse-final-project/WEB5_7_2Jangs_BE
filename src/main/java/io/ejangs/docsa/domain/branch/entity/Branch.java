@@ -15,15 +15,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.springframework.data.annotation.CreatedDate;
 
 @Entity
 @Getter
@@ -63,5 +60,9 @@ public class Branch extends BaseEntity {
         this.document = document;
         this.fromCommit = fromCommit;
         this.commits = new ArrayList<>();
+    }
+
+    public void updateLeafCommit(Commit leafCommit) {
+        this.leafCommit = leafCommit;
     }
 }
