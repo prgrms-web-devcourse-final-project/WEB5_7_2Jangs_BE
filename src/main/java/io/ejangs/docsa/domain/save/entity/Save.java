@@ -2,12 +2,14 @@ package io.ejangs.docsa.domain.save.entity;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.global.common.BaseEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -24,7 +26,9 @@ public class Save extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,5 +39,9 @@ public class Save extends BaseEntity {
     private Save(String content, Branch branch) {
         this.content = content;
         this.branch = branch;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
     }
 }
