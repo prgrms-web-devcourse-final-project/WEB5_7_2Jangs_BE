@@ -13,6 +13,8 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +63,11 @@ class SaveServiceIntegrationTest {
         Save updatedSave = saveRepository.findById(oldSave.getId()).orElseThrow();
         assertEquals("수정된 내용", updatedSave.getContent());
         assertTrue(updatedSave.getUpdatedAt().isAfter(beforeUpdate));
-        assertEquals(updatedSave.getUpdatedAt(), response.updatedAt());
+
+        ZoneOffset offset = ZoneOffset.of("+09:00"); // 예: KST 기준
+
+        OffsetDateTime updatedAt = updatedSave.getUpdatedAt().atOffset(offset);
+
+        assertEquals(updatedAt, response.updatedAt());
     }
 }

@@ -1,7 +1,7 @@
 package io.ejangs.docsa.domain.save.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
-public record SaveUpdateResponse(LocalDateTime updatedAt) {
+public record SaveUpdateResponse(OffsetDateTime updatedAt) {
 
 }
