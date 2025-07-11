@@ -15,9 +15,3 @@ public enum CommitErrorCode implements ErrorCode {
     private final String message;
     private final String error;
 }
-
-
-
-
-
-
