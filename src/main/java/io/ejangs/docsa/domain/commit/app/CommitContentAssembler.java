@@ -13,14 +13,14 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service
+@Component
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CommitContentAssembler {
@@ -47,7 +47,7 @@ public class CommitContentAssembler {
 
         ArrayNode array = objectMapper.createArrayNode();
 
-        while (cur != null) {
+        while (true) {
             Block blk = cur.getCurrentBlock();
 
             // ObjectNode 생성
