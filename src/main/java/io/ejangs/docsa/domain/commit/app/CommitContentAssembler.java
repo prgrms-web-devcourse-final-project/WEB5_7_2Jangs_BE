@@ -65,7 +65,20 @@ public class CommitContentAssembler {
                     throw new CustomException(DocumentErrorCode.JSON_SERIALIZATION_FAILED);
                 }
             } else {
-                node.put("data", rawData);
+                node.put("data", objectMapper.createObjectNode());
+            }
+            // tunes 필드 처리
+            String rawTunes = blk.getTunes();
+            if (rawTunes != null && rawTunes.trim().startsWith("{")) {
+                try {
+                    JsonNode tunesNode = objectMapper.readTree(rawTunes);
+                    node.set("tunes", tunesNode);
+                } catch (JsonProcessingException e) {
+                    throw new CustomException(DocumentErrorCode.JSON_SERIALIZATION_FAILED);
+                }
+            } else {
+                // tunes가 없으면 빈 객체로
+                node.set("tunes", objectMapper.createObjectNode());
             }
 
             array.add(node);

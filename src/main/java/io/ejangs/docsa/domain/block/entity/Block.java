@@ -33,6 +33,8 @@ public class Block {
 
     private String data;
 
+    private String tunes;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id")
     private Document document;
