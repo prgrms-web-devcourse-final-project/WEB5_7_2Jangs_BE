@@ -10,7 +10,7 @@ public class SaveMapper {
 
     public static SaveUpdateResponse toSaveUpdateResponse(Save save) {
         LocalDateTime localDateTime = save.getUpdatedAt();
-        ZoneOffset offset = ZoneOffset.of("+09:00"); // 예: KST 기준
+        ZoneOffset offset = ZoneOffset.ofHours(9); // 예: KST 기준
 
         OffsetDateTime updatedAt = localDateTime.atOffset(offset);
 
