@@ -5,6 +5,7 @@ import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -25,6 +26,8 @@ public class SaveController {
             @RequestBody SaveUpdateRequest saveUpdateRequest) {
         SaveUpdateResponse response = saveService.updateSave(
                 SaveUpdateIdDto.of(documentId, saveId, userId), saveUpdateRequest);
-        return ResponseEntity.ok(response);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
     }
 }
