@@ -14,4 +14,5 @@ public enum BranchErrorCode implements ErrorCode {
     private final HttpStatus status;
     private final String message;
     private final String error;
+
 }
