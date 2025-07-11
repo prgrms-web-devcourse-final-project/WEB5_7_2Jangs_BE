@@ -19,3 +19,4 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             """)
     List<DocumentListSimpleResponse> getSimpleDocumentList(@Param("userId") Long userId);
 }
+
