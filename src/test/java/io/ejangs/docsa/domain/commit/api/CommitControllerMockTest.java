@@ -47,14 +47,14 @@ class CommitControllerMockTest {
                 1L,
                 List.of(
                         new BlockDto("mhTl6ghSkV", "paragraph",
-                                Map.of("text", "Hey. Meet the new Editor.")),
+                                Map.of("text", "Hey. Meet the new Editor."), null),
                         new BlockDto("os_YI4eub4", "list", Map.of(
                                 "type", "unordered",
                                 "items", List.of(
                                         "It is a block-style editor",
                                         "It returns clean data output in JSON"
                                 )
-                        ))
+                        ), null)
                 ),
                 List.of("mhTl6ghSkV", "os_YI4eub4")
         );

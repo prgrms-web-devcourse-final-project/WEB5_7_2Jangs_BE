@@ -9,7 +9,7 @@ import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.document.dto.DocumentListSimpleResponse;
 import io.ejangs.docsa.domain.document.util.DocumentTestUtils;
 import io.ejangs.docsa.domain.user.entity.User;
-import io.ejangs.docsa.domain.user.entity.dao.UserRepository;
+import io.ejangs.docsa.domain.user.dao.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
