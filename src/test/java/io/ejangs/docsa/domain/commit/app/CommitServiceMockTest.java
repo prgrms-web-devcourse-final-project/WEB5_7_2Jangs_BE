@@ -23,7 +23,7 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
 import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.document.entity.Document;
-import io.ejangs.docsa.domain.save.save.SaveRepository;
+import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
@@ -75,8 +75,8 @@ class CommitServiceMockTest {
         Long userId = 10L;
 
         List<BlockDto> blocks = List.of(
-                new BlockDto("abc123", "paragraph", Map.of("text", "hello")),
-                new BlockDto("def456", "list", Map.of("items", List.of("item1", "item2")))
+                new BlockDto("abc123", "paragraph", Map.of("text", "hello"), null),
+                new BlockDto("def456", "list", Map.of("items", List.of("item1", "item2")), null)
         );
         List<String> blockOrders = List.of("abc123", "def456");
 
@@ -163,7 +163,7 @@ class CommitServiceMockTest {
         Long userId = 10L;
 
         List<BlockDto> blocks = List.of(
-                new BlockDto("abc123", "paragraph", Map.of("text", "test"))
+                new BlockDto("abc123", "paragraph", Map.of("text", "test"), null)
         );
         List<String> blockOrders = List.of("abc123");
 

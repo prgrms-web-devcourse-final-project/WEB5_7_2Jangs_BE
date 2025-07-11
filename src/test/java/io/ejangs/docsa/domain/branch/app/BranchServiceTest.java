@@ -12,6 +12,7 @@ import io.ejangs.docsa.domain.commit.dao.CommitRepository;
 import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -94,7 +95,7 @@ class BranchServiceTest {
         BranchCreateResponse resp = service.createBranch(1L, req);
 
         assertThat(resp.branchId()).isEqualTo(200L);
-        assertThat(resp.tempId()).isEqualTo(300L);
+        assertThat(resp.saveId()).isEqualTo(300L);
 
         verify(branchRepository).save(argThat(b -> b.getName().equals("b-new")));
         verify(saveRepository).save(argThat(s -> s.getContent().equals("")));
@@ -122,7 +123,7 @@ class BranchServiceTest {
         BranchCreateResponse resp = service.createBranch(1L, req);
 
         assertThat(resp.branchId()).isEqualTo(100L);
-        assertThat(resp.tempId()).isEqualTo(301L);
+        assertThat(resp.saveId()).isEqualTo(301L);
 
         verify(commitRepository).findById(10L);
         verify(assembler).assemble(fromCommit);
@@ -157,7 +158,7 @@ class BranchServiceTest {
         BranchCreateResponse resp = service.createBranch(1L, req);
 
         assertThat(resp.branchId()).isEqualTo(200L);
-        assertThat(resp.tempId()).isEqualTo(302L);
+        assertThat(resp.saveId()).isEqualTo(302L);
 
         verify(commitRepository).findById(10L);
         verify(branchRepository).save(any(Branch.class));
@@ -189,6 +190,6 @@ class BranchServiceTest {
         )
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
-                .isEqualTo(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+                .isEqualTo(CommitErrorCode.COMMIT_NOT_FOUND);
     }
 }

@@ -23,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -47,6 +48,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         request = new SignupCodeRequest("test@example.com");
+        ReflectionTestUtils.setField(authService, "signupCacheName", "signupCodeCache");
         lenient().when(cacheManager.getCache("signupCodeCache")).thenReturn(signupCodeCache);
     }
 

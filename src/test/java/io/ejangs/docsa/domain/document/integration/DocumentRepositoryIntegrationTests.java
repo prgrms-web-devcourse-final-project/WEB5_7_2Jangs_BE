@@ -8,7 +8,7 @@ import io.ejangs.docsa.domain.document.dto.DocumentListSimpleResponse;
 import io.ejangs.docsa.domain.document.entity.Document;
 import io.ejangs.docsa.domain.document.util.DocumentTestUtils;
 import io.ejangs.docsa.domain.user.entity.User;
-import io.ejangs.docsa.domain.user.entity.dao.UserRepository;
+import io.ejangs.docsa.domain.user.dao.UserRepository;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

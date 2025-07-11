@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.save.utils;
+package io.ejangs.docsa.domain.save.util;
 
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;

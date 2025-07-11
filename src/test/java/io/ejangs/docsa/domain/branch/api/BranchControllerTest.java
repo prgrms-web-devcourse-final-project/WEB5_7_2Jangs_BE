@@ -47,6 +47,6 @@ class BranchControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.branchId").value(99))
-                .andExpect(jsonPath("$.tempId").value(123));
+                .andExpect(jsonPath("$.saveId").value(123));
     }
 }

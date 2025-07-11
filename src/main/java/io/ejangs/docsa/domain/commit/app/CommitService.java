@@ -15,7 +15,7 @@ import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceFactory;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
 import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.document.entity.Document;
-import io.ejangs.docsa.domain.save.save.SaveRepository;
+import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
