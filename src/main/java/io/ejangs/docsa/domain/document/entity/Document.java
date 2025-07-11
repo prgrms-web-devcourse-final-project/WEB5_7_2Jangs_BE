@@ -26,7 +26,7 @@ public class Document extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(length = 50, nullable = false)
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,4 +38,5 @@ public class Document extends BaseEntity {
         this.title = title;
         this.user = user;
     }
+
 }
