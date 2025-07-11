@@ -61,4 +61,8 @@ public class Branch extends BaseEntity {
         this.fromCommit = fromCommit;
         this.commits = new ArrayList<>();
     }
+
+    public void updateLeafCommit(Commit leafCommit) {
+        this.leafCommit = leafCommit;
+    }
 }
