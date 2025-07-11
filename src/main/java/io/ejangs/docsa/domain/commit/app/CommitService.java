@@ -18,6 +18,7 @@ import io.ejangs.docsa.domain.document.entity.Document;
 import io.ejangs.docsa.domain.save.save.SaveRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,10 @@ public class CommitService {
     public CreateCommitResponse createCommit(Long documentId, Long userId,
             CreateCommitRequest commitRequest) {
 
+        if (commitRequest.blocks().isEmpty()) {
+            throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
+        }
+
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
         Branch branch = branchRepository.findById(commitRequest.branchId())
@@ -48,12 +53,12 @@ public class CommitService {
 
         Commit entity = CommitMapper.toEntity(branch, commitRequest);
         // 변경사항있는 '블럭'을 DB에 저장
-        List<String> updatedBlockUniqueIds = new ArrayList<>();
-        saveBlocks(document, commitRequest.blocks(), updatedBlockUniqueIds);
+
+        List<String> updatedBlocks = saveBlocks(document, commitRequest.blocks());
 
         // 현재 '커밋'에서의 '블럭'의 순서를 CommitBlockSequence DB에 저장
         List<CommitBlockSequence> commitBlockSequences = commitBlockSequenceFactory.create(entity,
-                commitRequest.blockOrders(), updatedBlockUniqueIds, branch);
+                commitRequest.blockOrders(), updatedBlocks, branch);
         entity.initializeCommitBlocks(commitBlockSequences);
 
         Commit save = commitRepository.save(entity);
@@ -65,11 +70,13 @@ public class CommitService {
         return CommitMapper.toCreateCommitResponse(save);
     }
 
-    private void saveBlocks(Document document, List<BlockDto> blocks, List<String> updatedBlock) {
+    private List<String> saveBlocks(Document document, List<BlockDto> blocks) {
+        List<String> updatedBlock = new ArrayList<>();
         for (BlockDto block : blocks) {
             Block entity = BlockMapper.toEntity(document, block);
             blockRepository.save(entity);
             updatedBlock.add(entity.getUniqueId());
         }
+        return updatedBlock;
     }
 }

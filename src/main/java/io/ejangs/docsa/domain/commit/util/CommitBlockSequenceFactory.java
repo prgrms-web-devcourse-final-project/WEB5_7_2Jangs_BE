@@ -35,8 +35,7 @@ public class CommitBlockSequenceFactory {
 
         List<Block> blocks = blockOrders.stream()
                 .map(blockUniqueId -> {
-                    if (updatedBlockUniqueIds.contains(blockUniqueId)
-                            || !baseBlockMap.containsKey(blockUniqueId)) {
+                    if (updatedBlockUniqueIds.contains(blockUniqueId)) {
                         return blockRepository.findLatestByUniqueId(blockUniqueId)
                                 .orElseThrow(
                                         () -> new CustomException(BlockErrorCode.BLOCK_NOT_FOUND));

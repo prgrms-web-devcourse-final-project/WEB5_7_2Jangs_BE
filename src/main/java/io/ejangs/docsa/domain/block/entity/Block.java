@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -31,8 +32,12 @@ public class Block {
     @Column(nullable = false)
     private String type;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String data;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String tunes;
 
     @ManyToOne(fetch = FetchType.LAZY)
