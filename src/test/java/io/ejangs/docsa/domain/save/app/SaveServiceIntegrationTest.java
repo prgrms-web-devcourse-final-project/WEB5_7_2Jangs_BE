@@ -21,6 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+/*
+JpaAuditing 작동을 통해 수정 시간을 직접 확인하고 싶어서
+불가피하게 통합테스트를 추가로 작성하였습니다.
+해당 테스트는 성공 케이스만 존재합니다.
+ */
 @SpringBootTest
 @Transactional
 class SaveServiceIntegrationTest {
