@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.user.entity;
 
-import io.ejangs.docsa.domain.document.entity.Document;
+import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -38,17 +38,17 @@ public class User extends BaseEntity {
     private String name;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    List<Document> documents;
+    List<Doc> docs;
 
     @Builder
     private User(String email, String password, String name) {
         this.email = email;
         this.password = password;
         this.name = name;
-        this.documents = new ArrayList<>();
+        this.docs = new ArrayList<>();
     }
 
-    public void addDocument(Document document) {
-        this.documents.add(document);
+    public void addDocument(Doc doc) {
+        this.docs.add(doc);
     }
 }

@@ -1,7 +1,7 @@
 package io.ejangs.docsa.domain.auth.app;
 
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
-import io.ejangs.docsa.domain.user.dao.UserRepository;
+import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import jakarta.mail.MessagingException;
