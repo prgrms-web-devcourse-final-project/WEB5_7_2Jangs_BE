@@ -10,7 +10,7 @@ import io.ejangs.docsa.domain.save.entity.Save;
 public final class BranchMapper {
 
     public static Branch toEntity(BranchCreateRequest dto, Doc doc, Commit fromCommit) {
-        return Branch.builder().name(dto.name()).document(doc).fromCommit(fromCommit).build();
+        return Branch.builder().name(dto.name()).doc(doc).fromCommit(fromCommit).build();
     }
 
     public static BranchCreateResponse toBranchCreateResponse(Branch branch, Save save) {
