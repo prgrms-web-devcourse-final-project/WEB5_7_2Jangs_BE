@@ -10,20 +10,20 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.block.dao.BlockRepository;
+import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.block.dto.response.BlockDto;
-import io.ejangs.docsa.domain.block.entity.Block;
+import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.block.util.BlockMapper;
-import io.ejangs.docsa.domain.branch.dao.BranchRepository;
+import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.dao.CommitRepository;
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
-import io.ejangs.docsa.domain.document.dao.DocumentRepository;
-import io.ejangs.docsa.domain.document.entity.Document;
-import io.ejangs.docsa.domain.save.dao.SaveRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
@@ -57,13 +57,13 @@ class CommitServiceMockTest {
     @Mock
     private SaveRepository saveRepository;
 
-    private Document document;
+    private Doc doc;
     private Branch branch;
     private Commit commit;
 
     @BeforeEach
     void setup() {
-        document = mock(Document.class);
+        doc = mock(Doc.class);
         branch = mock(Branch.class);
         commit = mock(Commit.class);
     }
@@ -82,7 +82,7 @@ class CommitServiceMockTest {
 
         CreateCommitRequest request = getCreateCommitRequest(blocks, blockOrders);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(doc));
         when(branchRepository.findById(documentId)).thenReturn(Optional.of(branch));
         when(saveRepository.findByBranchId(any())).thenReturn(Optional.empty());
 
@@ -103,9 +103,9 @@ class CommitServiceMockTest {
             mockedCommitMapper.when(() -> CommitMapper.toCreateCommitResponse(commit))
                     .thenReturn(new CreateCommitResponse(100L));
 
-            mockedBlockMapper.when(() -> BlockMapper.toEntity(document, blocks.get(0)))
+            mockedBlockMapper.when(() -> BlockMapper.toEntity(doc, blocks.get(0)))
                     .thenReturn(block1);
-            mockedBlockMapper.when(() -> BlockMapper.toEntity(document, blocks.get(1)))
+            mockedBlockMapper.when(() -> BlockMapper.toEntity(doc, blocks.get(1)))
                     .thenReturn(block2);
 
             // when
@@ -144,7 +144,7 @@ class CommitServiceMockTest {
         CreateCommitRequest request = getCreateCommitRequest();
 
         when(documentRepository.findById(documentId))
-                .thenReturn(Optional.of(mock(Document.class)));
+                .thenReturn(Optional.of(mock(Doc.class)));
 
         when(branchRepository.findById(documentId))
                 .thenReturn(Optional.empty());
@@ -169,12 +169,12 @@ class CommitServiceMockTest {
 
         CreateCommitRequest request = getCreateCommitRequest(blocks, blockOrders);
 
-        Document document = mock(Document.class);
+        Doc doc = mock(Doc.class);
         Branch branch = mock(Branch.class);
         Commit commit = mock(Commit.class);
         Block block = mock(Block.class);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(doc));
         when(branchRepository.findById(documentId)).thenReturn(Optional.of(branch));
         lenient().when(saveRepository.findByBranchId(any())).thenReturn(Optional.empty());
 
@@ -185,7 +185,7 @@ class CommitServiceMockTest {
             commitMapper.when(() -> CommitMapper.toEntity(branch, request))
                     .thenReturn(commit);
 
-            blockMapper.when(() -> BlockMapper.toEntity(document, blocks.get(0)))
+            blockMapper.when(() -> BlockMapper.toEntity(doc, blocks.get(0)))
                     .thenReturn(block);
 
             when(blockRepository.save(any())).thenReturn(block);

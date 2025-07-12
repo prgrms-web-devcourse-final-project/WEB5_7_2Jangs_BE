@@ -30,6 +30,9 @@ public class Commit extends BaseEntity {
     private Long id;
 
     @Column(nullable = false)
+    private String commitMongoId;
+
+    @Column(nullable = false)
     private String title;
 
     private String description;
@@ -38,17 +41,11 @@ public class Commit extends BaseEntity {
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "commit", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CommitBlockSequence> commitBlocks;
-
     @Builder
-    private Commit(String title, String description, Branch branch) {
+    private Commit(String commitMongoId, String title, String description, Branch branch) {
+        this.commitMongoId = commitMongoId;
         this.title = title;
         this.description = description;
         this.branch = branch;
-    }
-
-    public void initializeCommitBlocks(List<CommitBlockSequence> commitBlocks) {
-        this.commitBlocks = commitBlocks;
     }
 }

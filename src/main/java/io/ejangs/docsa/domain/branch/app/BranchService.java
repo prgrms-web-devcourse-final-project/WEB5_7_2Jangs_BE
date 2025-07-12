@@ -6,11 +6,11 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.document.entity.Document;
-import io.ejangs.docsa.domain.save.dao.SaveRepository;
-import io.ejangs.docsa.domain.document.dao.DocumentRepository;
-import io.ejangs.docsa.domain.commit.dao.CommitRepository;
-import io.ejangs.docsa.domain.branch.dao.BranchRepository;
+import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -31,7 +31,7 @@ public class BranchService {
     @Transactional
     public BranchCreateResponse createBranch(Long documentId,
             BranchCreateRequest request) {
-        Document document = documentRepository.findById(documentId)
+        Doc doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
 
         Long fromId = request.fromCommitId();
@@ -39,7 +39,7 @@ public class BranchService {
             Commit fromCommit = commitRepository.findById(fromId)
                     .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
 
-            if (!fromCommit.getBranch().getDocument().getId().equals(documentId)) {
+            if (!fromCommit.getBranch().getDoc().getId().equals(documentId)) {
                 throw new CustomException(DocumentErrorCode.COMMIT_NOT_IN_DOCUMENT);
             }
 
@@ -50,12 +50,12 @@ public class BranchService {
             // 최신커밋이면 있던 브랜치에 저장 만들기, 아니면 새로운 브랜치에 저장 만들기
             if (isLeaf) return createSaveAndResponse(fromCommit.getBranch(),commitContentAssembler.assemble(fromCommit));
             else {
-                Branch newBranch = branchRepository.save(BranchMapper.toEntity(request, document, fromCommit));
+                Branch newBranch = branchRepository.save(BranchMapper.toEntity(request, doc, fromCommit));
                 return createSaveAndResponse(newBranch,commitContentAssembler.assemble(fromCommit));
             }
         }
         // fromId가 null이면 최초 새 브랜치 생성 + 저장 만들기
-        Branch newBranch = branchRepository.save(BranchMapper.toEntity(request, document, null));
+        Branch newBranch = branchRepository.save(BranchMapper.toEntity(request, doc, null));
         return createSaveAndResponse(newBranch, "");
     }
 

@@ -1,7 +1,7 @@
 package io.ejangs.docsa.domain.branch.entity;
 
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.document.entity.Document;
+import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -37,7 +37,7 @@ public class Branch extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_id")
-    private Document document;
+    private Doc doc;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_commit_id")
@@ -55,9 +55,9 @@ public class Branch extends BaseEntity {
     private List<Commit> commits;
 
     @Builder
-    private Branch(String name, Document document, Commit fromCommit) {
+    private Branch(String name, Doc doc, Commit fromCommit) {
         this.name = name;
-        this.document = document;
+        this.doc = doc;
         this.fromCommit = fromCommit;
         this.commits = new ArrayList<>();
     }

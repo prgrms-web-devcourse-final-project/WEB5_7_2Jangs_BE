@@ -3,14 +3,14 @@ package io.ejangs.docsa.domain.save.app;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.ejangs.docsa.domain.document.dao.DocumentRepository;
-import io.ejangs.docsa.domain.document.entity.Document;
-import io.ejangs.docsa.domain.save.dao.SaveRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.user.dao.UserRepository;
+import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -46,7 +46,7 @@ class SaveServiceIntegrationTest {
                 .name("han")
                 .password("password1234")
                 .build());
-        Document document = documentRepository.save(Document.builder()
+        Doc doc = documentRepository.save(Doc.builder()
                 .title("title")
                 .user(user)
                 .build());
@@ -55,7 +55,7 @@ class SaveServiceIntegrationTest {
         LocalDateTime beforeUpdate = oldSave.getUpdatedAt();
 
         // When
-        SaveUpdateIdDto dto = SaveUpdateIdDto.of(document.getId(), oldSave.getId(), user.getId());
+        SaveUpdateIdDto dto = SaveUpdateIdDto.of(doc.getId(), oldSave.getId(), user.getId());
         SaveUpdateRequest request = new SaveUpdateRequest("수정된 내용");
         SaveUpdateResponse response = saveService.updateSave(dto, request);
 
