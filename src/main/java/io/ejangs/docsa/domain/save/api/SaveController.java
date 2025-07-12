@@ -19,11 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/document/{documentId}/save/{saveId}")
 public class SaveController {
 
     private final SaveService saveService;
 
-    @GetMapping("/api/document/{documentId}/save/{saveId}")
+    @GetMapping
     public ResponseEntity<SaveGetResponse> getSave(@RequestParam Long userId,
             @PathVariable Long saveId,
             @PathVariable Long documentId) {
@@ -31,7 +32,7 @@ public class SaveController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @PutMapping("/api/document/{documentId}/save/{saveId}")
+    @PutMapping
     public ResponseEntity<SaveUpdateResponse> updateSave(@RequestParam Long userId,
             @PathVariable Long documentId,
             @PathVariable Long saveId,
