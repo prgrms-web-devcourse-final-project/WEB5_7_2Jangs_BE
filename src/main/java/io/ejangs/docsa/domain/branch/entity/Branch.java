@@ -32,7 +32,7 @@ public class Branch extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 100, nullable = false)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -64,5 +64,8 @@ public class Branch extends BaseEntity {
 
     public void updateLeafCommit(Commit leafCommit) {
         this.leafCommit = leafCommit;
+    }
+    public void rename(String newName) {
+        this.name = newName;
     }
 }
