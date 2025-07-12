@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.branch.app;
 
 import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
@@ -11,6 +12,7 @@ import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.domain.document.dao.DocumentRepository;
 import io.ejangs.docsa.domain.commit.dao.CommitRepository;
 import io.ejangs.docsa.domain.branch.dao.BranchRepository;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -28,6 +30,7 @@ public class BranchService {
     private final SaveRepository saveRepository;
     private final CommitContentAssembler commitContentAssembler;
 
+    //브랜치 생성
     @Transactional
     public BranchCreateResponse createBranch(Long documentId,
             BranchCreateRequest request) {
@@ -39,7 +42,8 @@ public class BranchService {
             Commit fromCommit = commitRepository.findById(fromId)
                     .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
 
-            if (!fromCommit.getBranch().getDocument().getId().equals(documentId)) {
+            if (!fromCommit.getBranch().getDocument().getId().equals(documentId)){
+                // TODO: 이런 식의 get 연결은 도중에 NPE 위험, 추후 검증로직 도메인별 분리할 때 리팩토링
                 throw new CustomException(DocumentErrorCode.COMMIT_NOT_IN_DOCUMENT);
             }
 
@@ -58,7 +62,21 @@ public class BranchService {
         Branch newBranch = branchRepository.save(BranchMapper.toEntity(request, document, null));
         return createSaveAndResponse(newBranch, "");
     }
+    //브랜치 이름 수정
+    @Transactional
+    public BranchRenameResponse renameBranch(Long documentId,Long branchId, String newName){
 
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
+
+        if (!branch.getDocument().getId().equals(documentId)) {
+            throw new CustomException(DocumentErrorCode.BRANCH_NOT_IN_DOCUMENT);
+        }
+        branch.rename(newName);
+        return BranchMapper.toBranchRenameResponse(branch);
+    }
+
+    // 브랜치 생성에서 재사용하는 저장
     private BranchCreateResponse createSaveAndResponse(Branch branch, String content) {
         Save save = Save.builder()
                 .content(content)

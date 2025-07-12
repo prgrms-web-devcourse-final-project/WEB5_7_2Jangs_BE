@@ -12,6 +12,7 @@ import io.ejangs.docsa.domain.commit.dao.CommitRepository;
 import io.ejangs.docsa.domain.save.dao.SaveRepository;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -192,4 +193,55 @@ class BranchServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(CommitErrorCode.COMMIT_NOT_FOUND);
     }
+
+
+    @Test
+    @DisplayName("브랜치 이름 수정 성공")
+    void renameBranch_Success() {
+
+        Long branchId   = 100L;
+        Long documentId = 1L;
+        String newName  = "updated-name";
+
+        when(branchRepository.findById(branchId))
+                .thenReturn(Optional.of(existingBranch));
+
+        var resp = service.renameBranch(documentId, branchId, newName);
+
+        assertThat(resp.id()).isEqualTo(branchId);
+        assertThat(resp.name()).isEqualTo(newName);
+        assertThat(existingBranch.getName()).isEqualTo(newName);
+        verify(branchRepository).findById(branchId);
+    }
+
+    @Test
+    @DisplayName("브랜치를 찾을 수 없으면 BRANCH_NOT_FOUND 예외")
+    void renameBranch_BranchNotFound() {
+
+        Long branchId = 999L;
+        when(branchRepository.findById(branchId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.renameBranch(1L, branchId, "any"))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(BranchErrorCode.BRANCH_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("문서 ID가 다르면 BRANCH_NOT_IN_DOCUMENT 예외")
+    void renameBranch_DocumentMismatch() {
+
+        Long branchId   = 100L;
+        Long documentId = 2L;
+
+        when(branchRepository.findById(branchId))
+                .thenReturn(Optional.of(existingBranch));
+
+        assertThatThrownBy(() -> service.renameBranch(documentId, branchId, "any"))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(DocumentErrorCode.BRANCH_NOT_IN_DOCUMENT);
+    }
+
 }
