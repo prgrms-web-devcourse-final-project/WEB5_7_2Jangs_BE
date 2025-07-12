@@ -1,21 +1,21 @@
 package io.ejangs.docsa.domain.commit.app;
 
-import io.ejangs.docsa.domain.block.dao.BlockRepository;
+import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.block.dto.response.BlockDto;
-import io.ejangs.docsa.domain.block.entity.Block;
+import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.block.util.BlockMapper;
-import io.ejangs.docsa.domain.branch.dao.BranchRepository;
+import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.dao.CommitRepository;
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.commit.entity.CommitBlockSequence;
+import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceFactory;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
-import io.ejangs.docsa.domain.document.dao.DocumentRepository;
-import io.ejangs.docsa.domain.document.entity.Document;
-import io.ejangs.docsa.domain.save.dao.SaveRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
@@ -46,7 +46,7 @@ public class CommitService {
             throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
         }
 
-        Document document = documentRepository.findById(documentId)
+        Doc doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
         Branch branch = branchRepository.findById(commitRequest.branchId())
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
@@ -54,7 +54,7 @@ public class CommitService {
         Commit entity = CommitMapper.toEntity(branch, commitRequest);
         // 변경사항있는 '블럭'을 DB에 저장
 
-        List<String> updatedBlocks = saveBlocks(document, commitRequest.blocks());
+        List<String> updatedBlocks = saveBlocks(doc, commitRequest.blocks());
 
         // 현재 '커밋'에서의 '블럭'의 순서를 CommitBlockSequence DB에 저장
         List<CommitBlockSequence> commitBlockSequences = commitBlockSequenceFactory.create(entity,
@@ -70,10 +70,10 @@ public class CommitService {
         return CommitMapper.toCreateCommitResponse(save);
     }
 
-    private List<String> saveBlocks(Document document, List<BlockDto> blocks) {
+    private List<String> saveBlocks(Doc doc, List<BlockDto> blocks) {
         List<String> updatedBlock = new ArrayList<>();
         for (BlockDto block : blocks) {
-            Block entity = BlockMapper.toEntity(document, block);
+            Block entity = BlockMapper.toEntity(doc, block);
             blockRepository.save(entity);
             updatedBlock.add(entity.getUniqueId());
         }

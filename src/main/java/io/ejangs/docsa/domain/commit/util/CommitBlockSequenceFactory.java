@@ -1,10 +1,10 @@
 package io.ejangs.docsa.domain.commit.util;
 
-import io.ejangs.docsa.domain.block.dao.BlockRepository;
-import io.ejangs.docsa.domain.block.entity.Block;
+import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
+import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.commit.entity.CommitBlockSequence;
+import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockErrorCode;
 import java.util.Collections;

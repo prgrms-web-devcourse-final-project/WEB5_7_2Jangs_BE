@@ -1,13 +1,13 @@
 package io.ejangs.docsa.domain.save.app;
 
-import io.ejangs.docsa.domain.document.dao.DocumentRepository;
-import io.ejangs.docsa.domain.save.dao.SaveRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
-import io.ejangs.docsa.domain.user.dao.UserRepository;
+import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;

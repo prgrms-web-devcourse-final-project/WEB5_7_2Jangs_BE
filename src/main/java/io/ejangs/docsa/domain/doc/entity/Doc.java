@@ -1,6 +1,6 @@
-package io.ejangs.docsa.domain.save.entity;
+package io.ejangs.docsa.domain.doc.entity;
 
-import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -19,23 +18,25 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "saves")
+@Table(name = "docs")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Save extends BaseEntity {
+public class Doc extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String saveMongoId;
+    @Column(length = 50, nullable = false)
+    private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branch_id")
-    private Branch branch;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Builder
-    private Save(Branch branch) {
-        this.branch = branch;
+    private Doc(String title, User user) {
+        this.title = title;
+        this.user = user;
     }
+
 }
