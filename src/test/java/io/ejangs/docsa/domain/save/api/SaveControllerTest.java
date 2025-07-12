@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.save.api;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,10 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
+import io.ejangs.docsa.domain.save.dto.SaveGetIdDto;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
+import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,50 @@ class SaveControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Test
+    @DisplayName("저장 데이터 조회 성공")
+    void getSave_success() throws Exception {
+        Long userId = 1L;
+        Long documentId = 1L;
+        Long saveId = 1L;
+        String content = "my content";
+
+        SaveGetIdDto dto = SaveGetIdDto.of(userId, documentId, saveId);
+
+        OffsetDateTime now = OffsetDateTime.now();
+
+        when(saveService.getSave(dto)).thenReturn(
+                new SaveGetResponse(now, content));
+
+        mockMvc.perform(
+                        get("/api/document/{documentId}/save/{saveId}", documentId, saveId)
+                                .param("userId", String.valueOf(userId))
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value(content))
+                .andDo(print());
+    }
+
+    @ParameterizedTest
+    @DisplayName("path variable 이 비정상일 경우 예외 발생")
+    @CsvSource({
+            "abc,1",      // invalid documentId
+            "1,xyz",      // invalid saveId
+            "abc,xyz",    // both invalid
+    })
+    void getSave_fail_invalidPathVariables(String documentId, String saveId) throws Exception {
+        Long userId = 1L;
+
+        mockMvc.perform(
+                        get("/api/document/{documentId}/save/{saveId}", documentId, saveId)
+                                .param("userId", String.valueOf(userId))
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MethodArgumentTypeMismatchException.class,
+                        result.getResolvedException()))
+                .andDo(print());
+    }
 
     @Test
     @DisplayName("저장 데이터 덮어쓰기 성공")
