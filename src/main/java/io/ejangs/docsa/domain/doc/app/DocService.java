@@ -10,7 +10,7 @@ import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +67,7 @@ public class DocService {
     private void checkTitleDuplicate(Long userId, String title) {
         Boolean alreadyExistsTitle = docRepository.existsByUserIdAndTitle(userId, title);
         if (alreadyExistsTitle) {
-            throw new CustomException(DocumentErrorCode.TITLE_DUPLICATION);
+            throw new CustomException(DocErrorCode.TITLE_DUPLICATION);
         }
     }
 
@@ -78,7 +78,7 @@ public class DocService {
 
     private Doc getDocByIdAndUserId(Long documentId, Long userId) {
         return docRepository.getDocByIdAndUserId(documentId, userId)
-                .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
     }
 
 }

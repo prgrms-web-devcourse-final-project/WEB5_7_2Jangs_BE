@@ -8,7 +8,7 @@ import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
         docRepository.findById(dto.documentId())
-                .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
 
         Save findSave = saveRepository.findById(dto.saveId())
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
