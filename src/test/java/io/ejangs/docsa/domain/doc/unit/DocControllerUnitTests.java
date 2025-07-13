@@ -14,6 +14,9 @@ import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -53,7 +57,7 @@ class DocControllerUnitTests {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
                         .param("userId", "1")
                         .content(objectMapper.writeValueAsString(request))
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(documentId))
@@ -67,7 +71,7 @@ class DocControllerUnitTests {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
                         .param("userId", "1")
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."))
@@ -105,6 +109,55 @@ class DocControllerUnitTests {
                 .andExpect(jsonPath("$[0].title").value("마이크로소프트"))
                 .andExpect(jsonPath("$.[1].title").value("구글"))
                 .andDo(print());
+    }
+
+    @Test
+    @DisplayName("문서 제목 수정 성공")
+    void updateDocTitleSuccess() throws Exception {
+        //given
+        Long userId = 1L;
+        Long docId = 1L;
+        String newTitle = "new title";
+
+        DocTitleRequest request = new DocTitleRequest(newTitle);
+
+        DocTitleUpdateResponse response = new DocTitleUpdateResponse(
+                docId,
+                newTitle,
+                LocalDateTime.now()
+        );
+
+        when(docService.updateTitle(userId, docId, request)).thenReturn(response);
+
+        //when & then
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/document/" + docId)
+                        .param("userId", userId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(docId))
+                .andExpect(jsonPath("$.title").value(newTitle));
+    }
+
+    @Test
+    @DisplayName("문서 제목 중복 - 400 예외 반환")
+    void updateDocumentTitle_duplicateTitle_shouldReturnBadRequest() throws Exception {
+        // given
+        Long userId = 1L;
+        Long documentId = 10L;
+        String title = "중복된 제목";
+
+        DocTitleRequest request = new DocTitleRequest(title);
+
+        when(docService.updateTitle(userId, documentId, request))
+                .thenThrow(new CustomException(DocErrorCode.TITLE_DUPLICATION));
+
+        // when & then
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/document/{documentId}", documentId)
+                        .param("userId", userId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }
 
