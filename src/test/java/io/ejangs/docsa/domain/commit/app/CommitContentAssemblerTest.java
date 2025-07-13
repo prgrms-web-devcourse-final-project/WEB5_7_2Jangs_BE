@@ -1,86 +1,98 @@
 package io.ejangs.docsa.domain.commit.app;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
-import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
+import io.ejangs.docsa.global.exception.CustomException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
+
+import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
-
-@ExtendWith(MockitoExtension.class)
 class CommitContentAssemblerTest {
-
-    @Mock
-    private CommitBlockSequenceRepository cbsRepository;
-
-    @Mock
-    private ObjectMapper objectMapper;
 
     @InjectMocks
     private CommitContentAssembler assembler;
 
-    private Commit fakeCommit;
+    @Mock
+    private CommitBlockSequenceRepository commitBlockSequenceRepository;
+
+    @Mock
+    private BlockRepository blockRepository;
 
     @BeforeEach
     void setUp() {
-        fakeCommit = Commit.builder().title("테스트 커밋").description("desc").branch(null).build();
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void assemble_withTwoBlocks_producesExpectedJsonArray() throws Exception {
+    @DisplayName("정상적으로 블록을 조립하여 리스트 반환")
+    void assemble_success() {
+        // given
+        String commitMongoId = "commit123";
+        List<String> blockIds = List.of("block1", "block2");
 
-        Block b1 = Block.builder().uniqueId("mhTl6ghSkV").type("paragraph")
-                .data("{\"text\":\"First block\"}").document(null).build();
-        Block b2 = Block.builder().uniqueId("os_YI4eub4").type("list")
-                .data("{\"type\":\"unordered\",\"items\":[\"A\",\"B\"]}").document(null).build();
+        CommitBlockSequence seq = CommitBlockSequence.builder().blockOrders(blockIds).build();
+        when(commitBlockSequenceRepository.findById(commitMongoId)).thenReturn(Optional.of(seq));
 
-        ReflectionTestUtils.setField(b1, "id", 1L);
-        ReflectionTestUtils.setField(b2, "id", 2L);
+        Block block1 = Block.builder().content(Map.of("text", "hello")).build();
+        Block block2 = Block.builder().content(Map.of("text", "world")).build();
+        ReflectionTestUtils.setField(block1, "id", "block1");
+        ReflectionTestUtils.setField(block2, "id", "block2");
 
-        //CommitBlockSequence 두 건(순서, next 연결) 만들기
-        CommitBlockSequence seq1 =
-                CommitBlockSequence.builder().currentBlock(b1).first(true).nextBlock(b2).build();
-        CommitBlockSequence seq2 =
-                CommitBlockSequence.builder().currentBlock(b2).first(false).nextBlock(null).build();
+        when(blockRepository.findAllById(blockIds)).thenReturn(List.of(block1, block2));
 
-        List<CommitBlockSequence> seqs = Arrays.asList(seq1, seq2);
+        // when
+        List<Map<String, Object>> result = assembler.assemble(commitMongoId);
 
-        when(cbsRepository.findByCommit(fakeCommit)).thenReturn(seqs);
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).get("text")).isEqualTo("hello");
+        assertThat(result.get(1).get("text")).isEqualTo("world");
+    }
 
-        assembler = new CommitContentAssembler(cbsRepository, new ObjectMapper());
+    @Test
+    @DisplayName("커밋 MongoID가 존재하지 않으면 예외 발생")
+    void assemble_commitNotFound() {
+        // given
+        String commitMongoId = "nonexistent";
+        when(commitBlockSequenceRepository.findById(commitMongoId)).thenReturn(Optional.empty());
 
-        // assemble 호출
-        String json = assembler.assemble(fakeCommit);
+        // expect
+        assertThrows(CustomException.class, () -> assembler.assemble(commitMongoId));
+    }
 
-        // Jackson으로 파싱해서 검증
-        JsonNode root = new ObjectMapper().readTree(json);
-        assertTrue(root.isArray());
-        assertEquals(2, root.size());
+    @Test
+    @DisplayName("블록 일부가 없으면 예외 발생")
+    void assemble_blockMissing() {
+        // given
+        String commitMongoId = "commit456";
+        List<String> blockIds = List.of("block1", "block2");
 
-        JsonNode first = root.get(0);
-        assertEquals("mhTl6ghSkV", first.get("id").asText());
-        assertEquals("paragraph", first.get("type").asText());
-        assertEquals("First block", first.get("data").get("text").asText());
+        CommitBlockSequence seq = CommitBlockSequence.builder().blockOrders(blockIds).build();
+        when(commitBlockSequenceRepository.findById(commitMongoId)).thenReturn(Optional.of(seq));
 
-        JsonNode second = root.get(1);
-        assertEquals("os_YI4eub4", second.get("id").asText());
-        assertEquals("list", second.get("type").asText());
-        assertTrue(second.get("data").get("items").isArray());
-        assertEquals("A", second.get("data").get("items").get(0).asText());
-        assertEquals("B", second.get("data").get("items").get(1).asText());
+        Block block1 = Block.builder().content(Map.of("text", "present")).build();
+        ReflectionTestUtils.setField(block1, "id", "block1");
+
+        // block2 누락
+        when(blockRepository.findAllById(blockIds)).thenReturn(List.of(block1));
+
+        // expect
+        assertThrows(CustomException.class, () -> assembler.assemble(commitMongoId));
     }
 }
