@@ -13,6 +13,10 @@ spring:
     console:
       enabled: true
 
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -32,3 +36,6 @@ spring:
 
 auth:
   signup-code-cache-name: signupCodeCache
+
+default:
+  branch: main
