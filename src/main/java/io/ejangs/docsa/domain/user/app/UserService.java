@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.user.app;
 
-import io.ejangs.docsa.domain.user.dao.UserRepository;
+import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
 import io.ejangs.docsa.domain.user.entity.User;
