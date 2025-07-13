@@ -29,8 +29,11 @@ public class DocumentService {
 
         User user = getUserOrThrow(userId);
 
+        String title = request.title();
+        checkTitleDuplicate(userId, title);
+
         Doc doc = Doc.builder()
-                .title(request.title())
+                .title(title)
                 .user(user)
                 .build();
 
@@ -51,11 +54,21 @@ public class DocumentService {
     @Transactional
     public DocumentTitleUpdateResponse updateTitle(Long userId, Long documentId,
             DocumentTitleRequest request) {
+        String title = request.title();
+        checkTitleDuplicate(userId, title);
 
         Doc doc = getDocByIdAndUserId(documentId, userId);
-        doc.updateTitle(request.title());
+        doc.updateTitle(title);
 
         return DocumentMapper.toUpdateResponse(doc);
+    }
+
+    @Transactional(readOnly = true)
+    protected void checkTitleDuplicate(Long userId, String title) {
+        Boolean alreadyExistsTitle = documentRepository.existsByUserIdAndTitle(userId, title);
+        if (alreadyExistsTitle) {
+            throw new CustomException(DocumentErrorCode.TITLE_DUPLICATION);
+        }
     }
 
     private User getUserOrThrow(Long userId) {

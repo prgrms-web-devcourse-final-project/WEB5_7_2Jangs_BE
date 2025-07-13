@@ -20,8 +20,9 @@ public interface DocumentRepository extends JpaRepository<Doc, Long> {
             """)
     List<DocumentListSimpleResponse> getSimpleList(@Param("userId") Long userId);
 
-
     Optional<Doc> getDocByIdAndUserId(Long userId, Long id);
+
+    Boolean existsByUserIdAndTitle(Long userId, String title);
 
 }
 
