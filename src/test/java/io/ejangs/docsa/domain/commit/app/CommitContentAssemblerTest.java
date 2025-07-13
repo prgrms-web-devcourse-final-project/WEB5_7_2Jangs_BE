@@ -2,10 +2,10 @@ package io.ejangs.docsa.domain.commit.app;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.ejangs.docsa.domain.block.entity.Block;
-import io.ejangs.docsa.domain.commit.dao.CommitBlockSequenceRepository;
+import io.ejangs.docsa.domain.block.document.Block;
+import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.commit.entity.CommitBlockSequence;
+import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
