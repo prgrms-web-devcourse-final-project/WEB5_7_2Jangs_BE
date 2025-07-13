@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 public enum BlockErrorCode implements ErrorCode {
 
     BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 문단 블럭을 찾을 수 없습니다.", "BLOCK_NOT_FOUND"),
+    MONGO_BLOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "MomgoDB에서 해당 문단 블럭을 찾을 수 없습니다", "MONGO_BLOCK_NOT_FOUND")
     ;
 
     private final HttpStatus status;
