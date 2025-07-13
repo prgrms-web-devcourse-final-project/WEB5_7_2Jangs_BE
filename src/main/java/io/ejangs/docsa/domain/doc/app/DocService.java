@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.doc.app;
 
+import com.mongodb.MongoTimeoutException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -21,10 +22,13 @@ import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocService {
@@ -46,11 +50,20 @@ public class DocService {
         String title = request.title();
         checkTitleDuplicate(userId, title);
 
+        //Mongo 저장을 맨처음에 진행하여 실패시 예외 발생으로 인한 종료 -> 유사 트랜잭션
+        SaveContent defaultSaveContent;
+        try {
+            defaultSaveContent = createDefaultSaveContent();
+        } catch (MongoTimeoutException | DataAccessResourceFailureException e) {
+            log.error("DefaultSaveContent: Mongo 저장 실패 원인 - {}", e.getMessage());
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+        }
+
         Doc doc = createDoc(user, title);
 
         Branch defaultBranch = createDefaultBranch(doc);
 
-        createDefaultSave(defaultBranch);
+        createDefaultSave(defaultBranch, defaultSaveContent);
 
         return DocMapper.toCreateResponse(doc);
     }
@@ -74,13 +87,15 @@ public class DocService {
         return branch;
     }
 
-    private void createDefaultSave(Branch branch) {
-        SaveContent saveContent = saveContentRepository.save(
+    private SaveContent createDefaultSaveContent() {
+        return saveContentRepository.save(
                 SaveContent.builder()
                         .content(new HashMap<>())
                         .build()
         );
+    }
 
+    private void createDefaultSave(Branch branch, SaveContent saveContent) {
         saveRepository.save(Save.builder()
                 .branch(branch)
                 .saveMongoId(saveContent.getId())

@@ -13,7 +13,9 @@ public enum DocErrorCode implements ErrorCode {
             "JSON_SERIALIZATION_FAILED"),
     COMMIT_NOT_IN_DOCUMENT(HttpStatus.BAD_REQUEST, "커밋이 해당 문서에 속해있지 않습니다",
             "COMMIT_NOT_IN_DOCUMENT"),
-    TITLE_DUPLICATION(HttpStatus.BAD_REQUEST, "이미 사용중인 제목입니다.", "TITLE_DUPLICATION");
+    TITLE_DUPLICATION(HttpStatus.BAD_REQUEST, "이미 사용중인 제목입니다.", "TITLE_DUPLICATION"),
+    FAIL_CREATE_DOCUMENT(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류로 인해 문서 생성에 실패했습니다.",
+            "FAIL_CREATE_DOCUMENT");
 
     private final HttpStatus status;
     private final String message;
