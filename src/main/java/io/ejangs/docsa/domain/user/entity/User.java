@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -46,6 +47,11 @@ public class User extends BaseEntity {
         this.password = password;
         this.name = name;
         this.docs = new ArrayList<>();
+    }
+
+    // updateTime 수정
+    public void touch() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void addDocument(Doc doc) {

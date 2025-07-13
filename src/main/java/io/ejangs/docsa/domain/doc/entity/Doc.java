@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "docs")
+@Table(name = "docs",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_user_title", columnNames = {"user_id", "title"})
+        })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Doc extends BaseEntity {
 
@@ -26,7 +30,7 @@ public class Doc extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 50, nullable = false, unique = true)
+    @Column(length = 50, nullable = false)
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,5 +46,4 @@ public class Doc extends BaseEntity {
     public void updateTitle(String title) {
         this.title = title;
     }
-
 }

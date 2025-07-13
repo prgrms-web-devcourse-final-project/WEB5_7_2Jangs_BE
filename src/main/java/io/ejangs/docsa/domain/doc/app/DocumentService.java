@@ -40,6 +40,7 @@ public class DocumentService {
         Doc saved = documentRepository.save(doc);
 
         user.addDocument(saved);
+        user.touch();
 
         return DocumentMapper.toCreateResponse(saved);
     }
@@ -63,8 +64,7 @@ public class DocumentService {
         return DocumentMapper.toUpdateResponse(doc);
     }
 
-    @Transactional(readOnly = true)
-    protected void checkTitleDuplicate(Long userId, String title) {
+    private void checkTitleDuplicate(Long userId, String title) {
         Boolean alreadyExistsTitle = documentRepository.existsByUserIdAndTitle(userId, title);
         if (alreadyExistsTitle) {
             throw new CustomException(DocumentErrorCode.TITLE_DUPLICATION);
