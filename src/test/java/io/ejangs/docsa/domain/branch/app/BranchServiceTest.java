@@ -5,11 +5,11 @@ import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.document.entity.Document;
-import io.ejangs.docsa.domain.document.dao.DocumentRepository;
-import io.ejangs.docsa.domain.branch.dao.BranchRepository;
-import io.ejangs.docsa.domain.commit.dao.CommitRepository;
-import io.ejangs.docsa.domain.save.dao.SaveRepository;
+import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
@@ -41,14 +41,14 @@ class BranchServiceTest {
     @InjectMocks
     private BranchService service;
 
-    private Document doc;
+    private Doc doc;
     private Branch existingBranch;
     private Commit fromCommit;
     private Branch newBranch;
 
     @BeforeEach
     void setUp() {
-        doc = Document.builder().title("D").build();
+        doc = Doc.builder().title("D").build();
         ReflectionTestUtils.setField(doc, "id", 1L);
         lenient().when(documentRepository.findById(1L))
                 .thenReturn(Optional.of(doc));
