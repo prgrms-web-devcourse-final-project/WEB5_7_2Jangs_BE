@@ -16,12 +16,12 @@ public class MailService {
 
     private final JavaMailSender javaMailSender;
 
-    public void sendSignupAuthCode(String to, String authCode) throws MessagingException {
-        MimeMessage message = createSignupCodeMail(to, authCode);
+    public void sendSignupAuthCode(String to, String code) throws MessagingException {
+        MimeMessage message = createSignupCodeMail(to, code);
         javaMailSender.send(message);
     }
 
-    private MimeMessage createSignupCodeMail(String to, String authCode) throws MessagingException {
+    private MimeMessage createSignupCodeMail(String to, String code) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
 
         message.setFrom(senderEmail);
@@ -29,10 +29,10 @@ public class MailService {
         message.setSubject("Docsa 이메일 인증");
 
         String body = """
-            <h3>요청하신 인증 번호입니다.</h3>
-            <h1>%s</h1>
-            <h3>감사합니다.</h3>
-            """.formatted(authCode);
+                <h3>요청하신 인증 번호입니다.</h3>
+                <h1>%s</h1>
+                <h3>감사합니다.</h3>
+                """.formatted(code);
 
         message.setText(body, "UTF-8", "html");
 
