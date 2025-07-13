@@ -1,5 +1,7 @@
 package io.ejangs.docsa.domain.doc.app;
 
+import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
@@ -7,13 +9,19 @@ import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
+import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
+import io.ejangs.docsa.domain.save.document.SaveContent;
+import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +31,12 @@ public class DocService {
 
     private final DocRepository docRepository;
     private final UserRepository userRepository;
+    private final BranchRepository branchRepository;
+    private final SaveRepository saveRepository;
+    private final SaveContentRepository saveContentRepository;
+
+    @Value("${default.branch}")
+    private String defaultBranchName;
 
     @Transactional
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
@@ -32,17 +46,45 @@ public class DocService {
         String title = request.title();
         checkTitleDuplicate(userId, title);
 
-        Doc doc = Doc.builder()
+        Doc doc = createDoc(user, title);
+
+        Branch defaultBranch = createDefaultBranch(doc);
+
+        createDefaultSave(defaultBranch);
+
+        return DocMapper.toCreateResponse(doc);
+    }
+
+    private Doc createDoc(User user, String title) {
+        Doc doc = docRepository.save(Doc.builder()
                 .title(title)
                 .user(user)
-                .build();
-
-        Doc saved = docRepository.save(doc);
-
-        user.addDocument(saved);
+                .build());
+        user.addDocument(doc);
         user.touch();
+        return doc;
+    }
 
-        return DocMapper.toCreateResponse(saved);
+    private Branch createDefaultBranch(Doc doc) {
+        Branch branch = branchRepository.save(Branch.builder()
+                .name(defaultBranchName)
+                .doc(doc)
+                .build());
+        doc.addBranch(branch);
+        return branch;
+    }
+
+    private void createDefaultSave(Branch branch) {
+        SaveContent saveContent = saveContentRepository.save(
+                SaveContent.builder()
+                        .content(new HashMap<>())
+                        .build()
+        );
+
+        saveRepository.save(Save.builder()
+                .branch(branch)
+                .saveMongoId(saveContent.getId())
+                .build());
     }
 
     @Transactional(readOnly = true)

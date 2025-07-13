@@ -46,11 +46,10 @@ public class Doc extends BaseEntity {
     private List<Branch> branches;
 
     @Builder
-    private Doc(String title, User user, Branch branch) {
+    private Doc(String title, User user) {
         this.title = title;
         this.user = user;
         this.branches = new ArrayList<>();
-        this.branches.add(branch);
     }
 
     public void updateTitle(String title) {
