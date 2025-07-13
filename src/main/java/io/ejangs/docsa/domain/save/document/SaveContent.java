@@ -22,4 +22,8 @@ public class SaveContent {
     private SaveContent(Map<String, Object> content) {
         this.content = content;
     }
+
+    public void updateContent(Map<String, Object> content) {
+        this.content = content;
+    }
 }

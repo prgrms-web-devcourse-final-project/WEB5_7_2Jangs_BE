@@ -9,9 +9,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,12 +30,18 @@ public class Save extends BaseEntity {
     @Column(nullable = false)
     private String saveMongoId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
     @Builder
-    private Save(Branch branch) {
+    private Save(Branch branch, String saveMongoId) {
         this.branch = branch;
+        this.saveMongoId = saveMongoId;
+    }
+
+    // saveContent 가 수정될 경우 명시적으로 updatedAt을 갱신해야 한다.
+    public void touch() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
