@@ -108,7 +108,7 @@ public class DocServiceUnitTests {
 
     @Test
     @DisplayName("문서 제목 수정 실패 테스트 - 문서이름 중복")
-    void updateTitle_shouldThrowException_whenTitleIsDuplicated() {
+    void updateDocTitleFailByDuplicateTitle() throws Exception {
         // given
         Long userId = 1L;
         String duplicateTitle = "중복된 제목";

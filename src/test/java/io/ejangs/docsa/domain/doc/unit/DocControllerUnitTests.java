@@ -44,7 +44,7 @@ class DocControllerUnitTests {
 
     @Test
     @DisplayName("문서 생성 성공 컨트롤러 테스트")
-    void createDocumentApi() throws Exception {
+    void createDocSuccess() throws Exception {
 
         //given
         DocTitleRequest request = new DocTitleRequest("적당한 길이의 제목");
@@ -65,8 +65,8 @@ class DocControllerUnitTests {
     }
 
     @Test
-    @DisplayName("문서 제목이 빈값이면 400반환")
-    void throwExCusOfBlankTitle() throws Exception {
+    @DisplayName("문서 생성 - 문서 제목이 빈값이면 400반환")
+    void createDocFailByBlankTitle() throws Exception {
         DocTitleRequest request = new DocTitleRequest("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
@@ -80,7 +80,7 @@ class DocControllerUnitTests {
 
     @Test
     @DisplayName("문서 리스트 조회 컨트롤러 테스트 - 사이드바")
-    void getSimpleDocumentList() throws Exception {
+    void getSimpleDocList() throws Exception {
         // given
         Long userId = 1L;
 
@@ -141,7 +141,7 @@ class DocControllerUnitTests {
 
     @Test
     @DisplayName("문서 제목 중복 - 400 예외 반환")
-    void updateDocumentTitle_duplicateTitle_shouldReturnBadRequest() throws Exception {
+    void updateDocTitleFailByDuplicationTitle() throws Exception {
         // given
         Long userId = 1L;
         Long documentId = 10L;
@@ -159,5 +159,25 @@ class DocControllerUnitTests {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("문서 제목 수정 - 문서 제목이 50자 초과")
+    void updateDocTitleFailByTooLongTitle() throws Exception {
+        //given
+        Long userId = 1L;
+        Long documentId = 10L;
+        String tooLongTitle = "ThisTitleIsDefinitelyLongerThanFiftyCharactersInTotalLength!";
+        DocTitleRequest request = new DocTitleRequest(tooLongTitle);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/document/{documentId}", documentId)
+                        .param("userId", userId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("문서제목은 50자를 초과 할 수 없습니다."))
+                .andDo(print());
+    }
+
+
 }
 
