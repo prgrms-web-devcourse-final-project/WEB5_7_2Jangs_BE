@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.doc.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,6 +14,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.global.exception.CustomException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -102,6 +104,22 @@ public class DocServiceUnitTests {
         assertEquals(newTitle, doc.getTitle());
         assertEquals(response.id(), doc.getId());
         assertEquals(response.title(), result.title());
+    }
+
+    @Test
+    @DisplayName("문서 제목 수정 실패 테스트 - 문서이름 중복")
+    void updateTitle_shouldThrowException_whenTitleIsDuplicated() {
+        // given
+        Long userId = 1L;
+        String duplicateTitle = "중복된 제목";
+        DocTitleRequest request = new DocTitleRequest(duplicateTitle);
+
+        when(docRepository.existsByUserIdAndTitle(userId, duplicateTitle)).thenReturn(true);
+
+        // when & then
+        assertThrows(CustomException.class, () ->
+                docService.updateTitle(userId, 999L, request)
+        );
     }
 
 }
