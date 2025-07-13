@@ -11,9 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.doc.api.DocumentController;
 import io.ejangs.docsa.domain.doc.app.DocumentService;
-import io.ejangs.docsa.domain.doc.dto.DocumentCreateRequest;
 import io.ejangs.docsa.domain.doc.dto.DocumentCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.DocumentTitleRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -43,11 +43,11 @@ class DocControllerUnitTests {
     void createDocumentApi() throws Exception {
 
         //given
-        DocumentCreateRequest request = new DocumentCreateRequest("적당한 길이의 제목");
+        DocumentTitleRequest request = new DocumentTitleRequest("적당한 길이의 제목");
         Long documentId = 1L;
 
         //when, then
-        when(documentService.create(any(DocumentCreateRequest.class), anyLong()))
+        when(documentService.create(any(DocumentTitleRequest.class), anyLong()))
                 .thenReturn(new DocumentCreateResponse(documentId));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
@@ -63,7 +63,7 @@ class DocControllerUnitTests {
     @Test
     @DisplayName("문서 제목이 빈값이면 400반환")
     void throwExCusOfBlankTitle() throws Exception {
-        DocumentCreateRequest request = new DocumentCreateRequest("");
+        DocumentTitleRequest request = new DocumentTitleRequest("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
                         .param("userId", "1")
@@ -95,7 +95,7 @@ class DocControllerUnitTests {
                 )
         );
 
-        when(documentService.getSimpleDocumentList(anyLong())).thenReturn(responseList);
+        when(documentService.getSimpleList(anyLong())).thenReturn(responseList);
 
         //when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar")

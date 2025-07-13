@@ -39,4 +39,8 @@ public class Doc extends BaseEntity {
         this.user = user;
     }
 
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
 }

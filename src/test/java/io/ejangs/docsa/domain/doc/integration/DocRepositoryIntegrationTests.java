@@ -7,8 +7,8 @@ import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
 import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocumentTestUtils;
-import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.entity.User;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ public class DocRepositoryIntegrationTests {
         documentRepository.saveAll(docList);
 
         //when
-        List<DocumentListSimpleResponse> results = documentService.getSimpleDocumentList(
+        List<DocumentListSimpleResponse> results = documentService.getSimpleList(
                 user.getId());
 
         //then

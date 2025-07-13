@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.ejangs.docsa.domain.doc.app.DocumentService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
-import io.ejangs.docsa.domain.doc.dto.DocumentCreateRequest;
 import io.ejangs.docsa.domain.doc.dto.DocumentCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocumentTitleRequest;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocumentTestUtils;
-import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.transaction.Transactional;
@@ -39,7 +39,7 @@ public class DocServiceIntegrationTests {
         // given
         User user = userRepository.save(DocumentTestUtils.createUser());
 
-        DocumentCreateRequest request = new DocumentCreateRequest("테스트 문서");
+        DocumentTitleRequest request = new DocumentTitleRequest("테스트 문서");
 
         // when
         DocumentCreateResponse response = documentService.create(request, user.getId());
@@ -55,7 +55,7 @@ public class DocServiceIntegrationTests {
     void documentCreateFailTestNotFoundUser() {
         // given
         Long nonexistentUserId = 9999L; // 실제 DB에 없는 ID
-        DocumentCreateRequest request = new DocumentCreateRequest("없는 유저 문서");
+        DocumentTitleRequest request = new DocumentTitleRequest("없는 유저 문서");
 
         // when & then
         CustomException ex = assertThrows(CustomException.class, () ->

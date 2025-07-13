@@ -8,8 +8,8 @@ import io.ejangs.docsa.domain.doc.app.DocumentService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
 import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
 import io.ejangs.docsa.domain.doc.util.DocumentTestUtils;
-import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -50,16 +50,16 @@ public class DocServiceUnitTests {
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(documentRepository.getSimpleDocumentList(userId)).thenReturn(simpleDocuementList);
+        when(documentRepository.getSimpleList(userId)).thenReturn(simpleDocuementList);
 
         //when
-        List<DocumentListSimpleResponse> result = documentService.getSimpleDocumentList(userId);
+        List<DocumentListSimpleResponse> result = documentService.getSimpleList(userId);
 
         //then
         assertEquals(2, result.size());
         assertEquals("문서1", result.getFirst().title());
         verify(userRepository).findById(userId);
-        verify(documentRepository).getSimpleDocumentList(userId);
+        verify(documentRepository).getSimpleList(userId);
     }
 
 }
