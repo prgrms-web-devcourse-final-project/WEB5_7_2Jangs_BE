@@ -22,4 +22,8 @@ public class BlockService {
     public void deleteAll(List<Block> savedBlock) {
         blockRepository.deleteAll(savedBlock);
     }
+
+    public List<Block> findAllById(List<String> blockIds) {
+        return blockRepository.findAllById(blockIds);
+    }
 }

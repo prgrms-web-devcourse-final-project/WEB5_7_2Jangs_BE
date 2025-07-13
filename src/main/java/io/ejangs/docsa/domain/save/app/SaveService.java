@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.save.app;
 
 import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
@@ -23,6 +24,7 @@ public class SaveService {
     private final SaveRepository saveRepository;
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final SaveContentRepository saveContentRepository;
 
     @Transactional
     public SaveUpdateResponse updateSave(SaveUpdateIdDto dto, SaveUpdateRequest request) {
@@ -36,5 +38,13 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
 
         return null;
+    }
+
+    public void deleteSaveIfExists(Long branchId) {
+        saveRepository.findByBranchId(branchId).ifPresent(save -> {
+            saveContentRepository.findById(save.getSaveMongoId())
+                    .ifPresent(saveContentRepository::delete);
+            saveRepository.delete(save);
+        });
     }
 }

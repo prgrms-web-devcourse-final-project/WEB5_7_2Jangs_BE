@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.commit.app;
 
 import io.ejangs.docsa.domain.block.app.BlockService;
-import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
@@ -14,8 +13,7 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
 import io.ejangs.docsa.domain.doc.app.DocumentService;
-import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
-import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
+import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import java.util.ArrayList;
@@ -37,29 +35,10 @@ public class CommitService {
     private final DocumentService docService;
     private final BranchService branchService;
     private final BlockService blockService;
-    private final BlockRepository blockRepository;
-
-    private final SaveContentRepository saveContentRepository;
-    private final SaveRepository saveRepository;
+    private final SaveService saveService;
 
     @Transactional
-    public CreateCommitResponse createCommit(Long docId, Long userId,
-            CreateCommitRequest commitRequest) {
-
-        /**
-         * 1. documentId로 문서가 존재하는지 검사(JPA)
-         * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
-         * 3. 변경사항이 있는 block들을 DB에 저장(MongoDB)
-         * 4. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
-         * 5. baseCommit에서 사용한 block _id를 가져오기
-         * 6. block _id 로 이전 Commit에서 사용한 block 가져오기
-         * 7. blockId는 editor.js에서 만들어주는 uniqueId
-         * 8. blockOrder의 uniqueId가 변경된 블럭 중에 있는지 찾아보기
-         * 9. 없으면 이전 Commit에서 사용한 블럭에서 찾기
-         * 10. MongoDB에 cbs저장
-         * 11. Commit Entity만들어서 DB에 저장
-         * 12. branchId를 기반으로 Save가 있다면 삭제
-         */
+    public CreateCommitResponse createCommit(Long docId, CreateCommitRequest commitRequest) {
 
         // * 1. documentId로 문서가 존재하는지 검사(JPA)
         docService.notFoundDocCheck(docId);
@@ -74,6 +53,9 @@ public class CommitService {
             savedBlocks = blockService.saveBlocks(commitRequest.blocks());
             // * 4. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
             Commit baseCommit = getBaseCommit(branch);
+
+            // * 5. baseCommit에서 사용한 block _id를 가져오기
+            // * 6. block _id 로 이전 Commit에서 사용한 block 가져오기
             List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
 
             // * 7. blockId는 editor.js에서 만들어주는 uniqueId
@@ -87,7 +69,7 @@ public class CommitService {
             Commit savedCommit = saveCommit(branch, commitRequest, savedCbs.getId());
 
             // * 12. branchId를 기반으로 Save가 있다면 삭제
-            deleteSaveIfExists(branch.getId());
+            saveService.deleteSaveIfExists(branch.getId());
 
             return CommitMapper.toCreateCommitResponse(savedCommit);
         } catch (Exception e) {
@@ -119,15 +101,12 @@ public class CommitService {
                 .orElse(branch.getFromCommit());
     }
 
-    // blockService로 이동 예정
     private List<Block> getBaseCommitBlocks(Commit baseCommit) {
         if (baseCommit == null) {
             return List.of();
         }
-        // * 5. baseCommit에서 사용한 block _id를 가져오기
         CommitBlockSequence cbs = getCommitBlockSequence(baseCommit);
-        // * 6. block _id 로 이전 Commit에서 사용한 block 가져오기
-        return blockRepository.findAllById(cbs.getBlockOrders());
+        return blockService.findAllById(cbs.getBlockOrders());
     }
 
     private CommitBlockSequence getCommitBlockSequence(Commit commit) {
@@ -176,14 +155,5 @@ public class CommitService {
     private Commit saveCommit(Branch branch, CreateCommitRequest commitRequest, String cbsId) {
         Commit commit = CommitMapper.toEntity(branch, commitRequest, cbsId);
         return commitRepository.save(commit);
-    }
-
-    // saveService로 이동 예정
-    private void deleteSaveIfExists(Long branchId) {
-        saveRepository.findByBranchId(branchId).ifPresent(save -> {
-            saveContentRepository.findById(save.getSaveMongoId())
-                    .ifPresent(saveContentRepository::delete);
-            saveRepository.delete(save);
-        });
     }
 }
