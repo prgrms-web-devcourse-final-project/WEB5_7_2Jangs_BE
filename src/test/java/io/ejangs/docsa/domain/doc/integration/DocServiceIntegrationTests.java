@@ -8,7 +8,7 @@ import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.util.DocumentTestUtils;
+import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -37,7 +37,7 @@ public class DocServiceIntegrationTests {
     @DisplayName("문서 저장 성공 테스트")
     void documentCreateSuccess() throws Exception {
         // given
-        User user = userRepository.save(DocumentTestUtils.createUser());
+        User user = userRepository.save(DocTestUtils.createUser());
 
         DocTitleRequest request = new DocTitleRequest("테스트 문서");
 
