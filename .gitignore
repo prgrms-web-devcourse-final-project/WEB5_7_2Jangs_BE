@@ -35,6 +35,3 @@ out/
 
 ### VS Code ###
 .vscode/
-
-# 모든 테스트 무시
-src/test/java/io/ejangs/docsa/domain/**
