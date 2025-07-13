@@ -18,13 +18,13 @@ public class CommitController {
 
     private final CommitService commitService;
 
-    @PostMapping("/api/document/{document_Id}/commit/{user_Id}")
+    @PostMapping("/api/document/{docId}/commit/{userId}")
     public ResponseEntity<CreateCommitResponse> createCommit(
-            @PathVariable("document_Id") Long documentId,
-            @PathVariable("user_Id") Long userId,
+            @PathVariable("docId") Long docId,
+            @PathVariable("userId") Long userId,
             @RequestBody @Valid CreateCommitRequest commitRequest) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(commitService.createCommit(documentId, userId, commitRequest));
+                .body(commitService.createCommit(docId, userId, commitRequest));
     }
 }

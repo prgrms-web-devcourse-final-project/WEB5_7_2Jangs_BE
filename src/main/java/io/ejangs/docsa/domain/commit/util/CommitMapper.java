@@ -1,16 +1,18 @@
 package io.ejangs.docsa.domain.commit.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 
 public class CommitMapper {
 
-    public static Commit toEntity(Branch branch, CreateCommitRequest commitRequest) {
+    public static Commit toEntity(Branch branch, CreateCommitRequest commitRequest, String cbsId) {
         return Commit.builder()
                 .title(commitRequest.title())
                 .description(commitRequest.description())
+                .commitMongoId(cbsId)
                 .branch(branch)
                 .build();
     }
