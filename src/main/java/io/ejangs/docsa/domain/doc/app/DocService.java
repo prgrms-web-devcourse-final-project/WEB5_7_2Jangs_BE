@@ -53,12 +53,12 @@ public class DocService {
     }
 
     @Transactional
-    public DocTitleUpdateResponse updateTitle(Long userId, Long documentId,
+    public DocTitleUpdateResponse updateTitle(Long userId, Long docId,
             DocTitleRequest request) {
         String title = request.title();
         checkTitleDuplicate(userId, title);
 
-        Doc doc = getDocByIdAndUserId(documentId, userId);
+        Doc doc = getDocByIdAndUserId(docId, userId);
         doc.updateTitle(title);
 
         return DocMapper.toUpdateResponse(doc);

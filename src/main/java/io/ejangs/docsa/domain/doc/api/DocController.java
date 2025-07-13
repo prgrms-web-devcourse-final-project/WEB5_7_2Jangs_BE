@@ -42,14 +42,14 @@ public class DocController {
                 .body(docService.getSimpleList(userId));
     }
 
-    @PatchMapping("/{documentId}")
+    @PatchMapping("/{docId}")
     public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
-            @PathVariable Long documentId,
+            @PathVariable Long docId,
             @RequestParam Long userId,
             @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.updateTitle(userId, documentId, request));
+                .body(docService.updateTitle(userId, docId, request));
     }
 
 }
