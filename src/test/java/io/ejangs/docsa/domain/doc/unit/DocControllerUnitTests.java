@@ -9,11 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.ejangs.docsa.domain.doc.api.DocumentController;
-import io.ejangs.docsa.domain.doc.app.DocumentService;
-import io.ejangs.docsa.domain.doc.dto.DocumentCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocumentTitleRequest;
+import io.ejangs.docsa.domain.doc.api.DocController;
+import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-@WebMvcTest(DocumentController.class)
+@WebMvcTest(DocController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class DocControllerUnitTests {
 
@@ -36,19 +36,19 @@ class DocControllerUnitTests {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private DocumentService documentService;
+    private DocService docService;
 
     @Test
     @DisplayName("문서 생성 성공 컨트롤러 테스트")
     void createDocumentApi() throws Exception {
 
         //given
-        DocumentTitleRequest request = new DocumentTitleRequest("적당한 길이의 제목");
+        DocTitleRequest request = new DocTitleRequest("적당한 길이의 제목");
         Long documentId = 1L;
 
         //when, then
-        when(documentService.create(any(DocumentTitleRequest.class), anyLong()))
-                .thenReturn(new DocumentCreateResponse(documentId));
+        when(docService.create(any(DocTitleRequest.class), anyLong()))
+                .thenReturn(new DocCreateResponse(documentId));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
                         .param("userId", "1")
@@ -63,7 +63,7 @@ class DocControllerUnitTests {
     @Test
     @DisplayName("문서 제목이 빈값이면 400반환")
     void throwExCusOfBlankTitle() throws Exception {
-        DocumentTitleRequest request = new DocumentTitleRequest("");
+        DocTitleRequest request = new DocTitleRequest("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
                         .param("userId", "1")
@@ -80,14 +80,14 @@ class DocControllerUnitTests {
         // given
         Long userId = 1L;
 
-        List<DocumentListSimpleResponse> responseList = List.of(
-                new DocumentListSimpleResponse(
+        List<DocListSimpleResponse> responseList = List.of(
+                new DocListSimpleResponse(
                         1L,
                         "마이크로소프트",
                         LocalDateTime.now(),
                         LocalDateTime.now().plusDays(1)
                 ),
-                new DocumentListSimpleResponse(
+                new DocListSimpleResponse(
                         2L,
                         "구글",
                         LocalDateTime.now(),
@@ -95,7 +95,7 @@ class DocControllerUnitTests {
                 )
         );
 
-        when(documentService.getSimpleList(anyLong())).thenReturn(responseList);
+        when(docService.getSimpleList(anyLong())).thenReturn(responseList);
 
         //when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar")

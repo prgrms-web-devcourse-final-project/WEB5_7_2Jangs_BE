@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.doc.app.DocumentService;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
-import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
+import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.util.DocumentTestUtils;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -25,10 +25,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 public class DocServiceUnitTests {
 
     @InjectMocks
-    private DocumentService documentService;
+    private DocService docService;
 
     @Mock
-    private DocumentRepository documentRepository;
+    private DocRepository docRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -42,24 +42,24 @@ public class DocServiceUnitTests {
         User user = DocumentTestUtils.createUser();
         ReflectionTestUtils.setField(user, "id", 1L);
 
-        List<DocumentListSimpleResponse> simpleDocuementList = List.of(
-                new DocumentListSimpleResponse(1L, "문서1", LocalDateTime.now(),
+        List<DocListSimpleResponse> simpleDocuementList = List.of(
+                new DocListSimpleResponse(1L, "문서1", LocalDateTime.now(),
                         LocalDateTime.now().plusHours(3)),
-                new DocumentListSimpleResponse(2L, "문서2", LocalDateTime.now().plusHours(1),
+                new DocListSimpleResponse(2L, "문서2", LocalDateTime.now().plusHours(1),
                         LocalDateTime.now().plusDays(3))
         );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(documentRepository.getSimpleList(userId)).thenReturn(simpleDocuementList);
+        when(docRepository.getSimpleList(userId)).thenReturn(simpleDocuementList);
 
         //when
-        List<DocumentListSimpleResponse> result = documentService.getSimpleList(userId);
+        List<DocListSimpleResponse> result = docService.getSimpleList(userId);
 
         //then
         assertEquals(2, result.size());
         assertEquals("문서1", result.getFirst().title());
         verify(userRepository).findById(userId);
-        verify(documentRepository).getSimpleList(userId);
+        verify(docRepository).getSimpleList(userId);
     }
 
 }

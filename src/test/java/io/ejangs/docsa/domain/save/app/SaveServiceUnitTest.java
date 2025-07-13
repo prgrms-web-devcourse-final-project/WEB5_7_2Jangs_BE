@@ -1,11 +1,9 @@
 package io.ejangs.docsa.domain.save.app;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
@@ -27,7 +25,7 @@ class SaveServiceUnitTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private DocumentRepository documentRepository;
+    private DocRepository docRepository;
     @Mock
     private SaveRepository saveRepository;
     @Mock
@@ -73,7 +71,7 @@ class SaveServiceUnitTest {
         SaveUpdateRequest request = new SaveUpdateRequest("content");
 
         when(userRepository.findById(dto.userId())).thenReturn(Optional.of(mockUser));
-        when(documentRepository.findById(dto.documentId())).thenReturn(Optional.of(mockDoc));
+        when(docRepository.findById(dto.documentId())).thenReturn(Optional.of(mockDoc));
 
         // when & then
         assertThatThrownBy(() -> saveService.updateSave(dto, request))

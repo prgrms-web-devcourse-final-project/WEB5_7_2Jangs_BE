@@ -1,10 +1,10 @@
 package io.ejangs.docsa.domain.doc.api;
 
-import io.ejangs.docsa.domain.doc.app.DocumentService;
-import io.ejangs.docsa.domain.doc.dto.DocumentCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocumentTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocumentTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,34 +22,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/document")
 @RequiredArgsConstructor
-public class DocumentController {
+public class DocController {
 
-    private final DocumentService documentService;
+    private final DocService docService;
 
     @PostMapping
-    public ResponseEntity<DocumentCreateResponse> create(@RequestParam Long userId,
-            @Valid @RequestBody DocumentTitleRequest request) {
+    public ResponseEntity<DocCreateResponse> create(@RequestParam Long userId,
+            @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(documentService.create(request, userId));
+                .body(docService.create(request, userId));
     }
 
     @GetMapping("/sidebar")
-    public ResponseEntity<List<DocumentListSimpleResponse>> readListSidebar(
+    public ResponseEntity<List<DocListSimpleResponse>> readListSidebar(
             @RequestParam Long userId) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(documentService.getSimpleList(userId));
+                .body(docService.getSimpleList(userId));
     }
 
     @PatchMapping("/{documentId}")
-    public ResponseEntity<DocumentTitleUpdateResponse> updateDocumentTitle(
+    public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
             @PathVariable Long documentId,
             @RequestParam Long userId,
-            @Valid @RequestBody DocumentTitleRequest request) {
+            @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(documentService.updateTitle(userId, documentId, request));
+                .body(docService.updateTitle(userId, documentId, request));
     }
 
 }

@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.dto;
 
-public record DocumentCreateResponse(
+public record DocCreateResponse(
         Long id
 ) {
 

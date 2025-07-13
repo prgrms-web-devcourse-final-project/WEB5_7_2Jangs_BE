@@ -4,13 +4,13 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-public record DocumentTitleUpdateResponse(
+public record DocTitleUpdateResponse(
         Long id,
         String title,
         OffsetDateTime updatedAt
 ) {
 
-    public DocumentTitleUpdateResponse(
+    public DocTitleUpdateResponse(
             Long id,
             String title,
             LocalDateTime updatedAt

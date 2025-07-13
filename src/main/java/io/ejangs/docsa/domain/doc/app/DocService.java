@@ -1,12 +1,12 @@
 package io.ejangs.docsa.domain.doc.app;
 
-import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
-import io.ejangs.docsa.domain.doc.dto.DocumentCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocumentTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocumentTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.util.DocumentMapper;
+import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -19,13 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class DocumentService {
+public class DocService {
 
-    private final DocumentRepository documentRepository;
+    private final DocRepository docRepository;
     private final UserRepository userRepository;
 
     @Transactional
-    public DocumentCreateResponse create(DocumentTitleRequest request, Long userId) {
+    public DocCreateResponse create(DocTitleRequest request, Long userId) {
 
         User user = getUserOrThrow(userId);
 
@@ -37,35 +37,35 @@ public class DocumentService {
                 .user(user)
                 .build();
 
-        Doc saved = documentRepository.save(doc);
+        Doc saved = docRepository.save(doc);
 
         user.addDocument(saved);
         user.touch();
 
-        return DocumentMapper.toCreateResponse(saved);
+        return DocMapper.toCreateResponse(saved);
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentListSimpleResponse> getSimpleList(Long userId) {
+    public List<DocListSimpleResponse> getSimpleList(Long userId) {
         //추후 Principal에서 추출 예정
         User user = getUserOrThrow(userId);
-        return documentRepository.getSimpleList(user.getId());
+        return docRepository.getSimpleList(user.getId());
     }
 
     @Transactional
-    public DocumentTitleUpdateResponse updateTitle(Long userId, Long documentId,
-            DocumentTitleRequest request) {
+    public DocTitleUpdateResponse updateTitle(Long userId, Long documentId,
+            DocTitleRequest request) {
         String title = request.title();
         checkTitleDuplicate(userId, title);
 
         Doc doc = getDocByIdAndUserId(documentId, userId);
         doc.updateTitle(title);
 
-        return DocumentMapper.toUpdateResponse(doc);
+        return DocMapper.toUpdateResponse(doc);
     }
 
     private void checkTitleDuplicate(Long userId, String title) {
-        Boolean alreadyExistsTitle = documentRepository.existsByUserIdAndTitle(userId, title);
+        Boolean alreadyExistsTitle = docRepository.existsByUserIdAndTitle(userId, title);
         if (alreadyExistsTitle) {
             throw new CustomException(DocumentErrorCode.TITLE_DUPLICATION);
         }
@@ -77,7 +77,7 @@ public class DocumentService {
     }
 
     private Doc getDocByIdAndUserId(Long documentId, Long userId) {
-        return documentRepository.getDocByIdAndUserId(documentId, userId)
+        return docRepository.getDocByIdAndUserId(documentId, userId)
                 .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
     }
 
