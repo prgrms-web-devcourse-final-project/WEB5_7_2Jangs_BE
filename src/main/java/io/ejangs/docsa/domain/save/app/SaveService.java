@@ -1,7 +1,12 @@
 package io.ejangs.docsa.domain.save.app;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.ejangs.docsa.domain.branch.util.JsonConverter;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.save.dao.SaveRepositoryAdapter;
+import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
+import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
@@ -12,6 +17,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SaveService {
 
-    private final SaveRepository saveRepository;
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final SaveRepositoryAdapter saveRepository;
 
     @Transactional
     public SaveUpdateResponse updateSave(SaveUpdateIdDto dto, SaveUpdateRequest request) {
@@ -32,9 +38,11 @@ public class SaveService {
         documentRepository.findById(dto.documentId())
                 .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
 
-        Save findSave = saveRepository.findById(dto.saveId())
-                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
+        Save findSave = saveRepository.findSaveById(dto.saveId());
 
-        return null;
+        // 이런 예외가 있나?
+        SaveContent saveContent = saveRepository.findSaveContentById(findSave.getSaveMongoId());
+
+        return saveRepository.updateSave(findSave, saveContent, request.content());
     }
 }
