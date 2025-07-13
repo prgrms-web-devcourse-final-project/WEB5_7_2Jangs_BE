@@ -35,3 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# 모든 테스트 무시
+src/test/java/io/ejangs/docsa/domain/**
+
+# 예외: doc 하위만 포함 (doc 및 그 하위 파일들 포함)
+!src/test/java/io/ejangs/docsa/domain/doc/
+!src/test/java/io/ejangs/docsa/domain/doc/**

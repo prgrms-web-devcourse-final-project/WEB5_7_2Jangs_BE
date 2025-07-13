@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+import com.mongodb.MongoTimeoutException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.app.DocService;
@@ -26,10 +29,12 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 
 @SpringBootTest
@@ -95,6 +100,43 @@ public class DocServiceIntegrationTests {
         Optional<SaveContent> content = saveContentRepository.findById(mongoId);
         assertThat(content).isPresent();
         assertThat(content.get().getContent()).isEmpty(); // 빈 JSON 확인
+    }
+
+    @Nested
+    @DisplayName("Mongo 실패 케이스")
+    class MongoFailureTest {
+
+        @Autowired
+        private DocService docService;
+        @Autowired
+        private UserRepository userRepository;
+        @Autowired
+        private DocRepository docRepository;
+        @Autowired
+        private BranchRepository branchRepository;
+        @Autowired
+        private SaveRepository saveRepository;
+
+        @MockitoBean
+        private SaveContentRepository saveContentRepository;
+
+        @Test
+        @DisplayName("Mongo 저장 실패 시 문서 생성 트랜잭션이 중단된다")
+        void fail_when_mongo_save_fails() {
+            User user = userRepository.save(DocTestUtils.createUser());
+            DocTitleRequest request = new DocTitleRequest("Mongo 실패 케이스");
+
+            when(saveContentRepository.save(any()))
+                    .thenThrow(new MongoTimeoutException("Mongo 연결 실패"));
+
+            assertThatThrownBy(() -> docService.create(request, user.getId()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessageContaining(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
+
+            assertThat(docRepository.findAll()).isEmpty();
+            assertThat(branchRepository.findAll()).isEmpty();
+            assertThat(saveRepository.findAll()).isEmpty();
+        }
     }
 
     @Test
