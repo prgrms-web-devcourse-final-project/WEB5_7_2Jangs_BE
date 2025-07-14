@@ -37,7 +37,7 @@ class SaveRepositoryAdapterImplTest {
     @Test
     @DisplayName("findSaveById - 성공")
     void findSaveById_success() {
-        Save mockSave = Save.builder().saveMongoId("mongo123").build();
+        Save mockSave = Save.builder().build();
         when(saveRepository.findById(1L)).thenReturn(Optional.of(mockSave));
 
         Save result = adapter.findSaveById(1L);
@@ -82,7 +82,7 @@ class SaveRepositoryAdapterImplTest {
     @Test
     @DisplayName("updateSave - 성공")
     void updateSave_success() {
-        Save mockSave = Save.builder().saveMongoId("mongo123").build();
+        Save mockSave = Save.builder().build();
         SaveContent mockContent = SaveContent.builder()
                 .content(Map.of("old", "data"))
                 .build();
