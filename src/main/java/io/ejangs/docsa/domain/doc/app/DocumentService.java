@@ -57,6 +57,7 @@ public class DocumentService {
         return documentRepository.existsById(id);
     }
 
+    @Transactional(readOnly = true)
     public void notFoundDocCheck(Long id) {
         if (!documentRepository.existsById(id)) {
             throw new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND);
