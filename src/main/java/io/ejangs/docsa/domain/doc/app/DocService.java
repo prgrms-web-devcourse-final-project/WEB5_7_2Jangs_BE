@@ -38,9 +38,9 @@ public class DocService {
                 .build();
 
         Doc saved = docRepository.save(doc);
+        docRepository.flush();
 
         user.addDocument(saved);
-
         return DocMapper.toCreateResponse(saved);
     }
 
