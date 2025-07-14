@@ -165,6 +165,8 @@ public class CommitService {
 
     private Commit saveCommit(Branch branch, CreateCommitRequest commitRequest) {
         Commit commit = CommitMapper.toEntity(branch, commitRequest);
-        return commitRepository.save(commit);
+        Commit savedCommit = commitRepository.save(commit);
+        commitRepository.flush();
+        return savedCommit;
     }
 }
