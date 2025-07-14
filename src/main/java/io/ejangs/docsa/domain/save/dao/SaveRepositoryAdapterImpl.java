@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.save.dao;
 
-import io.ejangs.docsa.domain.branch.util.JsonConverter;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -11,7 +10,6 @@ import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +37,8 @@ public class SaveRepositoryAdapterImpl implements SaveRepositoryAdapter {
 
     @Override
     @Transactional
-    public SaveUpdateResponse updateSave(Save save, SaveContent saveContent, List<SaveBlock> content) {
+    public SaveUpdateResponse updateSave(Save save, SaveContent saveContent,
+            List<SaveBlock> content) {
         // MySQL 먼저 저장
         save.touch();
         saveRepository.save(save);
