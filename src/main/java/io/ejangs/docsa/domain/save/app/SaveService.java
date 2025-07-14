@@ -10,6 +10,7 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,10 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
 
         Save findSave = saveRepository.findSaveById(dto.saveId());
+
+        if (!findSave.getBranch().getDoc().getUser().getId().equals(dto.userId())) {
+            throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
+        }
 
         SaveContent saveContent = saveRepository.findSaveContentById(findSave.getSaveMongoId());
 
