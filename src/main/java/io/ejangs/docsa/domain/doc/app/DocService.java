@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,8 +77,8 @@ public class DocService {
                 .title(title)
                 .user(user)
                 .build());
+        docRepository.flush();
         user.addDocument(doc);
-        user.touch();
         return doc;
     }
 
@@ -98,7 +99,6 @@ public class DocService {
         );
     }
 
-
     @Transactional(readOnly = true)
     public List<DocListSimpleResponse> getSimpleList(Long userId) {
         //추후 Principal에서 추출 예정
@@ -110,9 +110,14 @@ public class DocService {
     public DocTitleUpdateResponse updateTitle(Long userId, Long docId,
             DocTitleRequest request) {
         String title = request.title();
-        checkTitleDuplicate(userId, title);
 
         Doc doc = getDocByIdAndUserId(docId, userId);
+
+        if (title.equals(doc.getTitle())) {
+            throw new CustomException(DocErrorCode.SAME_AS_CURRENT_TITLE);
+        }
+
+        checkTitleDuplicate(userId, title);
         doc.updateTitle(title);
 
         return DocMapper.toUpdateResponse(doc);
