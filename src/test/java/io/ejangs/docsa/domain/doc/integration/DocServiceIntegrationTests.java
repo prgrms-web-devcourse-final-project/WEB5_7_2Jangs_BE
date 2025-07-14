@@ -28,6 +28,7 @@ import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,11 @@ public class DocServiceIntegrationTests {
 
     @Value("${default.branch}")
     private String defaultBranchName;
+
+    @AfterEach
+    void cleanup() {
+        saveContentRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("문서 생성 시 문서, 브랜치, 세이브, 세이브컨텐츠가 모두 정상 저장된다")
@@ -136,6 +142,40 @@ public class DocServiceIntegrationTests {
             assertThat(docRepository.findAll()).isEmpty();
             assertThat(branchRepository.findAll()).isEmpty();
             assertThat(saveRepository.findAll()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("RDB 트랜잭션 실패 케이스")
+    class RdbFailureTest {
+
+        @Autowired
+        private DocService docService;
+        @Autowired
+        private UserRepository userRepository;
+        @Autowired
+        private SaveContentRepository saveContentRepository;
+
+        @MockitoBean
+        private DocRepository docRepository; // 트랜잭션 도중 예외 유도용
+
+        @Test
+        @DisplayName("RDB 트랜잭션 중 예외 발생 시 Mongo SaveContent가 롤백된다")
+        void rollback_mongo_when_rdb_transaction_fails() {
+            // given
+            User user = userRepository.save(DocTestUtils.createUser());
+            DocTitleRequest request = new DocTitleRequest("트랜잭션 실패");
+
+            when(docRepository.save(any()))
+                    .thenThrow(new RuntimeException("RDB 저장 실패"));
+
+            // when
+            assertThatThrownBy(() -> docService.create(request, user.getId()))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
+
+            // then
+            assertThat(saveContentRepository.findAll()).isEmpty();
         }
     }
 
