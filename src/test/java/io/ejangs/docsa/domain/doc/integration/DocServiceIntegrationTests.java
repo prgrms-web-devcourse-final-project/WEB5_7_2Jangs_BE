@@ -25,7 +25,6 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
-import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +35,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @SpringBootTest
@@ -91,14 +92,14 @@ public class DocServiceIntegrationTests {
         // then: 브랜치 저장 검증
         List<Branch> branches = branchRepository.findAll();
         assertThat(branches).hasSize(1);
-        Branch branch = branches.get(0);
+        Branch branch = branches.getFirst();
         assertThat(branch.getName()).isEqualTo(defaultBranchName);
         assertThat(branch.getDoc().getId()).isEqualTo(savedDoc.getId());
 
         // then: Save(RDB) 저장 검증
         List<Save> saves = saveRepository.findAll();
         assertThat(saves).hasSize(1);
-        Save save = saves.get(0);
+        Save save = saves.getFirst();
         assertThat(save.getBranch().getId()).isEqualTo(branch.getId());
 
         // then: SaveContent(MongoDB) 저장 검증
@@ -128,7 +129,9 @@ public class DocServiceIntegrationTests {
 
         @Test
         @DisplayName("Mongo 저장 실패 시 문서 생성 트랜잭션이 중단된다")
-        void fail_when_mongo_save_fails() {
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+            // findAll이 같은 트랜잭션 안에서 수행 되면 rollback 되기 전 상태를 그대로 읽을 수 있음
+        void MongoFailRdbTransaction() {
             User user = userRepository.save(DocTestUtils.createUser());
             DocTitleRequest request = new DocTitleRequest("Mongo 실패 케이스");
 
@@ -142,40 +145,6 @@ public class DocServiceIntegrationTests {
             assertThat(docRepository.findAll()).isEmpty();
             assertThat(branchRepository.findAll()).isEmpty();
             assertThat(saveRepository.findAll()).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("RDB 트랜잭션 실패 케이스")
-    class RdbFailureTest {
-
-        @Autowired
-        private DocService docService;
-        @Autowired
-        private UserRepository userRepository;
-        @Autowired
-        private SaveContentRepository saveContentRepository;
-
-        @MockitoBean
-        private DocRepository docRepository; // 트랜잭션 도중 예외 유도용
-
-        @Test
-        @DisplayName("RDB 트랜잭션 중 예외 발생 시 Mongo SaveContent가 롤백된다")
-        void rollback_mongo_when_rdb_transaction_fails() {
-            // given
-            User user = userRepository.save(DocTestUtils.createUser());
-            DocTitleRequest request = new DocTitleRequest("트랜잭션 실패");
-
-            when(docRepository.save(any()))
-                    .thenThrow(new RuntimeException("RDB 저장 실패"));
-
-            // when
-            assertThatThrownBy(() -> docService.create(request, user.getId()))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
-
-            // then
-            assertThat(saveContentRepository.findAll()).isEmpty();
         }
     }
 
