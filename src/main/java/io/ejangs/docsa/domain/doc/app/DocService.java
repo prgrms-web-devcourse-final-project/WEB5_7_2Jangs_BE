@@ -55,9 +55,14 @@ public class DocService {
     public DocTitleUpdateResponse updateTitle(Long userId, Long docId,
             DocTitleRequest request) {
         String title = request.title();
-        checkTitleDuplicate(userId, title);
 
         Doc doc = getDocByIdAndUserId(docId, userId);
+
+        if (title.equals(doc.getTitle())) {
+            throw new CustomException(DocErrorCode.SAME_AS_CURRENT_TITLE);
+        }
+
+        checkTitleDuplicate(userId, title);
         doc.updateTitle(title);
 
         return DocMapper.toUpdateResponse(doc);

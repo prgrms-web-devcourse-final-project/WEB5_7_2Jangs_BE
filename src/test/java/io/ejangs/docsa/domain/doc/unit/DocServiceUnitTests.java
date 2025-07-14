@@ -111,14 +111,25 @@ public class DocServiceUnitTests {
     void updateDocTitleFailByDuplicateTitle() throws Exception {
         // given
         Long userId = 1L;
+        Long docId = 10L;
         String duplicateTitle = "중복된 제목";
         DocTitleRequest request = new DocTitleRequest(duplicateTitle);
 
+        User user = DocTestUtils.createUser();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        Doc doc = Doc.builder()
+                .title("기존 제목")
+                .user(user)
+                .build();
+        ReflectionTestUtils.setField(doc, "id", docId);
+
+        when(docRepository.getDocByIdAndUserId(docId, userId)).thenReturn(Optional.of(doc));
         when(docRepository.existsByUserIdAndTitle(userId, duplicateTitle)).thenReturn(true);
 
         // when & then
         assertThrows(CustomException.class, () ->
-                docService.updateTitle(userId, 999L, request)
+                docService.updateTitle(userId, docId, request)
         );
     }
 
