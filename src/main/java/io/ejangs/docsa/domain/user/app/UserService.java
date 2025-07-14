@@ -7,6 +7,7 @@ import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.ejangs.docsa.domain.user.util.SecurityContextUtil;
 import io.ejangs.docsa.domain.user.util.UserMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
@@ -87,11 +88,7 @@ public class UserService {
                     )
             );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            HttpSession session = httpRequest.getSession(true);
-            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                    SecurityContextHolder.getContext());
+            SecurityContextUtil.saveAuthenticationToSession(httpRequest, authentication);
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             return new UserLoginResponse(userDetails.getId());
