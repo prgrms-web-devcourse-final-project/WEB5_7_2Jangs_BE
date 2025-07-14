@@ -16,6 +16,14 @@ public class CommitMapper {
                 .build();
     }
 
+    public static Commit toEntity(Branch branch, CreateCommitRequest commitRequest) {
+        return Commit.builder()
+                .title(commitRequest.title())
+                .description(commitRequest.description())
+                .branch(branch)
+                .build();
+    }
+
     public static CreateCommitResponse toCreateCommitResponse(Commit commit) {
         return new CreateCommitResponse(commit.getId());
     }

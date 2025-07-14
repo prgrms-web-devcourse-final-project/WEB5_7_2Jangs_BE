@@ -45,37 +45,39 @@ public class CommitService {
         // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
         Branch branch = branchService.findById(docId);
 
-        List<Block> savedBlocks = null;
-        CommitBlockSequence savedCbs = null;
+        // * 3. Commit Entity만들어서 DB에 저장
+        Commit savedCommit = saveCommit(branch, commitRequest);
+        branch.updateLeafCommit(savedCommit);
+
+        // * 4. branchId를 기반으로 Save가 있다면 삭제
+        saveService.deleteSaveIfExists(branch.getId());
+
+        // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
+        Commit baseCommit = getBaseCommit(branch);
+
+        // * 6. 변경사항이 있는 block들을 DB에 저장(MongoDB)
+        List<Block> savedBlocks = blockService.saveBlocks(commitRequest.blocks());
+
+        // * 7. baseCommit에서 사용한 block _id를 가져오기
+        // * 8. block _id 로 이전 Commit에서 사용한 block 가져오기
+        List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
+
+        // * 9. blockId는 editor.js에서 만들어주는 uniqueId
+        List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
+                baseCommitBlocks);
+
+        // * 12. MongoDB에 cbs저장
+        CommitBlockSequence savedCbs = saveCommitBlockSequence(newOrder);
 
         try {
-            // * 3. 변경사항이 있는 block들을 DB에 저장(MongoDB)
-            savedBlocks = blockService.saveBlocks(commitRequest.blocks());
-            // * 4. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
-            Commit baseCommit = getBaseCommit(branch);
-
-            // * 5. baseCommit에서 사용한 block _id를 가져오기
-            // * 6. block _id 로 이전 Commit에서 사용한 block 가져오기
-            List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
-
-            // * 7. blockId는 editor.js에서 만들어주는 uniqueId
-            List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
-                    baseCommitBlocks);
-
-            // * 10. MongoDB에 cbs저장
-            savedCbs = saveCommitBlockSequence(newOrder);
-
-            // * 11. Commit Entity만들어서 DB에 저장
-            Commit savedCommit = saveCommit(branch, commitRequest, savedCbs.getId());
-
-            // * 12. branchId를 기반으로 Save가 있다면 삭제
-            saveService.deleteSaveIfExists(branch.getId());
-
-            return CommitMapper.toCreateCommitResponse(savedCommit);
+            // * 13. Commit에 MongoId 세팅
+            savedCommit.initializeCommitMongoId(savedCbs.getId());
         } catch (Exception e) {
             rollbackMongoDb(savedBlocks, savedCbs);
             throw e;
         }
+
+        return CommitMapper.toCreateCommitResponse(savedCommit);
     }
 
     private void rollbackMongoDb(List<Block> savedBlocks, CommitBlockSequence savedCbs) {
@@ -129,10 +131,10 @@ public class CommitService {
 
     private Block findBlockById(String blockId, List<Block> savedBlocks,
             List<Block> baseCommitBlocks) {
-        // * 8. blockOrder의 uniqueId가 새로 저장된 블록에 있는지 찾기
+        // * 10. blockOrder의 uniqueId가 새로 저장된 블록에 있는지 찾기
         Optional<Block> block = findBlockByIdInList(blockId, savedBlocks);
 
-        // * 9. 없으면 이전 Commit의 블록에서 찾기
+        // * 11. 없으면 이전 Commit의 블록에서 찾기
         if (block.isEmpty()) {
             block = findBlockByIdInList(blockId, baseCommitBlocks);
         }
@@ -152,8 +154,8 @@ public class CommitService {
         return cbsRepository.save(cbs);
     }
 
-    private Commit saveCommit(Branch branch, CreateCommitRequest commitRequest, String cbsId) {
-        Commit commit = CommitMapper.toEntity(branch, commitRequest, cbsId);
+    private Commit saveCommit(Branch branch, CreateCommitRequest commitRequest) {
+        Commit commit = CommitMapper.toEntity(branch, commitRequest);
         return commitRepository.save(commit);
     }
 }
