@@ -14,6 +14,7 @@ public class JsonConverter {
         try {
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (JsonProcessingException e) {
+            // 추후 global 하게 사용되면 CustomException 사용
             throw new IllegalArgumentException("Invalid JSON format", e);
         }
     }

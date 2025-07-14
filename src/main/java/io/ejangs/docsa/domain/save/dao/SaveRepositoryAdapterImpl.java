@@ -36,9 +36,13 @@ public class SaveRepositoryAdapterImpl implements SaveRepositoryAdapter {
     public SaveUpdateResponse updateSave(Save save, SaveContent saveContent, String content) {
         Map<String, Object> json = JsonConverter.toMap(content);
 
+        // MySQL 먼저 저장
+        save.touch();
+        saveRepository.save(save);
+
+        // MongoDB 저장
         saveContent.updateContent(json);
-        save.touch(); // jpa 는 변경감지가 된다.
-        saveContentRepository.save(saveContent); // jpa를 사용하지 않으니 변경감지 안된다.
+        saveContentRepository.save(saveContent);
 
         return SaveMapper.toSaveUpdateResponse(save);
     }
