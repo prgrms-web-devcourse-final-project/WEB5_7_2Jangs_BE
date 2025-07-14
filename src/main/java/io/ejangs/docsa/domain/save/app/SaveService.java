@@ -34,6 +34,7 @@ public class SaveService {
 
         Save findSave = saveRepository.findSaveById(dto.saveId());
 
+        // SAVE 소유자인지 검사
         if (!findSave.getBranch().getDoc().getUser().getId().equals(dto.userId())) {
             throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
         }
