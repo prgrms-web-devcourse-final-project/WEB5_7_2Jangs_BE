@@ -33,7 +33,6 @@ public class SaveService {
 
         Save findSave = saveRepository.findSaveById(dto.saveId());
 
-        // 이런 예외가 있나?
         SaveContent saveContent = saveRepository.findSaveContentById(findSave.getSaveMongoId());
 
         return saveRepository.updateSave(findSave, saveContent, request.content());
