@@ -58,5 +58,6 @@ public class Doc extends BaseEntity {
 
     public void addBranch(Branch branch) {
         this.branches.add(branch);
+        this.updatedAt = branch.getUpdatedAt();
     }
 }
