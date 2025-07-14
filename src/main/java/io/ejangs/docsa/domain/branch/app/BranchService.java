@@ -16,15 +16,17 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import static io.ejangs.docsa.domain.branch.util.RenewUpdatedAtHelper.touch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+
 
 @Slf4j
 @Service
@@ -72,6 +74,9 @@ public class BranchService {
         if (isLeaf) {
             // 커밋이 브랜치의 최신 커밋인 경우 → 기존 브랜치에 새로운 저장(save)만 추가
             Save save = createSave(fromBranch, fromCommit.getCommitMongoId());
+
+            // 저장과 브랜치, 문서의 updatedAt 동시 갱신
+            touch(save);
             return BranchMapper.toBranchCreateResponse(fromBranch, save);
         }
         else {
@@ -79,9 +84,13 @@ public class BranchService {
             Branch newBranch = Branch.builder().name(request.name()).doc(fromBranch.getDoc())
                     .fromCommit(fromCommit).build();
 
+            fromBranch.getDoc().addBranch(newBranch);
             branchRepository.save(newBranch);
 
             Save save = createSave(newBranch, fromCommit.getCommitMongoId());
+
+            // 저장과 브랜치, 문서의 updatedAt 동시 갱신
+            touch(save);
             return BranchMapper.toBranchCreateResponse(newBranch, save);
         }
     }
