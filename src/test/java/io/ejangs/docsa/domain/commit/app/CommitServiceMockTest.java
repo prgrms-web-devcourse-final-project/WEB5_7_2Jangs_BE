@@ -1,216 +1,362 @@
 package io.ejangs.docsa.domain.commit.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
+import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.block.document.Block;
-import io.ejangs.docsa.domain.block.util.BlockMapper;
-import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import io.ejangs.docsa.domain.block.dto.response.BlockDto;
+import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
-import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
+import io.ejangs.docsa.domain.doc.app.DocumentService;
+import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.BlockErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class CommitServiceMockTest {
 
+    @Mock
+    private CommitRepository commitRepository;
+
+    @Mock
+    private CommitBlockSequenceRepository cbsRepository;
+
+    @Mock
+    private DocumentService documentService;
+
+    @Mock
+    private BranchService branchService;
+
+    @Mock
+    private BlockService blockService;
+
+    @Mock
+    private SaveService saveService;
+
     @InjectMocks
     private CommitService commitService;
 
-    @Mock
-    private CommitRepository commitRepository;
-    @Mock
-    private DocumentRepository documentRepository;
-    @Mock
-    private BranchRepository branchRepository;
-    @Mock
-    private BlockRepository blockRepository;
-    @Mock
-    private SaveRepository saveRepository;
-
-    private Doc doc;
+    private Long documentId;
+    private Long branchId;
+    private CreateCommitRequest createCommitRequest;
     private Branch branch;
-    private Commit commit;
+    private Commit baseCommit;
+    private List<Block> savedBlocks;
+    private List<Block> baseCommitBlocks;
+    private CommitBlockSequence savedCbs;
+    private Commit savedCommit;
+    private CreateCommitResponse expectedResponse;
 
     @BeforeEach
-    void setup() {
-        doc = mock(Doc.class);
-        branch = mock(Branch.class);
-        commit = mock(Commit.class);
+    void setUp() {
+        documentId = 1L;
+        branchId = 1L;
+
+        // CreateCommitRequest 생성
+        createCommitRequest = new CreateCommitRequest(
+                "Test commit message",
+                "",
+                1L,
+                List.of(createBlockRequest("block1"), createBlockRequest("block2")),
+                List.of("block1", "block2")
+        );
+
+        // Branch 생성
+        branch = createBranch();
+
+        // Base commit 생성
+        baseCommit = createBaseCommit();
+
+        // Blocks 생성
+        savedBlocks = List.of(
+                createBlock("block1"),
+                createBlock("block2")
+        );
+
+        baseCommitBlocks = List.of(
+                createBlock("baseBlock1")
+        );
+
+        // CommitBlockSequence 생성
+        savedCbs = createCommitBlockSequence();
+
+        // Commit 생성
+        savedCommit = createCommit();
+
+        // Expected response 생성
+        expectedResponse = new CreateCommitResponse(1L);
     }
 
     @Test
-    void createCommit_success() {
-        // given
-        Long documentId = 1L;
-        Long userId = 10L;
+    @DisplayName("커밋 생성 성공 - 기본")
+    void createCommit_Success() {
+        // Given
+        doNothing().when(documentService).notFoundDocCheck(documentId);
+        when(branchService.findById(branchId)).thenReturn(branch);
+        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
 
-        List<BlockDto> blocks = List.of(
-                new BlockDto("abc123", "paragraph", Map.of("text", "hello"), null),
-                new BlockDto("def456", "list", Map.of("items", List.of("item1", "item2")), null)
-        );
-        List<String> blockOrders = List.of("abc123", "def456");
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-        CreateCommitRequest request = getCreateCommitRequest(blocks, blockOrders);
+            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
+            when(cbsRepository.save(savedCbs)).thenReturn(savedCbs);
+            when(CommitMapper.toEntity(branch, createCommitRequest, savedCbs.getId())).thenReturn(
+                    savedCommit);
+            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
+            when(CommitMapper.toCreateCommitResponse(savedCommit)).thenReturn(expectedResponse);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(doc));
-        when(branchRepository.findById(documentId)).thenReturn(Optional.of(branch));
-        when(saveRepository.findByBranchId(any())).thenReturn(Optional.empty());
+            // When
+            CreateCommitResponse result = commitService.createCommit(documentId,
+                    createCommitRequest);
 
-        Block block1 = mock(Block.class);
-        Block block2 = mock(Block.class);
+            // Then
+            assertThat(result).isEqualTo(expectedResponse);
 
-        when(blockRepository.save(any())).thenReturn(block1).thenReturn(block2);
-        when(blockRepository.findLatestByUniqueId("abc123")).thenReturn(Optional.of(block1));
-        when(blockRepository.findLatestByUniqueId("def456")).thenReturn(Optional.of(block2));
-        when(commitRepository.save(commit)).thenReturn(commit);
-
-        try (
-                MockedStatic<CommitMapper> mockedCommitMapper = mockStatic(CommitMapper.class);
-                MockedStatic<BlockMapper> mockedBlockMapper = mockStatic(BlockMapper.class)
-        ) {
-            mockedCommitMapper.when(() -> CommitMapper.toEntity(branch, request))
-                    .thenReturn(commit);
-            mockedCommitMapper.when(() -> CommitMapper.toCreateCommitResponse(commit))
-                    .thenReturn(new CreateCommitResponse(100L));
-
-            mockedBlockMapper.when(() -> BlockMapper.toEntity(doc, blocks.get(0)))
-                    .thenReturn(block1);
-            mockedBlockMapper.when(() -> BlockMapper.toEntity(doc, blocks.get(1)))
-                    .thenReturn(block2);
-
-            // when
-            CreateCommitResponse result = commitService.createCommit(documentId, userId, request);
-
-            // then
-            assertThat(result.id()).isEqualTo(100L);
-            verify(commitRepository, times(1)).save(commit);
-            verify(blockRepository, times(2)).save(any(Block.class));
-            verify(blockRepository, times(2)).findLatestByUniqueId(anyString());
+            verify(documentService).notFoundDocCheck(documentId);
+            verify(branchService).findById(branchId);
+            verify(blockService).saveBlocks(createCommitRequest.blocks());
+            verify(cbsRepository).save(savedCbs);
+            verify(commitRepository).save(savedCommit);
         }
     }
 
     @Test
-    void createCommit_fail_Document_NotFound() {
-        // given
-        Long documentId = 1L;
-        Long userId = 10L;
-        CreateCommitRequest request = getCreateCommitRequest();
+    @DisplayName("커밋 생성 실패 - 문서 검증 실패")
+    void createCommit_Fail_DocumentNotFound() {
+        // Given
+        doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
+                .when(documentService).notFoundDocCheck(documentId);
 
-        when(documentRepository.findById(documentId))
-                .thenReturn(Optional.empty());
+        // When & Then
+        assertThatThrownBy(() -> commitService.createCommit(documentId, createCommitRequest))
+                .isInstanceOf(CustomException.class);
 
-        // when & then
-        CustomException exception = Assertions.assertThrows(CustomException.class,
-                () -> commitService.createCommit(documentId, userId, request));
-
-        assertThat(exception.getErrorCode()).isEqualTo(DocumentErrorCode.DOCUMENT_NOT_FOUND);
+        verify(documentService).notFoundDocCheck(documentId);
+        verify(branchService, never()).findById(any());
+        verify(blockService, never()).saveBlocks(any());
     }
 
     @Test
-    void createCommit_fail_Branch_NotFound() {
-        // given
-        Long documentId = 1L;
-        Long userId = 10L;
-        CreateCommitRequest request = getCreateCommitRequest();
+    @DisplayName("커밋 생성 실패 - 블록 저장 실패시 롤백")
+    void createCommit_Fail_BlockSaveFails_ShouldRollback() {
+        // Given
+        doNothing().when(documentService).notFoundDocCheck(documentId);
+        when(branchService.findById(branchId)).thenReturn(branch);
+        when(blockService.saveBlocks(any())).thenThrow(new RuntimeException("Block save failed"));
 
-        when(documentRepository.findById(documentId))
-                .thenReturn(Optional.of(mock(Doc.class)));
+        // When & Then
+        assertThatThrownBy(() -> commitService.createCommit(documentId, createCommitRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Block save failed");
 
-        when(branchRepository.findById(documentId))
-                .thenReturn(Optional.empty());
-
-        // when & then
-        CustomException exception = Assertions.assertThrows(CustomException.class,
-                () -> commitService.createCommit(documentId, userId, request));
-
-        assertThat(exception.getErrorCode()).isEqualTo(BranchErrorCode.BRANCH_NOT_FOUND);
+        verify(documentService).notFoundDocCheck(documentId);
+        verify(branchService).findById(branchId);
+        verify(blockService).saveBlocks(createCommitRequest.blocks());
+        verify(cbsRepository, never()).save(any());
+        verify(commitRepository, never()).save(any());
     }
 
     @Test
-    void createCommit_fail_Block_Not_Found() {
-        // given
-        Long documentId = 1L;
-        Long userId = 10L;
+    @DisplayName("커밋 생성 실패 - JPA 저장 실패시 MongoDB 롤백")
+    void createCommit_Fail_JpaSaveFails_ShouldRollbackMongoDB() {
+        // Given
+        doNothing().when(documentService).notFoundDocCheck(documentId);
+        when(branchService.findById(branchId)).thenReturn(branch);
+        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
 
-        List<BlockDto> blocks = List.of(
-                new BlockDto("abc123", "paragraph", Map.of("text", "test"), null)
-        );
-        List<String> blockOrders = List.of("abc123");
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-        CreateCommitRequest request = getCreateCommitRequest(blocks, blockOrders);
+            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
+            when(cbsRepository.save(savedCbs)).thenReturn(savedCbs);
+            when(CommitMapper.toEntity(branch, createCommitRequest, savedCbs.getId())).thenReturn(
+                    savedCommit);
+            when(commitRepository.save(savedCommit)).thenThrow(
+                    new RuntimeException("JPA save failed"));
 
-        Doc doc = mock(Doc.class);
-        Branch branch = mock(Branch.class);
-        Commit commit = mock(Commit.class);
-        Block block = mock(Block.class);
+            // When & Then
+            assertThatThrownBy(() -> commitService.createCommit(documentId, createCommitRequest))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessage("JPA save failed");
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(doc));
-        when(branchRepository.findById(documentId)).thenReturn(Optional.of(branch));
-        lenient().when(saveRepository.findByBranchId(any())).thenReturn(Optional.empty());
-
-        try (
-                MockedStatic<CommitMapper> commitMapper = mockStatic(CommitMapper.class);
-                MockedStatic<BlockMapper> blockMapper = mockStatic(BlockMapper.class)
-        ) {
-            commitMapper.when(() -> CommitMapper.toEntity(branch, request))
-                    .thenReturn(commit);
-
-            blockMapper.when(() -> BlockMapper.toEntity(doc, blocks.get(0)))
-                    .thenReturn(block);
-
-            when(blockRepository.save(any())).thenReturn(block);
-            when(blockRepository.findLatestByUniqueId("abc123"))
-                    .thenReturn(Optional.empty()); // ✅ Block 못 찾는 상황
-
-            // when & then
-            CustomException exception = Assertions.assertThrows(CustomException.class,
-                    () -> commitService.createCommit(documentId, userId, request));
-
-            assertThat(exception.getErrorCode()).isEqualTo(BlockErrorCode.BLOCK_NOT_FOUND);
+            // MongoDB 롤백 확인
+            verify(blockService).deleteAll(savedBlocks);
+            verify(cbsRepository).delete(savedCbs);
         }
     }
 
-    private static CreateCommitRequest getCreateCommitRequest() {
-        return new CreateCommitRequest(
-                "제목", "설명", 1L,
-                List.of(), List.of()
+    @Test
+    @DisplayName("커밋 생성 실패 - 잘못된 블록 순서")
+    void createCommit_Fail_InvalidBlockOrder() {
+        // Given
+        CreateCommitRequest invalidRequest = new CreateCommitRequest(
+                "Test commit message",
+                "",
+                1L,
+                List.of(createBlockRequest("block1")),
+                List.of("block1", "invalidBlock") // 존재하지 않는 블록
         );
+
+        doNothing().when(documentService).notFoundDocCheck(documentId);
+        when(branchService.findById(branchId)).thenReturn(branch);
+        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
+
+        // When & Then
+        assertThatThrownBy(() -> commitService.createCommit(documentId, invalidRequest))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining(BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());
+
+        // MongoDB 롤백 확인
+        verify(blockService).deleteAll(savedBlocks);
     }
 
-    private static CreateCommitRequest getCreateCommitRequest(List<BlockDto> blocks,
-            List<String> blockOrders) {
-        return new CreateCommitRequest(
-                "제목", "설명", 1L, blocks, blockOrders
-        );
+    @Test
+    @DisplayName("커밋 생성 성공 - 기존 Save 삭제")
+    void createCommit_Success_DeleteExistingSave() {
+        // Given
+        doNothing().when(documentService).notFoundDocCheck(documentId);
+        when(branchService.findById(branchId)).thenReturn(branch);
+        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
+
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
+
+            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
+            when(cbsRepository.save(savedCbs)).thenReturn(savedCbs);
+            when(CommitMapper.toEntity(branch, createCommitRequest, savedCbs.getId())).thenReturn(
+                    savedCommit);
+            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
+            when(CommitMapper.toCreateCommitResponse(savedCommit)).thenReturn(expectedResponse);
+
+            // When
+            CreateCommitResponse result = commitService.createCommit(documentId,
+                    createCommitRequest);
+
+            // Then
+            assertThat(result).isEqualTo(expectedResponse);
+
+            verify(saveService).deleteSaveIfExists(branch.getId());
+        }
+    }
+
+    @Test
+    @DisplayName("커밋 생성 성공 - leafCommit이 null인 경우 fromCommit 사용")
+    void createCommit_Success_UseFromCommitWhenLeafCommitIsNull() {
+        // Given
+        Branch branchWithoutLeafCommit = createBranch();
+        branchWithoutLeafCommit.updateLeafCommit(null); // leafCommit을 null로 설정
+
+        doNothing().when(documentService).notFoundDocCheck(documentId);
+        when(branchService.findById(branchId)).thenReturn(branchWithoutLeafCommit);
+        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
+        when(cbsRepository.findById(
+                branchWithoutLeafCommit.getFromCommit().getCommitMongoId())).thenReturn(
+                Optional.of(createCommitBlockSequence()));
+
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
+
+            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
+            when(cbsRepository.save(savedCbs)).thenReturn(savedCbs);
+            when(CommitMapper.toEntity(branchWithoutLeafCommit, createCommitRequest,
+                    savedCbs.getId())).thenReturn(savedCommit);
+            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
+            when(CommitMapper.toCreateCommitResponse(savedCommit)).thenReturn(expectedResponse);
+
+            // When
+            CreateCommitResponse result = commitService.createCommit(documentId,
+                    createCommitRequest);
+
+            // Then
+            assertThat(result).isEqualTo(expectedResponse);
+            verify(cbsRepository).findById(
+                    branchWithoutLeafCommit.getFromCommit().getCommitMongoId());
+        }
+    }
+
+    private BlockDto createBlockRequest(String blockId) {
+        Map<String, Object> blockData = new HashMap<>();
+        blockData.put("id", blockId);
+        blockData.put("type", "text");
+        blockData.put("content", "Test content");
+        return new BlockDto(blockData);
+    }
+
+    private Block createBlock(String blockId) {
+        Map<String, Object> content = new HashMap<>();
+        content.put("id", blockId);
+        content.put("type", "text");
+        content.put("content", "Test content");
+        return Block.builder()
+                .content(content)
+                .build();
+    }
+
+    private Branch createBranch() {
+        Branch branch = Branch.builder()
+                .fromCommit(baseCommit)
+                .build();
+        ReflectionTestUtils.setField(branch, "id", 1L);
+        ReflectionTestUtils.setField(branch, "leafCommit", baseCommit);
+        return branch;
+    }
+
+    private Commit createBaseCommit() {
+        Commit commit = Commit.builder()
+                .commitMongoId("mongo-commit-id")
+                .build();
+        ReflectionTestUtils.setField(commit, "id", 1L);
+        return commit;
+    }
+
+    private CommitBlockSequence createCommitBlockSequence() {
+        CommitBlockSequence cbs = CommitBlockSequence.builder()
+                .blockOrders(List.of("block1", "block2"))
+                .build();
+        ReflectionTestUtils.setField(cbs, "id", "cbs-id");
+        return cbs;
+    }
+
+    private Commit createCommit() {
+        Commit commit = Commit.builder()
+                .title("Test commit message")
+                .commitMongoId("mongo-commit-id")
+                .build();
+        ReflectionTestUtils.setField(commit, "id", 1L);
+        return commit;
     }
 }
