@@ -50,22 +50,36 @@ public class DocService {
         String title = request.title();
         checkTitleDuplicate(userId, title);
 
-        //Mongo 저장을 맨처음에 진행하여 실패시 예외 발생으로 인한 종료 -> 유사 트랜잭션
+        //Mongo 저장을 맨처음에 진행하여 실패시 예외 발생으로 인한 종료
         SaveContent defaultSaveContent;
         try {
             defaultSaveContent = createDefaultSaveContent();
         } catch (MongoTimeoutException | DataAccessResourceFailureException e) {
-            log.error("DefaultSaveContent: Mongo 저장 실패 원인 - {}", e.getMessage());
+            log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
             throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
         }
 
-        Doc doc = createDoc(user, title);
+        try {
+            Doc doc = createDoc(user, title);
+            Branch defaultBranch = createDefaultBranch(doc);
+            createDefaultSave(defaultBranch, defaultSaveContent);
+            return DocMapper.toCreateResponse(doc);
+        } catch (Exception e) {
+            rollbackMongo(defaultSaveContent);
+            log.error("RDB 트랜잭션 중 예외 발생 - {}", e.getMessage(), e);
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+        }
 
-        Branch defaultBranch = createDefaultBranch(doc);
+    }
 
-        createDefaultSave(defaultBranch, defaultSaveContent);
-
-        return DocMapper.toCreateResponse(doc);
+    private void rollbackMongo(SaveContent defaultSaveContent) {
+        try {
+            saveContentRepository.deleteById(defaultSaveContent.getId());
+            log.info("Mongo 롤백 성공: {}", defaultSaveContent.getId());
+        } catch (Exception e) {
+            log.error("DefaultSaveContent Mongo 롤백 실패 - {}", e.getMessage(), e);
+            //추가적인 조치(ex. 재시도, 알림 .. 등등?)
+        }
     }
 
     private Doc createDoc(User user, String title) {
