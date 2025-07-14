@@ -36,7 +36,6 @@ import org.springframework.util.ObjectUtils;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserMapper userMapper;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CacheManager cacheManager;
@@ -46,6 +45,20 @@ public class UserService {
     private String passcodeCacheName;
 
     public UserSignupResponse signup(UserSignupRequest request) {
+
+        validateSignupRequest(request);
+
+        String encodedPassword = passwordEncoder.encode(request.password());
+        User user = UserMapper.toEntity(request, encodedPassword);
+        User savedUser = userRepository.save(user);
+
+        // passCode 캐시 제거
+        cacheManager.getCache(passcodeCacheName).evict(request.email());
+
+        return UserMapper.toSignupResponse(savedUser);
+    }
+
+    private void validateSignupRequest(UserSignupRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
             throw new CustomException(AuthErrorCode.DUPLICATE_EMAIL);
@@ -62,15 +75,6 @@ public class UserService {
         if (!cachedCode.equals(request.passCode())) {
             throw new CustomException(AuthErrorCode.INVALID_CODE);
         }
-
-        String encodedPassword = passwordEncoder.encode(request.password());
-        User user = userMapper.toEntity(request, encodedPassword);
-        User savedUser = userRepository.save(user);
-
-        // passCode 캐시 제거
-        cache.evict(request.email());
-
-        return userMapper.toSignupResponse(savedUser);
     }
 
     public UserLoginResponse login(UserLoginRequest request, HttpServletRequest httpRequest) {

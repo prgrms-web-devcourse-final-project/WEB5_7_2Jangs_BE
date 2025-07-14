@@ -17,7 +17,6 @@ import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
-import io.ejangs.docsa.domain.user.util.UserMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
@@ -43,9 +42,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
-
-    @Mock
-    private UserMapper userMapper;
 
     @Mock
     private UserRepository userRepository;
@@ -109,9 +105,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail(signupRequest.email())).thenReturn(false);
         when(passCodeCache.get(signupRequest.email())).thenReturn(() -> "abc12345");
         when(passwordEncoder.encode(signupRequest.password())).thenReturn("encodedPassword");
-        when(userMapper.toEntity(signupRequest, "encodedPassword")).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(user);
-        when(userMapper.toSignupResponse(user)).thenReturn(signupResponse);
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
         // when
         UserSignupResponse result = userService.signup(signupRequest);
@@ -124,7 +118,7 @@ class UserServiceTest {
         verify(userRepository).existsByEmail(signupRequest.email());
         verify(passCodeCache).get(signupRequest.email());
         verify(passwordEncoder).encode(signupRequest.password());
-        verify(userRepository).save(user);
+        verify(userRepository).save(any(User.class));
         verify(passCodeCache).evict(signupRequest.email());
     }
 
