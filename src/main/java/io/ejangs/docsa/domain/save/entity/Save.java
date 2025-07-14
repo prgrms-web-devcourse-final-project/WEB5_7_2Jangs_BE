@@ -35,13 +35,16 @@ public class Save extends BaseEntity {
     private Branch branch;
 
     @Builder
-    private Save(Branch branch, String saveMongoId) {
+    private Save(Branch branch) {
         this.branch = branch;
-        this.saveMongoId = saveMongoId;
     }
 
     // saveContent 가 수정될 경우 명시적으로 updatedAt을 갱신해야 한다.
     public void touch() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateSaveMongoId(String saveMongoId) {
+        this.saveMongoId = saveMongoId;
     }
 }
