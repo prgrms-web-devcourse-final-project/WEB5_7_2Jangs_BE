@@ -6,8 +6,8 @@ import io.ejangs.docsa.domain.doc.dto.DocumentCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.DocumentListSimpleResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocumentMapper;
-import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocumentErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
@@ -61,5 +61,10 @@ public class DocumentService {
         if (!documentRepository.existsById(id)) {
             throw new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND);
         }
+    }
+
+    public Doc findById(Long id) {
+        return documentRepository.findById(id)
+                .orElseThrow(() -> new CustomException(DocumentErrorCode.DOCUMENT_NOT_FOUND));
     }
 }

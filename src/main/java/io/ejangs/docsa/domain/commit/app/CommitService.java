@@ -13,6 +13,10 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
 import io.ejangs.docsa.domain.doc.app.DocumentService;
+import io.ejangs.docsa.domain.doc.app.EdgeService;
+import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.doc.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
@@ -36,12 +40,13 @@ public class CommitService {
     private final BranchService branchService;
     private final BlockService blockService;
     private final SaveService saveService;
+    private final EdgeService edgeService;
 
     @Transactional
     public CreateCommitResponse createCommit(Long docId, CreateCommitRequest commitRequest) {
 
         // * 1. documentId로 문서가 존재하는지 검사(JPA)
-        docService.notFoundDocCheck(docId);
+        Doc doc = docService.findById(docId);
         // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
         Branch branch = branchService.findById(docId);
 
@@ -55,22 +60,26 @@ public class CommitService {
         // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
         Commit baseCommit = getBaseCommit(branch);
 
-        // * 6. 변경사항이 있는 block들을 DB에 저장(MongoDB)
+        // * 6. 새로운 간선 생성
+        Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
+        edgeService.saveEdge(newEdge);
+
+        // * 7. 변경사항이 있는 block들을 DB에 저장(MongoDB)
         List<Block> savedBlocks = blockService.saveBlocks(commitRequest.blocks());
 
-        // * 7. baseCommit에서 사용한 block _id를 가져오기
-        // * 8. block _id 로 이전 Commit에서 사용한 block 가져오기
+        // * 8. baseCommit에서 사용한 block _id를 가져오기
+        // * 9. block _id 로 이전 Commit에서 사용한 block 가져오기
         List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
 
-        // * 9. blockId는 editor.js에서 만들어주는 uniqueId
+        // * 10. blockId는 editor.js에서 만들어주는 uniqueId
         List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
                 baseCommitBlocks);
 
-        // * 12. MongoDB에 cbs저장
+        // * 13. MongoDB에 cbs저장
         CommitBlockSequence savedCbs = saveCommitBlockSequence(newOrder);
 
         try {
-            // * 13. Commit에 MongoId 세팅
+            // * 14. Commit에 MongoId 세팅
             savedCommit.initializeCommitMongoId(savedCbs.getId());
         } catch (Exception e) {
             rollbackMongoDb(savedBlocks, savedCbs);
@@ -131,10 +140,10 @@ public class CommitService {
 
     private Block findBlockById(String blockId, List<Block> savedBlocks,
             List<Block> baseCommitBlocks) {
-        // * 10. blockOrder의 uniqueId가 새로 저장된 블록에 있는지 찾기
+        // * 11. blockOrder의 uniqueId가 새로 저장된 블록에 있는지 찾기
         Optional<Block> block = findBlockByIdInList(blockId, savedBlocks);
 
-        // * 11. 없으면 이전 Commit의 블록에서 찾기
+        // * 12. 없으면 이전 Commit의 블록에서 찾기
         if (block.isEmpty()) {
             block = findBlockByIdInList(blockId, baseCommitBlocks);
         }
