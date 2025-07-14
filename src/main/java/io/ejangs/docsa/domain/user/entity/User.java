@@ -56,6 +56,6 @@ public class User extends BaseEntity {
 
     public void addDocument(Doc doc) {
         this.docs.add(doc);
-        touch();
+        this.updatedAt = doc.getUpdatedAt();
     }
 }
