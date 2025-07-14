@@ -39,7 +39,7 @@ public class User extends BaseEntity {
     private String name;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    List<Doc> docs;
+    private List<Doc> docs;
 
     @Builder
     private User(String email, String password, String name) {
@@ -56,5 +56,6 @@ public class User extends BaseEntity {
 
     public void addDocument(Doc doc) {
         this.docs.add(doc);
+        touch();
     }
 }

@@ -40,7 +40,6 @@ public class DocService {
         Doc saved = docRepository.save(doc);
 
         user.addDocument(saved);
-        user.touch();
 
         return DocMapper.toCreateResponse(saved);
     }
