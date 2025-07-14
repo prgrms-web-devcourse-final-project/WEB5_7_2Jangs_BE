@@ -11,7 +11,6 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.entity.User;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +31,6 @@ import org.springframework.test.web.servlet.MvcResult;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
 class UserIntegrationTest {
 
     @Autowired
