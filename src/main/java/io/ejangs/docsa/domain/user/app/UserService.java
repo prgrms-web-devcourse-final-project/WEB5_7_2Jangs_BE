@@ -1,18 +1,33 @@
 package io.ejangs.docsa.domain.user.app;
 
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
+import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.domain.user.util.UserMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
@@ -25,6 +40,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CacheManager cacheManager;
+    private final AuthenticationManager authenticationManager;
 
     @Value("${auth.passcode-cache-name}")
     private String passcodeCacheName;
@@ -55,5 +71,29 @@ public class UserService {
         cache.evict(request.email());
 
         return userMapper.toSignupResponse(savedUser);
+    }
+
+    public UserLoginResponse login(UserLoginRequest request, HttpServletRequest httpRequest) {
+
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.email(),
+                            request.password()
+                    )
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                    SecurityContextHolder.getContext());
+
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            return new UserLoginResponse(userDetails.getId());
+
+        } catch (BadCredentialsException | InternalAuthenticationServiceException e) {
+            throw new CustomException(AuthErrorCode.INVALID_CREDENTIALS);
+        }
     }
 }
