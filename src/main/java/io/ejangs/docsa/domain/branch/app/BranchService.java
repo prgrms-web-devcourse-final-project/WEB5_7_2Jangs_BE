@@ -87,54 +87,48 @@ public class BranchService {
     }
 
     /**
-     * 커밋 내용을 기반으로 새로운 저장(save)을 생성합니다.
-     * MongoDB와 RDB에 모두 저장합니다.
+     * 새로운 저장(Save)을 생성합니다.
+     *
+     * 1. 먼저 RDB에 Save 엔티티를 저장합니다 (MongoId는 null).
+     * 2. 이후 MongoDB에 내용을 저장합니다.
+     * 3. Mongo 저장 성공 시, 해당 MongoId를 RDB Save 엔티티에 업데이트합니다.
      */
     private Save createSave(Branch branch, String commitMongoId) {
-        // 커밋의 블록 내용을 조립
-        List<Map<String, Object>> blockContents = commitContentAssembler.assemble(commitMongoId);
-
-        // MongoDB에 저장 후 mongoId 획득
-        String mongoId = saveContentToMongo(blockContents);
-
-        // RDB에 저장 (실패 시 Mongo 롤백 포함)
-        return saveToRDB(branch, mongoId);
-
+        Save save = saveToRDB(branch); // RDB에 먼저 저장
+        saveContentToMongoAndUpdateRDB(save, commitMongoId); // Mongo 저장 + RDB에 mongoId 반영
+        return save;
     }
 
     /**
-     * 블록 내용을 MongoDB에 저장합니다.
+     * Save 엔티티를 MongoId 없이 RDB에 먼저 저장합니다.
+     */
+    private Save saveToRDB(Branch branch) {
+        Save save = Save.builder().branch(branch).build();
+        return saveRepository.save(save);
+    }
+
+    /**
+     * 커밋의 블록을 조립해 MongoDB에 저장하고, 그 결과로 받은 mongoId를 RDB save에 반영(update)합니다.
      *
-     * 저장 구조는 { "blocks": [...] } 형식의 문서입니다.
+     * Mongo 저장 실패 시 예외가 발생하고 트랜잭션 전체가 롤백됩니다.
      */
-    private String saveContentToMongo(List<Map<String, Object>> blockContents) {
-        Map<String, Object> content = new HashMap<>();
-        content.put("blocks", blockContents);
-
-        SaveContent saveContent = SaveContent.builder().content(content).build();
-
-        SaveContent saved = saveContentRepository.save(saveContent);
-        return saved.getId(); // MongoDB ObjectId
-
-    }
-
-    /**
-     * RDB에 저장 정보를 저장하고, 실패 시 MongoDB에 저장된 내용도 롤백합니다.
-     */
-    private Save saveToRDB(Branch branch, String saveMongoId) {
+    private void saveContentToMongoAndUpdateRDB(Save save, String commitMongoId) {
         try {
-            Save save = Save.builder().branch(branch).saveMongoId(saveMongoId).build();
-            return saveRepository.save(save);
-        } catch (DataAccessException e) {
-            // RDB 저장 실패 → MongoDB 저장 롤백 시도
-            try {
-                saveContentRepository.deleteById(saveMongoId);
-            } catch (Exception deleteEx) {
-                log.error("Mongo SaveContent(id={})  RDB 저장 실패 후 Mongo 삭제까지 실패함", saveMongoId,
-                        deleteEx);
-            }
-            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_RDB);
+            List<Map<String, Object>> blockContents = commitContentAssembler.assemble(commitMongoId);
+            Map<String, Object> content = new HashMap<>();
+            content.put("blocks", blockContents);
+
+            SaveContent saveContent = SaveContent.builder().content(content).build();
+            SaveContent saved = saveContentRepository.save(saveContent);
+
+            // mongoId를 RDB Save 엔티티에 설정
+            save.updateSaveMongoId(saved.getId());
+            // 트랜잭션 내에서 JPA의 더치체킹으로 update 됨
+        } catch (Exception e) {
+            log.error("MongoDB 저장 실패로 인해 save(id={}) 에 MongoId 갱신 실패", save.getId(), e);
+            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
         }
     }
+
 }
 
