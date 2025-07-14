@@ -39,6 +39,7 @@ public class SaveRepositoryAdapterImpl implements SaveRepositoryAdapter {
     @Transactional
     public SaveUpdateResponse updateSave(Save save, SaveContent saveContent,
             List<SaveBlock> content) {
+        // TODO : 연관된 branch, doc의 updatedAt 도 수정해야 함.
         // MySQL 먼저 저장
         save.touch();
         saveRepository.save(save);
