@@ -12,7 +12,6 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
 import io.ejangs.docsa.domain.user.entity.User;
-import io.ejangs.docsa.domain.user.util.UserMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,9 +28,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
-
-    @Mock
-    private UserMapper userMapper;
 
     @Mock
     private UserRepository userRepository;
@@ -67,6 +63,7 @@ class UserServiceTest {
                 .password("encodedPassword")
                 .build();
 
+        ReflectionTestUtils.setField(user, "id", 1L);
         response = new UserSignupResponse(1L, "이장님");
 
         ReflectionTestUtils.setField(userService, "passcodeCacheName", "passCodeCache");
@@ -80,9 +77,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passCodeCache.get(request.email())).thenReturn(() -> "abc12345");
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
-        when(userMapper.toEntity(request, "encodedPassword")).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(user);
-        when(userMapper.toSignupResponse(user)).thenReturn(response);
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
         // when
         UserSignupResponse result = userService.signup(request);
@@ -95,7 +90,7 @@ class UserServiceTest {
         verify(userRepository).existsByEmail(request.email());
         verify(passCodeCache).get(request.email());
         verify(passwordEncoder).encode(request.password());
-        verify(userRepository).save(user);
+        verify(userRepository).save(any(User.class));
         verify(passCodeCache).evict(request.email());
     }
 
