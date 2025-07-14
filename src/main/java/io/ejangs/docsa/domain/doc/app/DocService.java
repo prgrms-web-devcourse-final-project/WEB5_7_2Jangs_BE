@@ -42,7 +42,7 @@ public class DocService {
     @Value("${default.branch}")
     private String defaultBranchName;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
 
         User user = getUserOrThrow(userId);
@@ -50,7 +50,14 @@ public class DocService {
         String title = request.title();
         checkTitleDuplicate(userId, title);
 
-        //Mongo 저장을 맨처음에 진행하여 실패시 예외 발생으로 인한 종료
+        Doc doc = createDoc(user, title);
+        Branch defaultBranch = createDefaultBranch(doc);
+
+        Save defaultSave = Save.builder()
+                .branch(defaultBranch)
+                .build();
+
+        //Mongo 저장을 RDB 저장 이 후에 진행하여 실패시 예외 발생으로 인한 종료
         SaveContent defaultSaveContent;
         try {
             defaultSaveContent = createDefaultSaveContent();
@@ -59,27 +66,9 @@ public class DocService {
             throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
         }
 
-        try {
-            Doc doc = createDoc(user, title);
-            Branch defaultBranch = createDefaultBranch(doc);
-            createDefaultSave(defaultBranch, defaultSaveContent);
-            return DocMapper.toCreateResponse(doc);
-        } catch (Exception e) {
-            rollbackMongo(defaultSaveContent);
-            log.error("RDB 트랜잭션 중 예외 발생 - {}", e.getMessage(), e);
-            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
-        }
-
-    }
-
-    private void rollbackMongo(SaveContent defaultSaveContent) {
-        try {
-            saveContentRepository.deleteById(defaultSaveContent.getId());
-            log.info("Mongo 롤백 성공: {}", defaultSaveContent.getId());
-        } catch (Exception e) {
-            log.error("DefaultSaveContent Mongo 롤백 실패 - {}", e.getMessage(), e);
-            //추가적인 조치(ex. 재시도, 알림 .. 등등?)
-        }
+        defaultSave.updateSaveMongoId(defaultSaveContent.getId());
+        saveRepository.save(defaultSave);
+        return DocMapper.toCreateResponse(doc);
     }
 
     private Doc createDoc(User user, String title) {
@@ -109,12 +98,6 @@ public class DocService {
         );
     }
 
-    private void createDefaultSave(Branch branch, SaveContent saveContent) {
-        saveRepository.save(Save.builder()
-                .branch(branch)
-                .saveMongoId(saveContent.getId())
-                .build());
-    }
 
     @Transactional(readOnly = true)
     public List<DocListSimpleResponse> getSimpleList(Long userId) {
