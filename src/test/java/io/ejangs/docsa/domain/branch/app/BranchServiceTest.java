@@ -13,6 +13,7 @@ import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -113,9 +115,10 @@ class BranchServiceTest {
         // given
         Long documentId = 1L;
         Long commitId = 10L;
+        User mockUser = mock(User.class);
         BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
 
-        Doc doc = Doc.builder().title("title").build();
+        Doc doc = Doc.builder().user(mockUser).title("title").build();
         ReflectionTestUtils.setField(doc, "id", 1L);
         Branch fromBranch = Branch.builder().doc(doc).name("from").build();
         Commit commit = mock(Commit.class);
@@ -123,6 +126,7 @@ class BranchServiceTest {
         when(commit.getId()).thenReturn(commitId);
         when(commit.getBranch()).thenReturn(fromBranch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
+        when(mockUser.getDocs()).thenReturn(new ArrayList<>());
 
         when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
         when(branchRepository.save(any())).thenAnswer(i -> i.getArgument(0));
