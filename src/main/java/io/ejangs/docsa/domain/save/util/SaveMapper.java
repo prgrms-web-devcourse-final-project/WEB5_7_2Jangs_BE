@@ -12,18 +12,14 @@ import java.util.List;
 public class SaveMapper {
 
     public static SaveUpdateResponse toSaveUpdateResponse(Save save) {
-        LocalDateTime localDateTime = save.getUpdatedAt();
-        ZoneOffset offset = ZoneOffset.ofHours(9); // 예: KST 기준
-
-        OffsetDateTime updatedAt = localDateTime.atOffset(offset);
-
-        return new SaveUpdateResponse(updatedAt);
+        return new SaveUpdateResponse(toOffsetDateTime(save.getUpdatedAt()));
     }
 
     public static SaveGetResponse toSaveGetResponse(LocalDateTime localDateTime, List<SaveBlock> content) {
-        ZoneOffset offset = ZoneOffset.ofHours(9);
-        OffsetDateTime updatedAt = localDateTime.atOffset(offset);
+        return new SaveGetResponse(toOffsetDateTime(localDateTime), content);
+    }
 
-        return new SaveGetResponse(updatedAt, content);
+    private static OffsetDateTime toOffsetDateTime(LocalDateTime localDateTime) {
+        return localDateTime.atOffset(ZoneOffset.ofHours(9));
     }
 }
