@@ -8,12 +8,13 @@ public record DocListSimpleResponse(
         Long id,
         String title,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        RecentActivityDto recent
 ) {
 
     public DocListSimpleResponse(Long id, String title, LocalDateTime createdAt,
-            LocalDateTime updatedAt) {
+            LocalDateTime updatedAt, RecentActivityDto recent) {
         this(id, title, createdAt.atOffset(ZoneOffset.ofHours(9)),
-                updatedAt.atOffset(ZoneOffset.ofHours(9)));
+                updatedAt.atOffset(ZoneOffset.ofHours(9)), recent);
     }
 }

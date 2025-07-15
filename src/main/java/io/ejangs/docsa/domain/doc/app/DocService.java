@@ -2,11 +2,13 @@ package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
@@ -19,6 +21,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,9 +104,27 @@ public class DocService {
 
     @Transactional(readOnly = true)
     public List<DocListSimpleResponse> getSimpleList(Long userId) {
-        //추후 Principal에서 추출 예정
-        User user = getUserOrThrow(userId);
-        return docRepository.getSimpleList(user.getId());
+        List<Doc> docs = docRepository.findAllByUserId(userId);
+
+        return docs.stream().map(doc -> {
+            Branch recentBranch = doc.getBranches().stream()
+                    .max(Comparator.comparing(Branch::getUpdatedAt)) // 가장 최신 Branch
+                    .orElse(null);
+
+            RecentActivityDto recent = null;
+            if (recentBranch != null) {
+                Save lastSave = recentBranch.getSave();
+                Commit lastCommit = recentBranch.getLeafCommit();
+                if (lastSave != null) {
+                    recent = RecentActivityDto.from(lastSave);
+                } else if (lastCommit != null) {
+                    recent = RecentActivityDto.from(lastCommit);
+                }
+            }
+
+            return DocMapper.toListSimpleResponse(doc, recent);
+
+        }).toList();
     }
 
     @Transactional
