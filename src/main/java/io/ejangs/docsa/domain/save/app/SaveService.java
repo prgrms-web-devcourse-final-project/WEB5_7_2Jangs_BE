@@ -42,7 +42,7 @@ public class SaveService {
         Save findSave = getSaveById(dto.saveId());
 
         // SAVE 소유자인지 검사
-        checkSaveOwner(findSave, dto.userId());
+        checkSaveAndDocOwner(findSave, dto.userId(), dto.documentId());
 
         SaveContent saveContent = getSaveContentById(findSave.getSaveMongoId());
 
@@ -57,7 +57,7 @@ public class SaveService {
         Save findSave = getSaveById(dto.saveId());
 
         // SAVE 소유자인지 검사
-        checkSaveOwner(findSave, dto.userId());
+        checkSaveAndDocOwner(findSave, dto.userId(), dto.documentId());
 
         SaveContent saveContent = getSaveContentById(findSave.getSaveMongoId());
 
@@ -100,8 +100,12 @@ public class SaveService {
         }
     }
 
-    private void checkSaveOwner(Save save, Long userId) {
+    private void checkSaveAndDocOwner(Save save, Long userId, Long documentId) {
         if (!save.getBranch().getDoc().getUser().getId().equals(userId)) {
+            throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
+        }
+
+        if(!save.getBranch().getDoc().getId().equals(documentId)) {
             throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
         }
     }
