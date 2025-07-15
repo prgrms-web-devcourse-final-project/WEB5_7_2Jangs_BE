@@ -20,6 +20,7 @@ import io.ejangs.docsa.domain.doc.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -167,6 +168,7 @@ public class CommitService {
         Commit commit = CommitMapper.toEntity(branch, commitRequest);
         Commit savedCommit = commitRepository.save(commit);
         commitRepository.flush();
+        branch.addCommit(savedCommit);
         return savedCommit;
     }
 }
