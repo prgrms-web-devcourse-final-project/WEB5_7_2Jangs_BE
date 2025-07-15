@@ -51,7 +51,7 @@ public class Doc extends BaseEntity {
     @Builder
     private Doc(String title, User user) {
         this.title = title;
-        this.user = user;
+        setUser(user);
         this.branches = new ArrayList<>();
         this.edges = new ArrayList<>();
     }
@@ -73,4 +73,12 @@ public class Doc extends BaseEntity {
             edge.setDoc(this);
         }
     }
+
+    public void setUser(User user) {
+        this.user = user;
+        if (!user.getDocs().contains(this)) {
+            user.getDocs().add(this);
+        }
+    }
+
 }

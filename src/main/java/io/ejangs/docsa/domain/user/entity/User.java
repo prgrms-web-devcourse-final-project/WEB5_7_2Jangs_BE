@@ -50,6 +50,8 @@ public class User extends BaseEntity {
 
     public void addDocument(Doc doc) {
         this.docs.add(doc);
-        this.updatedAt = doc.getUpdatedAt();
+        if (doc.getUser() != this) {
+            doc.setUser(this);
+        }
     }
 }
