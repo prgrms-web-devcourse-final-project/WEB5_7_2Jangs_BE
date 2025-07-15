@@ -70,6 +70,12 @@ public class Branch extends BaseEntity {
         this.leafCommit = leafCommit;
     }
 
+    public void initializeRootCommitIfNull(Commit commit) {
+        if (this.rootCommit == null) {
+            this.rootCommit = commit;
+        }
+    }
+
     public void setSave(Save save) {
         this.save = save;
         if (save.getBranch() != this) {

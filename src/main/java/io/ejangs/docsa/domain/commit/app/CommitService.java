@@ -57,6 +57,7 @@ public class CommitService {
             // * 3. Commit Entity만들어서 DB에 저장
             Commit savedCommit = saveCommit(branch, commitRequest);
             branch.updateLeafCommit(savedCommit);
+            branch.initializeRootCommitIfNull(savedCommit);
 
             // * 4. branchId를 기반으로 Save가 있다면 삭제
             saveService.deleteSaveIfExists(branch.getId());
