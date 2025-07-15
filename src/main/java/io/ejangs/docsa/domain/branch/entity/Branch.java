@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.branch.entity;
 
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -54,10 +55,13 @@ public class Branch extends BaseEntity {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Commit> commits;
 
+    @OneToOne(mappedBy = "branch", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Save save;
+
     @Builder
     private Branch(String name, Doc doc, Commit fromCommit) {
         this.name = name;
-        this.doc = doc;
+        setDoc(doc);
         this.fromCommit = fromCommit;
         this.commits = new ArrayList<>();
     }
@@ -65,7 +69,25 @@ public class Branch extends BaseEntity {
     public void updateLeafCommit(Commit leafCommit) {
         this.leafCommit = leafCommit;
     }
-    public void updateDoc(Doc doc) {
+
+    public void setSave(Save save) {
+        this.save = save;
+        if (save.getBranch() != this) {
+            save.setBranch(this);
+        }
+    }
+
+    public void setDoc(Doc doc) {
         this.doc = doc;
+        if (!doc.getBranches().contains(this)) {
+            doc.getBranches().add(this);
+        }
+    }
+
+    public void addCommit(Commit commit) {
+        this.commits.add(commit);
+        if (commit.getBranch() != this) {
+            commit.setBranch(this);
+        }
     }
 }

@@ -39,8 +39,15 @@ public class Edge {
 
     @Builder
     private Edge(Doc doc, Commit prevCommit, Commit nextCommit) {
-        this.doc = doc;
+        setDoc(doc);
         this.prevCommit = prevCommit;
         this.nextCommit = nextCommit;
+    }
+
+    public void setDoc(Doc doc) {
+        this.doc = doc;
+        if (!doc.getEdges().contains(this)) {
+            doc.getEdges().add(this);
+        }
     }
 }
