@@ -9,6 +9,7 @@ import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
+import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
@@ -101,6 +102,17 @@ public class CommitService {
         List<Map<String, Object>> assemble = getWholeContent(commitId);
 
         return new CommitResponse(assemble);
+    }
+
+    @Transactional(readOnly = true)
+    public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId,
+            Long targetId) {
+
+        docService.getById(docId);
+        List<Map<String, Object>> baseContent = getWholeContent(baseId);
+        List<Map<String, Object>> targetContent = getWholeContent(targetId);
+
+        return new CompareMergeCommitResponse(baseContent, targetContent);
     }
 
     private List<Map<String, Object>> getWholeContent(Long commitId) {
