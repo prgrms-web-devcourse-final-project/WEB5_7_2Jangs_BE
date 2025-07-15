@@ -90,6 +90,14 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
     }
 
+    public void deleteSaveIfExists(Long branchId) {
+        saveRepository.findByBranchId(branchId).ifPresent(save -> {
+            saveRepository.delete(save);
+            saveContentRepository.findById(save.getSaveMongoId())
+                    .ifPresent(saveContentRepository::delete);
+        });
+    }
+
     private void checkValidation(Long userId, Long documentId) {
         if (!userRepository.existsById(userId)) {
             throw new CustomException(UserErrorCode.USER_NOT_FOUND);
@@ -108,13 +116,5 @@ public class SaveService {
         if (!save.getBranch().getDoc().getId().equals(documentId)) {
             throw new CustomException(SaveErrorCode.SAVE_NOT_IN_DOCUMENT);
         }
-    }
-
-    public void deleteSaveIfExists(Long branchId) {
-        saveRepository.findByBranchId(branchId).ifPresent(save -> {
-            saveRepository.delete(save);
-            saveContentRepository.findById(save.getSaveMongoId())
-                    .ifPresent(saveContentRepository::delete);
-        });
     }
 }
