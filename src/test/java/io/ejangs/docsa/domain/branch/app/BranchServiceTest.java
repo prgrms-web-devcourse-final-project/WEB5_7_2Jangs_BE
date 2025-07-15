@@ -13,6 +13,7 @@ import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,7 +116,7 @@ class BranchServiceTest {
         Long commitId = 10L;
         BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
 
-        Doc doc = Doc.builder().title("title").build();
+        Doc doc = Doc.builder().title("title").user(User.builder().build()).build();
         ReflectionTestUtils.setField(doc, "id", 1L);
         Branch fromBranch = Branch.builder().doc(doc).name("from").build();
         Commit commit = mock(Commit.class);
