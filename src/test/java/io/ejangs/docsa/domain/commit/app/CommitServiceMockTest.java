@@ -151,7 +151,7 @@ class CommitServiceMockTest {
     void createCommit_Success() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
+        when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
                 Optional.of(createCommitBlockSequence()));
@@ -175,7 +175,7 @@ class CommitServiceMockTest {
             assertThat(result).isEqualTo(expectedResponse);
 
             verify(docService).getById(docId);
-            verify(branchService).findById(branchId);
+            verify(branchService).getById(branchId);
             verify(blockService).saveBlocks(createCommitRequest.blocks());
             verify(cbsRepository).save(savedCbs);
             verify(commitRepository).save(savedCommit);
@@ -187,7 +187,7 @@ class CommitServiceMockTest {
     void createCommit_Success_DeleteExistingSave() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
+        when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
                 Optional.of(createCommitBlockSequence()));
@@ -221,7 +221,7 @@ class CommitServiceMockTest {
         branchWithoutLeafCommit.updateLeafCommit(null); // leafCommit을 null로 설정
 
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branchWithoutLeafCommit);
+        when(branchService.getById(branchId)).thenReturn(branchWithoutLeafCommit);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(
                 branchWithoutLeafCommit.getFromCommit().getCommitMongoId())).thenReturn(
@@ -261,7 +261,7 @@ class CommitServiceMockTest {
                 .isInstanceOf(CustomException.class);
 
         verify(docService).getById(docId);
-        verify(branchService, never()).findById(any());
+        verify(branchService, never()).getById(any());
         verify(blockService, never()).saveBlocks(any());
     }
 
@@ -270,7 +270,7 @@ class CommitServiceMockTest {
     void createCommit_Fail_BlockSaveFails_ShouldRollback() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
+        when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenThrow(new RuntimeException("Block save failed"));
 
         // When & Then
@@ -279,7 +279,7 @@ class CommitServiceMockTest {
                 .hasMessage("Block save failed");
 
         verify(docService).getById(docId);
-        verify(branchService).findById(branchId);
+        verify(branchService).getById(branchId);
         verify(blockService).saveBlocks(createCommitRequest.blocks());
         verify(cbsRepository, never()).save(any());
     }
@@ -289,7 +289,7 @@ class CommitServiceMockTest {
     void createCommit_Fail_JpaSaveFails_ShouldRollbackMongoDB() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        lenient().when(branchService.findById(branchId)).thenReturn(branch);
+        lenient().when(branchService.getById(branchId)).thenReturn(branch);
         lenient().when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
@@ -325,7 +325,7 @@ class CommitServiceMockTest {
         );
 
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
+        when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
 
         // When & Then

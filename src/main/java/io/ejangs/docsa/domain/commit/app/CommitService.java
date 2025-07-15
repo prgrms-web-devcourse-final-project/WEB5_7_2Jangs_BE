@@ -52,7 +52,7 @@ public class CommitService {
             // * 1. documentId로 문서가 존재하는지 검사(JPA)
             Doc doc = docService.getById(docId);
             // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
-            Branch branch = branchService.findById(commitRequest.branchId());
+            Branch branch = branchService.getById(commitRequest.branchId());
 
             // * 3. Commit Entity만들어서 DB에 저장
             Commit savedCommit = saveCommit(branch, commitRequest);
@@ -135,7 +135,7 @@ public class CommitService {
             return List.of();
         }
         CommitBlockSequence cbs = getCommitBlockSequence(baseCommit);
-        return blockService.findAllById(cbs.getBlockOrders());
+        return blockService.getAllById(cbs.getBlockOrders());
     }
 
     private CommitBlockSequence getCommitBlockSequence(Commit commit) {
@@ -149,14 +149,14 @@ public class CommitService {
         List<String> newOrder = new ArrayList<>();
 
         for (String blockId : requestedBlockOrders) {
-            Block block = findBlockById(blockId, savedBlocks, baseCommitBlocks);
+            Block block = getBlockById(blockId, savedBlocks, baseCommitBlocks);
             newOrder.add(block.getId());
         }
 
         return newOrder;
     }
 
-    private Block findBlockById(String blockId, List<Block> savedBlocks,
+    private Block getBlockById(String blockId, List<Block> savedBlocks,
             List<Block> baseCommitBlocks) {
         // * 11. blockOrder의 uniqueId가 새로 저장된 블록에 있는지 찾기
         Optional<Block> block = findBlockByIdInList(blockId, savedBlocks);

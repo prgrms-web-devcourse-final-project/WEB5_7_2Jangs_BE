@@ -23,7 +23,7 @@ public class BlockService {
         blockRepository.deleteAll(savedBlock);
     }
 
-    public List<Block> findAllById(List<String> blockIds) {
+    public List<Block> getAllById(List<String> blockIds) {
         return blockRepository.findAllById(blockIds);
     }
 }
