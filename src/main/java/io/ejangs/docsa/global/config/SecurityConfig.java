@@ -32,7 +32,7 @@ public class SecurityConfig {
                                 .maxSessionsPreventsLogin(false))
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/api/user/signup", "/api/user/login",
-                                "/api/auth/code/signup-email").anonymous()
+                                "/api/auth/code/signup-email", "/api/auth/code/check").anonymous()
                         .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin.disable())

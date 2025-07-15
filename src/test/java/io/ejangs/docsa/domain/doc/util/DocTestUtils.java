@@ -5,7 +5,7 @@ import io.ejangs.docsa.domain.user.entity.User;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DocumentTestUtils {
+public class DocTestUtils {
 
     public static List<Doc> createDocumentList(int count, User user) {
         List<Doc> docs = new ArrayList<>();
