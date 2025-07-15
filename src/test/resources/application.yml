@@ -4,6 +4,11 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -12,6 +17,10 @@ spring:
   h2:
     console:
       enabled: true
+
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
 
   mail:
     host: smtp.gmail.com
@@ -28,7 +37,18 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
-      auth-code-expiration-millis: 180000  # 3분
+
+  cache:
+    cache-names:
+      - signupCodeCache
+      - passCodeCache
+    caffeine:
+      spec: maximumSize=10000, expireAfterWrite=3m
 
 auth:
   signup-code-cache-name: signupCodeCache
+  passcode-cache-name: passCodeCache
+
+default:
+  branch: main
+

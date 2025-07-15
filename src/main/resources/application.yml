@@ -43,3 +43,6 @@ spring:
 auth:
   signup-code-cache-name: signupCodeCache
   passcode-cache-name: passCodeCache
+
+default:
+  branch: main
