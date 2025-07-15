@@ -7,6 +7,15 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 
 public class CommitMapper {
 
+    public static Commit toEntity(Branch branch, CreateCommitRequest commitRequest, String cbsId) {
+        return Commit.builder()
+                .title(commitRequest.title())
+                .description(commitRequest.description())
+                .commitMongoId(cbsId)
+                .branch(branch)
+                .build();
+    }
+
     public static Commit toEntity(Branch branch, CreateCommitRequest commitRequest) {
         return Commit.builder()
                 .title(commitRequest.title())

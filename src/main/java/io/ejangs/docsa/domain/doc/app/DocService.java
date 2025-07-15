@@ -12,7 +12,6 @@ import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -20,8 +19,6 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -143,4 +140,15 @@ public class DocService {
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
+    public void notFoundDocCheck(Long id) {
+        if (!docRepository.existsById(id)) {
+            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+        }
+    }
+
+    public Doc getById(Long id) {
+        return docRepository.findById(id)
+                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+    }
 }
