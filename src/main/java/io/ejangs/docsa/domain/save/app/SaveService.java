@@ -36,9 +36,13 @@ public class SaveService {
 
     @Transactional(readOnly = true)
     public SaveGetResponse getSave(SaveGetIdDto dto) {
+        // 존재하는 user, document 인지 검사
         checkValidation(dto.userId(), dto.documentId());
 
         Save findSave = getSaveById(dto.saveId());
+
+        // SAVE 소유자인지 검사
+        checkSaveOwner(findSave, dto.userId());
 
         SaveContent saveContent = getSaveContentById(findSave.getSaveMongoId());
 
@@ -47,6 +51,7 @@ public class SaveService {
 
     @Transactional
     public SaveUpdateResponse updateSave(SaveUpdateIdDto dto, SaveUpdateRequest request) {
+        // 존재하는 user, document 인지 검사
         checkValidation(dto.userId(), dto.documentId());
 
         Save findSave = getSaveById(dto.saveId());
