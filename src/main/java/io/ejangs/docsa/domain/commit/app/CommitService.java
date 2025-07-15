@@ -8,6 +8,7 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
@@ -20,8 +21,10 @@ import io.ejangs.docsa.domain.doc.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +44,8 @@ public class CommitService {
     private final BlockService blockService;
     private final SaveService saveService;
     private final EdgeService edgeService;
+
+    private final CommitContentAssembler assembler;
 
     @Transactional
     public CreateCommitResponse createCommit(Long docId, CreateCommitRequest commitRequest) {
@@ -87,6 +92,25 @@ public class CommitService {
         }
 
         return CommitMapper.toCreateCommitResponse(savedCommit);
+    }
+
+    @Transactional(readOnly = true)
+    public CommitResponse getCommit(Long docId, Long commitId) {
+
+        docService.getById(docId);
+        List<Map<String, Object>> assemble = getWholeContent(commitId);
+
+        return new CommitResponse(assemble);
+    }
+
+    private List<Map<String, Object>> getWholeContent(Long commitId) {
+        Commit commit = getById(commitId);
+        return assembler.assemble(commit.getCommitMongoId());
+    }
+
+    private Commit getById(Long commitId) {
+        return commitRepository.findById(commitId)
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 
     private void rollbackMongoDb(List<Block> savedBlocks, CommitBlockSequence savedCbs) {
