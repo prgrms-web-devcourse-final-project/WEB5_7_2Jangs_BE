@@ -1,8 +1,11 @@
 package io.ejangs.docsa.domain.user.api;
 
 import io.ejangs.docsa.domain.user.app.UserService;
+import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
+import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +28,16 @@ public class UserController {
         UserSignupResponse response = userService.signup(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserLoginResponse> login(
+            @Valid @RequestBody UserLoginRequest request,
+            HttpServletRequest httpRequest) {
+        UserLoginResponse response = userService.login(request, httpRequest);
+        return ResponseEntity
+                .status(HttpStatus.OK)
                 .body(response);
     }
 }

@@ -52,4 +52,8 @@ public class Commit extends BaseEntity {
             branch.getCommits().add(this);
         }
     }
+
+    public void initializeCommitMongoId(String commitMongoId) {
+        this.commitMongoId = commitMongoId;
+    }
 }

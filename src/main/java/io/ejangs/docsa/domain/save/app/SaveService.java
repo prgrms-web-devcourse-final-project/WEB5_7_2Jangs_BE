@@ -105,4 +105,12 @@ public class SaveService {
             throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
         }
     }
+
+    public void deleteSaveIfExists(Long branchId) {
+        saveRepository.findByBranchId(branchId).ifPresent(save -> {
+            saveRepository.delete(save);
+            saveContentRepository.findById(save.getSaveMongoId())
+                    .ifPresent(saveContentRepository::delete);
+        });
+    }
 }

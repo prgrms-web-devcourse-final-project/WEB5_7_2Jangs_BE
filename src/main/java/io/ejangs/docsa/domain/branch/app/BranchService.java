@@ -16,6 +16,7 @@ import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
@@ -137,5 +138,10 @@ public class BranchService {
         }
     }
 
+    public Branch findById(Long id) {
+        return branchRepository.findById(id)
+                .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
+    }
 }
+
 
