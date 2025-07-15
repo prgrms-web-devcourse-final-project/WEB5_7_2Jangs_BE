@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.doc.app;
 
-import com.mongodb.MongoTimeoutException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -24,7 +23,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,8 +60,11 @@ public class DocService {
         SaveContent defaultSaveContent;
         try {
             defaultSaveContent = createDefaultSaveContent();
-        } catch (MongoTimeoutException | DataAccessResourceFailureException e) {
+        } catch (DataAccessException e) {
             log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+        } catch (Exception e) {
+            log.error("DefaultSaveContent Mongo 알 수 없는 오류 - {}", e.getMessage(), e);
             throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
         }
 
