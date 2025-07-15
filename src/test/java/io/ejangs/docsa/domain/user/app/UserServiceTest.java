@@ -19,7 +19,6 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.AfterEach;
