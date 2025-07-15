@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.commit.app;
 
+import com.mongodb.MongoException;
 import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.branch.app.BranchService;
@@ -20,6 +21,8 @@ import io.ejangs.docsa.domain.doc.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -87,6 +90,53 @@ public class CommitService {
         }
 
         return CommitMapper.toCreateCommitResponse(savedCommit);
+    }
+
+    @Transactional
+    public void deleteCommit(Long docId, Long commitId) {
+
+        /**
+         * Commit 삭제
+         * Edge 삭제
+         * Branch 업데이트
+         *
+         * CommitMongo 삭제
+         */
+        Commit commit;
+
+        try {
+            docService.getById(docId);
+
+            commit = getById(commitId);
+            commitRepository.delete(commit);
+
+            List<Commit> prevCommits = edgeService.cutEdge(commitId);
+
+            for (Commit prevCommit : prevCommits) {
+                Branch branch = prevCommit.getBranch();
+                branch.updateLeafCommit(prevCommit);
+                RenewUpdatedAtHelper.touch(branch);
+            }
+        } catch (CustomException e) {
+            log.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            throw new CustomException(CommitErrorCode.FAIL_DELETE_COMMIT);
+        }
+
+        try {
+            cbsRepository.deleteById(commit.getCommitMongoId());
+        } catch (MongoException e) {
+            // TODO 예외를 잡아서 후처리하는 로직
+        } catch (Exception e) {
+            log.error("error during delete commit {}", commitId, e);
+            throw new CustomException(CommitErrorCode.FAIL_DELETE_COMMIT);
+        }
+    }
+
+    private Commit getById(Long commitId) {
+        return commitRepository.findById(commitId)
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 
     private void rollbackMongoDb(List<Block> savedBlocks, CommitBlockSequence savedCbs) {
