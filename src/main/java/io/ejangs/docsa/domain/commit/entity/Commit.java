@@ -43,7 +43,14 @@ public class Commit extends BaseEntity {
         this.commitMongoId = commitMongoId;
         this.title = title;
         this.description = description;
+        setBranch(branch);
+    }
+
+    public void setBranch(Branch branch) {
         this.branch = branch;
+        if (!branch.getCommits().contains(this)) {
+            branch.getCommits().add(this);
+        }
     }
 
     public void initializeCommitMongoId(String commitMongoId) {
