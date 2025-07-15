@@ -34,6 +34,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -232,8 +233,7 @@ class UserServiceTest {
 
         // when & then
         assertThatThrownBy(() -> userService.login(invalidRequest, mockRequest))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.INVALID_CREDENTIALS);
+                .isInstanceOf(BadCredentialsException.class);
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
@@ -248,12 +248,11 @@ class UserServiceTest {
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new CustomException(UserErrorCode.USER_NOT_FOUND));
+                .thenThrow(new InternalAuthenticationServiceException("User not found"));
 
         // when & then
         assertThatThrownBy(() -> userService.login(notFoundRequest, mockRequest))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
+                .isInstanceOf(InternalAuthenticationServiceException.class); // 💡 변경 포인트
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }

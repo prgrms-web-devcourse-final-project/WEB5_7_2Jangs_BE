@@ -53,7 +53,7 @@ class UserIntegrationTest {
         user = User.builder()
                 .name("이장님")
                 .email("test@example.com")
-                .password(passwordEncoder.encode("password123"))
+                .password(passwordEncoder.encode("Password123"))
                 .build();
         userRepository.save(user);
     }
@@ -66,7 +66,7 @@ class UserIntegrationTest {
     @Test
     @DisplayName("로그인 성공 - 세션 및 응답 확인")
     void login_Success_SessionAndResponse() throws Exception {
-        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "password123");
+        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "Password123");
 
         MvcResult result = mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -94,7 +94,7 @@ class UserIntegrationTest {
     @Test
     @DisplayName("로그인 실패 - 잘못된 이메일")
     void login_Fail_InvalidEmail() throws Exception {
-        UserLoginRequest loginRequest = new UserLoginRequest("wrong@example.com", "password123");
+        UserLoginRequest loginRequest = new UserLoginRequest("wrong@example.com", "Password123");
 
         mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +106,7 @@ class UserIntegrationTest {
     @Test
     @DisplayName("로그인 실패 - 잘못된 비밀번호")
     void login_Fail_InvalidPassword() throws Exception {
-        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "wrongpassword");
+        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "Wrongpwd123");
 
         mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,7 +119,7 @@ class UserIntegrationTest {
     @DisplayName("로그인 요청 - 유효하지 않은 입력값")
     void login_Fail_InvalidInput() throws Exception {
         // 빈 이메일
-        UserLoginRequest invalidEmailRequest = new UserLoginRequest("", "password123");
+        UserLoginRequest invalidEmailRequest = new UserLoginRequest("", "Password123");
 
         mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -144,12 +144,12 @@ class UserIntegrationTest {
         User user2 = User.builder()
                 .name("사용자2")
                 .email("user2@example.com")
-                .password(passwordEncoder.encode("password456"))
+                .password(passwordEncoder.encode("Password456"))
                 .build();
         userRepository.save(user2);
 
-        UserLoginRequest loginRequest1 = new UserLoginRequest("test@example.com", "password123");
-        UserLoginRequest loginRequest2 = new UserLoginRequest("user2@example.com", "password456");
+        UserLoginRequest loginRequest1 = new UserLoginRequest("test@example.com", "Password123");
+        UserLoginRequest loginRequest2 = new UserLoginRequest("user2@example.com", "Password456");
 
         // 첫 번째 사용자 로그인
         MvcResult result1 = mockMvc.perform(post("/api/user/login")
@@ -179,7 +179,7 @@ class UserIntegrationTest {
     @Test
     @DisplayName("로그인 성공 후 Security Context 확인")
     void login_Success_SecurityContextCheck() throws Exception {
-        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "password123");
+        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "Password123");
 
         MvcResult result = mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -200,7 +200,7 @@ class UserIntegrationTest {
     @Test
     @DisplayName("세션 쿠키 관련 헤더 확인")
     void login_Success_SessionCookieHeaders() throws Exception {
-        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "password123");
+        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "Password123");
 
         MvcResult result = mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -212,13 +212,8 @@ class UserIntegrationTest {
         MockHttpServletResponse response = result.getResponse();
         String setCookieHeader = response.getHeader("Set-Cookie");
 
-        // 실제 환경에서는 JSESSIONID 쿠키가 설정될 것임을 문서화
-        // MockMvc 환경에서는 실제 쿠키 헤더가 설정되지 않을 수 있음
-        System.out.println("Set-Cookie header: " + setCookieHeader);
-
         // 세션 ID 확인
         MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
         assertThat(session.getId()).isNotNull();
-        System.out.println("Session ID: " + session.getId());
     }
 }
