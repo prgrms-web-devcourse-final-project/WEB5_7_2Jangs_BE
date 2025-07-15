@@ -10,9 +10,9 @@ import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
-import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import java.time.LocalDateTime;
@@ -35,37 +35,34 @@ public class DocServiceUnitTests {
     @Mock
     private DocRepository docRepository;
 
-    @Mock
-    private UserRepository userRepository;
-
-
     @Test
     @DisplayName("사이드바 문서 목록 조회 성공 테스트")
     void getSimpleDocumentListSuccess() throws Exception {
 
-        //given
+        // given
         Long userId = 1L;
         User user = DocTestUtils.createUser();
-        ReflectionTestUtils.setField(user, "id", 1L);
+        ReflectionTestUtils.setField(user, "id", userId);
 
-        List<DocListSimpleResponse> simpleDocuementList = List.of(
-                new DocListSimpleResponse(1L, "문서1", LocalDateTime.now(),
-                        LocalDateTime.now().plusHours(3)),
-                new DocListSimpleResponse(2L, "문서2", LocalDateTime.now().plusHours(1),
-                        LocalDateTime.now().plusDays(3))
-        );
+        Long docId = 10L;
+        List<Doc> docs = DocTestUtils.createDocumentList(2, user);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(docRepository.getSimpleList(userId)).thenReturn(simpleDocuementList);
+        when(docRepository.findAllByUserId(userId)).thenReturn(docs);
 
-        //when
+        // when
         List<DocListSimpleResponse> result = docService.getSimpleList(userId);
 
-        //then
+        // then
         assertEquals(2, result.size());
-        assertEquals("문서1", result.getFirst().title());
-        verify(userRepository).findById(userId);
-        verify(docRepository).getSimpleList(userId);
+        assertEquals("테스트 문서 1", result.getFirst().title());
+
+        assertEquals(RecentType.SAVE, result.getFirst().recent().recentType());
+        assertEquals(10L, result.getFirst().recent().recentTypeId());
+
+        assertEquals(RecentType.COMMIT, result.getLast().recent().recentType());
+        assertEquals(200L, result.getLast().recent().recentTypeId());
+
+        verify(docRepository).findAllByUserId(userId);
     }
 
     @Test
