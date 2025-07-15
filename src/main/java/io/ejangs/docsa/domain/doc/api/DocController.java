@@ -1,10 +1,7 @@
 package io.ejangs.docsa.domain.doc.api;
 
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.*;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +47,11 @@ public class DocController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(docService.updateTitle(userId, docId, request));
+    }
+
+    @GetMapping("/{documentId}/graph")
+    public ResponseEntity<CommitGraphResponse> getGraph(@PathVariable Long docId){
+        return ResponseEntity.status(HttpStatus.OK).body(docService.getGraph(docId));
     }
 
 }

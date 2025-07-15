@@ -20,6 +20,16 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
             """)
     List<DocListSimpleResponse> getSimpleList(@Param("userId") Long userId);
 
+    @Query("""
+        SELECT DISTINCT d
+        FROM Doc d
+        LEFT JOIN FETCH d.branches b
+        LEFT JOIN FETCH b.commits
+        LEFT JOIN FETCH d.edges
+        WHERE d.id = :id
+    """)
+    Optional<Doc> findByIdWithBranchesAndEdges(@Param("id") Long id);
+
     Optional<Doc> getDocByIdAndUserId(Long id, Long userId);
 
     Boolean existsByUserIdAndTitle(Long userId, String title);

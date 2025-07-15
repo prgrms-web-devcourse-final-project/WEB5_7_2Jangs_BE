@@ -1,14 +1,14 @@
 package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.*;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
+import io.ejangs.docsa.domain.doc.util.GraphMapper;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -151,4 +151,27 @@ public class DocService {
         return docRepository.findById(id)
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
     }
+
+    // 문서 조회시 그래프를 그리기 위한 응답 생성
+    @Transactional(readOnly = true)
+    public CommitGraphResponse getGraph(Long documentId) {
+        Doc doc = docRepository.findByIdWithBranchesAndEdges(documentId)
+                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+
+        List<CommitDto> commits = doc.getBranches().stream()
+                .flatMap(b -> b.getCommits().stream())
+                .map(GraphMapper::toCommitDto)
+                .toList();
+
+        List<EdgeDto> edges = doc.getEdges().stream()
+                .map(GraphMapper::toEdgeDto)
+                .toList();
+
+        List<BranchDto> branches = doc.getBranches().stream()
+                .map(GraphMapper::toBranchDto)
+                .toList();
+
+        return new CommitGraphResponse(doc.getTitle(), commits, edges, branches);
+    }
+
 }
