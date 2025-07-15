@@ -13,7 +13,9 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
@@ -175,5 +177,35 @@ public class DocServiceIntegrationTests {
         );
 
         assertEquals(UserErrorCode.USER_NOT_FOUND, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("사이드바 문서리스트 조회 - 최근 활동이 커밋 또는 저장 중 최신으로 설정됨")
+    void getSimpleDocumentList() throws Exception {
+        // given
+        User user = userRepository.save(DocTestUtils.createUser());
+
+        List<Doc> docs = DocTestUtils.createDocumentListForIntegrationTest(user,
+                saveContentRepository);
+        docRepository.saveAll(docs);
+
+        // when
+        List<DocListSimpleResponse> results = docService.getSimpleList(user.getId());
+
+        // then
+        assertEquals(2, results.size());
+
+        DocListSimpleResponse first = results.get(0);  // 최신 updatedAt 기준으로 정렬되었다고 가정
+        DocListSimpleResponse second = results.get(1);
+
+        // 저장이 없음 -> 최신 커밋
+        assertEquals("문서 1", first.title());
+        assertEquals(RecentType.COMMIT, first.recent().recentType());
+        assertEquals(2L, first.recent().recentTypeId());
+
+        // 저장이 있음
+        assertEquals("문서 2", second.title());
+        assertEquals(RecentType.SAVE, second.recent().recentType());
+        assertEquals(2L, second.recent().recentTypeId());
     }
 }
