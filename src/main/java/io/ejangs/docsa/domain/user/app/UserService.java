@@ -11,24 +11,16 @@ import io.ejangs.docsa.domain.user.util.SecurityContextUtil;
 import io.ejangs.docsa.domain.user.util.UserMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
@@ -80,21 +72,16 @@ public class UserService {
 
     public UserLoginResponse login(UserLoginRequest request, HttpServletRequest httpRequest) {
 
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.email(),
-                            request.password()
-                    )
-            );
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.email(),
+                        request.password()
+                )
+        );
 
-            SecurityContextUtil.saveAuthenticationToSession(httpRequest, authentication);
+        SecurityContextUtil.saveAuthenticationToSession(httpRequest, authentication);
 
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            return new UserLoginResponse(userDetails.getId());
-
-        } catch (BadCredentialsException | InternalAuthenticationServiceException e) {
-            throw new CustomException(AuthErrorCode.INVALID_CREDENTIALS);
-        }
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        return new UserLoginResponse(userDetails.getId());
     }
 }

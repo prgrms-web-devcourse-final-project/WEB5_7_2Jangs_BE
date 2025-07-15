@@ -1,5 +1,6 @@
 package io.ejangs.docsa.global.config;
 
+import io.ejangs.docsa.domain.user.security.CustomAuthenticationEntryPoint;
 import io.ejangs.docsa.domain.user.security.CustomUserDetailsService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -43,6 +45,7 @@ public class SecurityConfig {
                 )
                 .formLogin(formLogin -> formLogin.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .logout(logout -> logout
                         .logoutUrl("/api/user/logout")
                         .logoutSuccessUrl("/")
