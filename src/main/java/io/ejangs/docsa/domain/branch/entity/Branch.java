@@ -65,4 +65,7 @@ public class Branch extends BaseEntity {
     public void updateLeafCommit(Commit leafCommit) {
         this.leafCommit = leafCommit;
     }
+    public void updateDoc(Doc doc) {
+        this.doc = doc;
+    }
 }

@@ -18,9 +18,14 @@ public abstract class BaseEntity {
 
     @Column(updatable = false, nullable = false)
     @CreatedDate
-    protected LocalDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     @LastModifiedDate
     protected LocalDateTime updatedAt;
+
+    public void updateTimestamp() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }

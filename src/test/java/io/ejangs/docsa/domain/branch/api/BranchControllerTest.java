@@ -32,21 +32,22 @@ class BranchControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("POST /api/document/{id}/branch → 201 + body")
-    void createBranch_returns201() throws Exception {
-        long docId = 42L;
+    @DisplayName("브랜치 생성 또는 저장 생성 API 성공")
+    void createBranchOrSave_success() throws Exception {
+        // given
+        Long documentId = 1L;
+        BranchCreateRequest request = new BranchCreateRequest("기능 브랜치", 100L);
+        BranchCreateResponse response = new BranchCreateResponse(200L, 300L);
 
-        BranchCreateRequest req = new BranchCreateRequest("new-branch", null);
-        BranchCreateResponse resp = new BranchCreateResponse(99L, 123L);
+        Mockito.when(branchService.createBranchOrSave(eq(documentId), any()))
+                .thenReturn(response);
 
-        Mockito.when(branchService.createBranch(eq(docId), any(BranchCreateRequest.class)))
-                .thenReturn(resp);
-
-        mockMvc.perform(post("/api/document/{documentId}/branch", docId)
+        // when + then
+        mockMvc.perform(post("/api/document/{documentId}/branch", documentId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.branchId").value(99))
-                .andExpect(jsonPath("$.saveId").value(123));
+                .andExpect(jsonPath("$.branchId").value(200L))
+                .andExpect(jsonPath("$.saveId").value(300L));
     }
 }

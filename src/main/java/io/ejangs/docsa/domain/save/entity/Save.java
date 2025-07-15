@@ -11,7 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,12 +38,8 @@ public class Save extends BaseEntity {
         this.branch = branch;
     }
 
-    // saveContent 가 수정될 경우 명시적으로 updatedAt을 갱신해야 한다.
-    public void touch() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
     public void updateSaveMongoId(String saveMongoId) {
         this.saveMongoId = saveMongoId;
     }
+
 }

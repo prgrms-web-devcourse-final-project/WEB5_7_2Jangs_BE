@@ -10,6 +10,7 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +45,7 @@ public class SaveRepositoryAdapterImpl implements SaveRepositoryAdapter {
             List<SaveBlock> content) {
         // TODO : 연관된 branch, doc의 updatedAt 도 수정해야 함.
         // MySQL 먼저 저장
-        save.touch();
+        RenewUpdatedAtHelper.touch(save);
         saveRepository.save(save);
 
         // MongoDB 저장
