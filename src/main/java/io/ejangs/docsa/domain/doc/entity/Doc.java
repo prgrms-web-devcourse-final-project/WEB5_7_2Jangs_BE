@@ -45,11 +45,15 @@ public class Doc extends BaseEntity {
     @OneToMany(mappedBy = "doc", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Branch> branches;
 
+    @OneToMany(mappedBy = "doc", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Edge> edges;
+
     @Builder
     private Doc(String title, User user) {
         this.title = title;
         this.user = user;
         this.branches = new ArrayList<>();
+        this.edges = new ArrayList<>();
     }
 
     public void updateTitle(String title) {
@@ -60,6 +64,13 @@ public class Doc extends BaseEntity {
         this.branches.add(branch);
         if (branch.getDoc() != this) {
             branch.setDoc(this);
+        }
+    }
+
+    public void addEdge(Edge edge) {
+        this.edges.add(edge);
+        if (edge.getDoc() != this) {
+            edge.setDoc(this);
         }
     }
 }
