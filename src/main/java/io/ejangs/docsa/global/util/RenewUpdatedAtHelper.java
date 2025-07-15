@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.branch.util;
+package io.ejangs.docsa.global.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
