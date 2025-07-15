@@ -64,8 +64,8 @@ class SaveServiceUnitTest {
     void setUp() {
         dto = SaveUpdateIdDto.of(docId, saveId, userId);
         data = List.of(
-                new SaveBlock("id1", "type1", Map.of("text1", "Key features")),
-                new SaveBlock("id2", "type2", Map.of("text2", "Key features"))
+                new SaveBlock(Map.of("text1", "Key features")),
+                new SaveBlock(Map.of("text2", "Key features"))
         );
         request = new SaveUpdateRequest(data);
     }

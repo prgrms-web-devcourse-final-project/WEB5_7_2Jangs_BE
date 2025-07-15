@@ -50,8 +50,8 @@ class SaveControllerTest {
     void setUp() {
         dto = SaveUpdateIdDto.of(1L, 1L, 1L);
         data = List.of(
-                new SaveBlock("id1", "type1", Map.of("text1", "Key features")),
-                new SaveBlock("id2", "type2", Map.of("text2", "Key features"))
+                new SaveBlock(Map.of("text1", "Key features")),
+                new SaveBlock(Map.of("text2", "Key features"))
         );
         request = new SaveUpdateRequest(data);
     }
@@ -62,8 +62,6 @@ class SaveControllerTest {
         Long userId = 1L;
         Long documentId = 1L;
         Long saveId = 1L;
-
-        SaveUpdateIdDto dto = SaveUpdateIdDto.of(documentId, saveId, userId);
 
         when(saveService.updateSave(dto, request)).thenReturn(new SaveUpdateResponse(
                 OffsetDateTime.now()));

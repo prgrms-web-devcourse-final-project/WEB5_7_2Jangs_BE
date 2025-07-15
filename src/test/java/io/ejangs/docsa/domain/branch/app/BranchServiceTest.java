@@ -11,6 +11,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
+import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
@@ -88,9 +89,12 @@ class BranchServiceTest {
 
         Save save = Save.builder().branch(branch).build();
         when(saveRepository.save(any())).thenReturn(save);
-        when(commitContentAssembler.assemble("mongo-1")).thenReturn(List.of(Map.of("block", "data")));
+        when(commitContentAssembler.assemble("mongo-1")).thenReturn(
+                List.of(Map.of("block", "data")));
 
-        SaveContent saveContent = SaveContent.builder().content(Map.of("blocks", List.of())).build();
+        SaveContent saveContent = SaveContent.builder()
+                .content(List.of(SaveBlock.from(Map.of("key", "value"))))
+                .build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
@@ -125,9 +129,11 @@ class BranchServiceTest {
 
         Save save = Save.builder().branch(fromBranch).build();
         when(saveRepository.save(any())).thenReturn(save);
-        when(commitContentAssembler.assemble("mongo-1")).thenReturn(List.of(Map.of("block", "data")));
+        when(commitContentAssembler.assemble("mongo-1")).thenReturn(
+                List.of(Map.of("block", "data")));
 
-        SaveContent saveContent = SaveContent.builder().content(Map.of("blocks", List.of())).build();
+        SaveContent saveContent = SaveContent.builder().content(List.of(
+                SaveBlock.from(Map.of("block", "data")))).build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when

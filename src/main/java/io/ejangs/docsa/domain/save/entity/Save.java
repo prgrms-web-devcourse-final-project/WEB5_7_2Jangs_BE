@@ -36,10 +36,18 @@ public class Save extends BaseEntity {
     @Builder
     private Save(Branch branch) {
         this.branch = branch;
+        branch.setSave(this);
     }
 
     public void updateSaveMongoId(String saveMongoId) {
         this.saveMongoId = saveMongoId;
+    }
+
+    public void setBranch(Branch branch) {
+        this.branch = branch;
+        if (branch.getSave() != this) {
+            branch.setSave(this);
+        }
     }
 
 }
