@@ -59,8 +59,8 @@ class SaveRepositoryAdapterImplTest {
     void findSaveContentById_success() {
         SaveContent content = SaveContent.builder()
                 .content(List.of(
-                        new SaveBlock("id1", "type1", Map.of("text1", "Key features")),
-                        new SaveBlock("id2", "type2", Map.of("text2", "Key features"))
+                        new SaveBlock(Map.of("text1", "Key features")),
+                        new SaveBlock(Map.of("text2", "Key features"))
                 ))
                 .build();
         when(saveContentRepository.findById("mongo123")).thenReturn(Optional.of(content));
@@ -86,8 +86,8 @@ class SaveRepositoryAdapterImplTest {
     void updateSave_success() {
         Save mockSave = Save.builder().build();
         List<SaveBlock> data = List.of(
-                new SaveBlock("id1", "type1", Map.of("text1", "Key features")),
-                new SaveBlock("id2", "type2", Map.of("text2", "Key features"))
+                new SaveBlock(Map.of("text1", "Key features")),
+                new SaveBlock(Map.of("text2", "Key features"))
         );
 
         SaveContent mockContent = SaveContent.builder()

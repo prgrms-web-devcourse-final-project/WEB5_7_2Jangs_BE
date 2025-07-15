@@ -2,6 +2,9 @@ package io.ejangs.docsa.domain.save.dto;
 
 import java.util.Map;
 
-public record SaveBlock(String id, String type, Map<String, Object> data) {
+public record SaveBlock(Map<String, Object> data) {
 
+    public static SaveBlock from(Map<String, Object> data) {
+        return new SaveBlock(data);
+    }
 }
