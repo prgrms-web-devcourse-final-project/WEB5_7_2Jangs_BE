@@ -90,4 +90,7 @@ public class Branch extends BaseEntity {
             commit.setBranch(this);
         }
     }
+    public void updateName(String name){
+        this.name = name;
+    }
 }

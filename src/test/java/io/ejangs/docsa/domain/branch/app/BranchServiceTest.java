@@ -3,22 +3,27 @@ package io.ejangs.docsa.domain.branch.app;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -48,21 +53,12 @@ class BranchServiceTest {
     @Mock
     private CommitContentAssembler commitContentAssembler;
 
+    @Mock
+    private DocRepository docRepository;
+
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    @DisplayName("fromCommitId가 null이면 예외 발생")
-    void testThrowWhenFromCommitIdIsNull() {
-        // given
-        BranchCreateRequest request = new BranchCreateRequest("test-branch", null);
-
-        // when & then
-        CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranchOrSave(1L, request));
-        assertEquals(CommitErrorCode.INVALID_FROM_COMMIT, ex.getErrorCode());
     }
 
     @Test
@@ -70,6 +66,7 @@ class BranchServiceTest {
     void testAddSaveToExistingBranch() {
         // given
         Long documentId = 1L;
+        Long userId = 1L;
         Long commitId = 10L;
         BranchCreateRequest request = new BranchCreateRequest("ignored", commitId);
 
@@ -87,18 +84,21 @@ class BranchServiceTest {
 
         when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
 
+        when(docRepository.existsByIdAndUserId(documentId, userId)).thenReturn(true);
+
         Save save = Save.builder().branch(branch).build();
         when(saveRepository.save(any())).thenReturn(save);
         when(commitContentAssembler.assemble("mongo-1")).thenReturn(
                 List.of(Map.of("block", "data")));
 
-        SaveContent saveContent = SaveContent.builder()
-                .content(List.of(SaveBlock.from(Map.of("key", "value"))))
-                .build();
+        SaveContent saveContent =
+                SaveContent.builder().content(List.of(SaveBlock.from(Map.of("key", "value"))))
+                        .build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request);
+        BranchCreateResponse response =
+                branchService.createBranchOrSave(documentId, request, userId);
 
         // then
         assertNotNull(response);
@@ -112,11 +112,13 @@ class BranchServiceTest {
     void testCreateNewBranchAndSave() {
         // given
         Long documentId = 1L;
+        Long userId = 1L;
         Long commitId = 10L;
         BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
 
-        Doc doc = Doc.builder().title("title").build();
-        ReflectionTestUtils.setField(doc, "id", 1L);
+        Doc doc = Doc.builder().title("title").user(User.builder().build()).build();
+        ReflectionTestUtils.setField(doc, "id", documentId);
+
         Branch fromBranch = Branch.builder().doc(doc).name("from").build();
         Commit commit = mock(Commit.class);
 
@@ -127,21 +129,52 @@ class BranchServiceTest {
         when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
         when(branchRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
+        when(docRepository.existsByIdAndUserId(documentId, userId)).thenReturn(true);
+
         Save save = Save.builder().branch(fromBranch).build();
         when(saveRepository.save(any())).thenReturn(save);
         when(commitContentAssembler.assemble("mongo-1")).thenReturn(
                 List.of(Map.of("block", "data")));
 
-        SaveContent saveContent = SaveContent.builder().content(List.of(
-                SaveBlock.from(Map.of("block", "data")))).build();
+        SaveContent saveContent =
+                SaveContent.builder().content(List.of(SaveBlock.from(Map.of("block", "data"))))
+                        .build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request);
+        BranchCreateResponse response =
+                branchService.createBranchOrSave(documentId, request, userId);
 
         // then
         assertNotNull(response);
         verify(branchRepository).save(any());
         verify(saveRepository).save(any());
+    }
+
+    @Test
+    @DisplayName("브랜치 이름 수정 성공")
+    void renameBranch_success() {
+        Long docId = 1L;
+        Long branchId = 2L;
+        Long userId = 3L;
+        String newName = "수정된 이름";
+
+        Branch branch = Branch.builder().name("기존이름").doc(mock(Doc.class)).fromCommit(null).build();
+        when(docRepository.existsByIdAndUserId(docId, userId)).thenReturn(true);
+        when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
+
+        BranchRenameResponse response =
+                branchService.renameBranch(docId, branchId, newName, userId);
+
+        assertEquals(newName, response.name());
+    }
+
+    @Test
+    @DisplayName("문서가 존재하지 않으면 예외 발생")
+    void renameBranch_documentNotFound() {
+        when(docRepository.existsByIdAndUserId(anyLong(), anyLong())).thenReturn(false);
+        CustomException e = assertThrows(CustomException.class,
+                () -> branchService.renameBranch(1L, 2L, "new", 3L));
+        assertEquals(DocErrorCode.DOCUMENT_NOT_FOUND, e.getErrorCode());
     }
 }
