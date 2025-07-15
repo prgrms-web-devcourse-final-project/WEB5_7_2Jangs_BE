@@ -18,6 +18,7 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -88,8 +89,8 @@ public class DocService {
                 .name(defaultBranchName)
                 .doc(doc)
                 .build());
-        branchRepository.flush();
         doc.addBranch(branch);
+        RenewUpdatedAtHelper.touch(branch);
         return branch;
     }
 
