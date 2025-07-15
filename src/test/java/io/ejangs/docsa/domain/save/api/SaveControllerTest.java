@@ -1,0 +1,101 @@
+package io.ejangs.docsa.domain.save.api;
+
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.ejangs.docsa.domain.save.app.SaveService;
+import io.ejangs.docsa.domain.save.dto.SaveBlock;
+import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
+import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
+import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+@WebMvcTest(controllers = SaveController.class)
+@AutoConfigureMockMvc(addFilters = false)
+class SaveControllerTest {
+
+    @MockitoBean
+    private SaveService saveService;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private SaveUpdateIdDto dto;
+    private List<SaveBlock> data;
+    private SaveUpdateRequest request;
+
+    @BeforeEach
+    void setUp() {
+        dto = SaveUpdateIdDto.of(1L, 1L, 1L);
+        data = List.of(
+                new SaveBlock("id1", "type1", Map.of("text1", "Key features")),
+                new SaveBlock("id2", "type2", Map.of("text2", "Key features"))
+        );
+        request = new SaveUpdateRequest(data);
+    }
+
+    @Test
+    @DisplayName("저장 데이터 덮어쓰기 성공")
+    void updateSave_success() throws Exception {
+        Long userId = 1L;
+        Long documentId = 1L;
+        Long saveId = 1L;
+
+        SaveUpdateIdDto dto = SaveUpdateIdDto.of(documentId, saveId, userId);
+
+        when(saveService.updateSave(dto, request)).thenReturn(new SaveUpdateResponse(
+                OffsetDateTime.now()));
+
+        mockMvc.perform(
+                        put("/api/document/{documentId}/save/{saveId}", documentId, saveId)
+                                .param("userId", String.valueOf(userId))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updatedAt").exists())
+                .andDo(print());
+    }
+
+    @ParameterizedTest
+    @DisplayName("path variable 이 비정상일 경우 예외 발생")
+    @CsvSource({
+            "abc,1",      // invalid documentId
+            "1,xyz",      // invalid saveId
+            "abc,xyz",    // both invalid
+    })
+    void updateSave_fail_invalidPathVariables(String documentId, String saveId) throws Exception {
+        Long userId = 1L;
+
+        mockMvc.perform(
+                        put("/api/document/{documentId}/save/{saveId}", documentId, saveId)
+                                .param("userId", String.valueOf(userId))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MethodArgumentTypeMismatchException.class,
+                        result.getResolvedException()))
+                .andDo(print());
+    }
+}
