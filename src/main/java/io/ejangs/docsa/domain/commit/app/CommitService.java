@@ -52,7 +52,7 @@ public class CommitService {
             // * 1. documentId로 문서가 존재하는지 검사(JPA)
             Doc doc = docService.getById(docId);
             // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
-            Branch branch = branchService.findById(docId);
+            Branch branch = branchService.findById(commitRequest.branchId());
 
             // * 3. Commit Entity만들어서 DB에 저장
             Commit savedCommit = saveCommit(branch, commitRequest);
