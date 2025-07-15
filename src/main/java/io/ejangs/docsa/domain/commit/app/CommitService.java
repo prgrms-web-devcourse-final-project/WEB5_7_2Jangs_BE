@@ -87,6 +87,7 @@ public class CommitService {
             throw e;
         }
 
+        RenewUpdatedAtHelper.touch(branch);
         return CommitMapper.toCreateCommitResponse(savedCommit);
     }
 
