@@ -2,7 +2,6 @@ package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
@@ -106,25 +105,32 @@ public class DocService {
     public List<DocListSimpleResponse> getSimpleList(Long userId) {
         List<Doc> docs = docRepository.findAllByUserId(userId);
 
-        return docs.stream().map(doc -> {
-            Branch recentBranch = doc.getBranches().stream()
-                    .max(Comparator.comparing(Branch::getUpdatedAt)) // 가장 최신 Branch
-                    .orElse(null);
+        return docs.stream()
+                .map(doc -> {
+                    Branch recentBranch = getMostRecentBranch(doc);
+                    RecentActivityDto recent = getRecentActivity(recentBranch);
+                    return DocMapper.toListSimpleResponse(doc, recent);
+                })
+                .toList();
+    }
 
-            RecentActivityDto recent = null;
-            if (recentBranch != null) {
-                Save lastSave = recentBranch.getSave();
-                Commit lastCommit = recentBranch.getLeafCommit();
-                if (lastSave != null) {
-                    recent = RecentActivityDto.from(lastSave);
-                } else if (lastCommit != null) {
-                    recent = RecentActivityDto.from(lastCommit);
-                }
-            }
+    private Branch getMostRecentBranch(Doc doc) {
+        return doc.getBranches().stream()
+                .max(Comparator.comparing(Branch::getUpdatedAt))
+                .orElse(null);
+    }
 
-            return DocMapper.toListSimpleResponse(doc, recent);
-
-        }).toList();
+    private RecentActivityDto getRecentActivity(Branch branch) {
+        if (branch == null) {
+            return null;
+        }
+        if (branch.getSave() != null) {
+            return RecentActivityDto.from(branch.getSave());
+        }
+        if (branch.getLeafCommit() != null) {
+            return RecentActivityDto.from(branch.getLeafCommit());
+        }
+        return null;
     }
 
     @Transactional
