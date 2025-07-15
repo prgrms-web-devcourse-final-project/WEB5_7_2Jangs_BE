@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
-import static io.ejangs.docsa.domain.branch.util.RenewUpdatedAtHelper.touch;
+import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
 
 
 @Slf4j
