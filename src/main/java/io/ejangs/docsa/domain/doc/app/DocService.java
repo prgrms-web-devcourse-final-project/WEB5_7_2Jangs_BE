@@ -58,16 +58,7 @@ public class DocService {
                 .build();
 
         //Mongo 저장을 RDB 저장 이 후에 진행하여 실패시 예외 발생으로 인한 종료
-        SaveContent defaultSaveContent;
-        try {
-            defaultSaveContent = createDefaultSaveContent();
-        } catch (DataAccessException e) {
-            log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
-            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
-        } catch (Exception e) {
-            log.error("DefaultSaveContent Mongo 알 수 없는 오류 - {}", e.getMessage(), e);
-            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
-        }
+        SaveContent defaultSaveContent = createDefaultSaveContent();
 
         defaultSave.updateSaveMongoId(defaultSaveContent.getId());
         saveRepository.save(defaultSave);
@@ -95,11 +86,20 @@ public class DocService {
     }
 
     private SaveContent createDefaultSaveContent() {
-        return saveContentRepository.save(
-                SaveContent.builder()
-                        .content(new HashMap<>())
-                        .build()
-        );
+
+        try {
+            return saveContentRepository.save(
+                    SaveContent.builder()
+                            .content(new HashMap<>())
+                            .build()
+            );
+        } catch (DataAccessException e) {
+            log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+        } catch (Exception e) {
+            log.error("DefaultSaveContent Mongo 알 수 없는 오류 - {}", e.getMessage(), e);
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+        }
     }
 
     @Transactional(readOnly = true)
