@@ -29,7 +29,7 @@ public class Save extends BaseEntity {
     @Column(nullable = false)
     private String saveMongoId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
