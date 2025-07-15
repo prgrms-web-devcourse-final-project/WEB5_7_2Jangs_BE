@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocumentRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.SaveRepositoryAdapterImpl;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -36,7 +36,7 @@ class SaveServiceUnitTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private DocumentRepository documentRepository;
+    private DocRepository documentRepository;
     @Mock
     private SaveRepositoryAdapterImpl saveRepository;
     @Mock
@@ -64,8 +64,8 @@ class SaveServiceUnitTest {
     void setUp() {
         dto = SaveUpdateIdDto.of(docId, saveId, userId);
         data = List.of(
-                new SaveBlock("id1", "type1", Map.of("text1", "Key features")),
-                new SaveBlock("id2", "type2", Map.of("text2", "Key features"))
+                new SaveBlock(Map.of("text1", "Key features")),
+                new SaveBlock(Map.of("text2", "Key features"))
         );
         request = new SaveUpdateRequest(data);
     }
