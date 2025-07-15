@@ -98,7 +98,7 @@ public class CommitService {
     @Transactional(readOnly = true)
     public CommitResponse getCommit(Long docId, Long commitId) {
 
-        docService.getById(docId);
+        docService.notFoundDocCheck(docId);
         List<Map<String, Object>> assemble = getWholeContent(commitId);
 
         return new CommitResponse(assemble);
@@ -108,7 +108,7 @@ public class CommitService {
     public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId,
             Long targetId) {
 
-        docService.getById(docId);
+        docService.notFoundDocCheck(docId);
         List<Map<String, Object>> baseContent = getWholeContent(baseId);
         List<Map<String, Object>> targetContent = getWholeContent(targetId);
 
