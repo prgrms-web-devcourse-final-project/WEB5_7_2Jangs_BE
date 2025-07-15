@@ -105,8 +105,8 @@ public class SaveService {
             throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
         }
 
-        if(!save.getBranch().getDoc().getId().equals(documentId)) {
-            throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
+        if (!save.getBranch().getDoc().getId().equals(documentId)) {
+            throw new CustomException(SaveErrorCode.SAVE_NOT_IN_DOCUMENT);
         }
     }
 
