@@ -22,5 +22,10 @@ public abstract class BaseEntity {
 
     @Column(name = "updated_at")
     @LastModifiedDate
-    private LocalDateTime updatedAt;
+    protected LocalDateTime updatedAt;
+
+    public void updateTimestamp() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }

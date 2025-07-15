@@ -9,8 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -30,7 +29,7 @@ public class Save extends BaseEntity {
     @Column(nullable = false)
     private String saveMongoId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id")
     private Branch branch;
 
@@ -38,4 +37,9 @@ public class Save extends BaseEntity {
     private Save(Branch branch) {
         this.branch = branch;
     }
+
+    public void updateSaveMongoId(String saveMongoId) {
+        this.saveMongoId = saveMongoId;
+    }
+
 }

@@ -39,8 +39,6 @@ public class SaveController {
             @RequestBody SaveUpdateRequest saveUpdateRequest) {
         SaveUpdateResponse response = saveService.updateSave(
                 SaveUpdateIdDto.of(documentId, saveId, userId), saveUpdateRequest);
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
