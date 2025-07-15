@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -38,4 +37,9 @@ public class Save extends BaseEntity {
     private Save(Branch branch) {
         this.branch = branch;
     }
+
+    public void updateSaveMongoId(String saveMongoId) {
+        this.saveMongoId = saveMongoId;
+    }
+
 }
