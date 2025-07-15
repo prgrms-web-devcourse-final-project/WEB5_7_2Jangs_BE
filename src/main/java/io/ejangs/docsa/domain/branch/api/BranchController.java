@@ -16,10 +16,11 @@ public class BranchController {
 
     private final BranchService branchService;
 
+    // 브랜치에 이어서 새로운 저장 생성 or 새로운 브랜치 + 저장 생성
     @PostMapping
-    public ResponseEntity<BranchCreateResponse> createBranch(@PathVariable Long documentId,
+    public ResponseEntity<BranchCreateResponse> createBranchOrSave(@PathVariable Long documentId,
             @Valid @RequestBody BranchCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(branchService.createBranch(documentId, request));
+                .body(branchService.createBranchOrSave(documentId, request));
     }
 }

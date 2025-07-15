@@ -61,6 +61,5 @@ public class Doc extends BaseEntity {
         if (branch.getDoc() != this) {
             branch.setDoc(this);
         }
-        this.updatedAt = branch.getUpdatedAt();
     }
 }

@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.doc.app;
 
-import com.mongodb.MongoTimeoutException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -19,12 +18,13 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,13 +58,7 @@ public class DocService {
                 .build();
 
         //Mongo 저장을 RDB 저장 이 후에 진행하여 실패시 예외 발생으로 인한 종료
-        SaveContent defaultSaveContent;
-        try {
-            defaultSaveContent = createDefaultSaveContent();
-        } catch (MongoTimeoutException | DataAccessResourceFailureException e) {
-            log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
-            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
-        }
+        SaveContent defaultSaveContent = createDefaultSaveContent();
 
         defaultSave.updateSaveMongoId(defaultSaveContent.getId());
         saveRepository.save(defaultSave);
@@ -86,17 +80,26 @@ public class DocService {
                 .name(defaultBranchName)
                 .doc(doc)
                 .build());
-        branchRepository.flush();
         doc.addBranch(branch);
+        RenewUpdatedAtHelper.touch(branch);
         return branch;
     }
 
     private SaveContent createDefaultSaveContent() {
-        return saveContentRepository.save(
-                SaveContent.builder()
-                        .content(new HashMap<>())
-                        .build()
-        );
+
+        try {
+            return saveContentRepository.save(
+                    SaveContent.builder()
+                            .content(new HashMap<>())
+                            .build()
+            );
+        } catch (DataAccessException e) {
+            log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+        } catch (Exception e) {
+            log.error("DefaultSaveContent Mongo 알 수 없는 오류 - {}", e.getMessage(), e);
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+        }
     }
 
     @Transactional(readOnly = true)
