@@ -33,7 +33,6 @@ public class SaveRepositoryAdapterImpl implements SaveRepositoryAdapter {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public SaveContent findSaveContentById(String id) {
         return saveContentRepository.findById(id)
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
