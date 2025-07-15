@@ -12,6 +12,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -61,5 +62,15 @@ public class SaveRepositoryAdapterImpl implements SaveRepositoryAdapter {
         }
 
         return SaveMapper.toSaveUpdateResponse(save);
+    }
+
+    @Override
+    public Optional<Save> findSaveByBranchId(Long branchId) {
+        return saveRepository.findByBranchId(branchId);
+    }
+
+    @Override
+    public void deleteSave(Save save) {
+        saveRepository.delete(save);
     }
 }

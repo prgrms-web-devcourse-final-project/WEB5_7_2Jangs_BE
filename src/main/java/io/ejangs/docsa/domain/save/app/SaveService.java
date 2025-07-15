@@ -47,8 +47,8 @@ public class SaveService {
     }
 
     public void deleteSaveIfExists(Long branchId) {
-        saveRepository.findByBranchId(branchId).ifPresent(save -> {
-            saveRepository.delete(save);
+        saveRepository.findSaveByBranchId(branchId).ifPresent(save -> {
+            saveRepository.deleteSave(save);
             saveContentRepository.findById(save.getSaveMongoId())
                     .ifPresent(saveContentRepository::delete);
         });

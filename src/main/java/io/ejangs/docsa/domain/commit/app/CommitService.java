@@ -12,7 +12,7 @@ import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
-import io.ejangs.docsa.domain.doc.app.DocumentService;
+import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
@@ -36,7 +36,7 @@ public class CommitService {
     private final CommitRepository commitRepository;
     private final CommitBlockSequenceRepository cbsRepository;
 
-    private final DocumentService docService;
+    private final DocService docService;
     private final BranchService branchService;
     private final BlockService blockService;
     private final SaveService saveService;
@@ -46,7 +46,7 @@ public class CommitService {
     public CreateCommitResponse createCommit(Long docId, CreateCommitRequest commitRequest) {
 
         // * 1. documentId로 문서가 존재하는지 검사(JPA)
-        Doc doc = docService.findById(docId);
+        Doc doc = docService.getById(docId);
         // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
         Branch branch = branchService.findById(docId);
 
