@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.user.integration;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,6 +12,9 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.entity.User;
+import jakarta.servlet.http.Cookie;
+import java.util.Arrays;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -82,7 +86,8 @@ class UserIntegrationTest {
         assertThat(session.getId()).isNotNull();
 
         // Spring Security Context가 세션에 저장되었는지 확인
-        Object securityContext = session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+        Object securityContext = session.getAttribute(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
         assertThat(securityContext).isNotNull();
 
         // 응답 본문 확인
@@ -219,5 +224,43 @@ class UserIntegrationTest {
         // 세션 ID 확인
         MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
         assertThat(session.getId()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공 - 세션 무효화 및 쿠키 제거 확인")
+    void logout_Success() throws Exception {
+        // 로그인 먼저 수행
+        UserLoginRequest loginRequest = new UserLoginRequest("test@example.com", "Password123");
+
+        MvcResult loginResult = mockMvc.perform(post("/api/user/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        assertThat(session.getId()).isNotNull();
+
+        // 로그아웃 수행
+        MvcResult logoutResult = mockMvc.perform(post("/api/user/logout")
+                        .session(session))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn();
+
+        // 세션 무효화 확인
+        assertThatThrownBy(() ->
+                session.getAttribute(
+                        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY))
+                .isInstanceOf(IllegalStateException.class);
+
+        // 쿠키 무효화 확인
+        Cookie[] cookies = logoutResult.getResponse().getCookies();
+        Optional<Cookie> jsessionCookie = Arrays.stream(cookies)
+                .filter(cookie -> "JSESSIONID".equals(cookie.getName()))
+                .findFirst();
+
+        assertThat(jsessionCookie).isPresent();
+        assertThat(jsessionCookie.get().getMaxAge()).isEqualTo(0);
     }
 }

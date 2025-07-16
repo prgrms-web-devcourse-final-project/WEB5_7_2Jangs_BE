@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.doc.api;
 
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
@@ -11,7 +12,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,8 +61,9 @@ public class DocController {
                 .body(docService.updateTitle(userId, docId, request));
     }
 
-    @DeleteMapping("/{docId}")
-    public void delete(@PathVariable Long docId, @RequestParam Long userId) {
-
+    @GetMapping("/{docId}/graph")
+    public ResponseEntity<CommitGraphResponse> getGraph(@RequestParam Long userId,
+            @PathVariable Long docId) {
+        return ResponseEntity.status(HttpStatus.OK).body(docService.getGraph(userId, docId));
     }
 }
