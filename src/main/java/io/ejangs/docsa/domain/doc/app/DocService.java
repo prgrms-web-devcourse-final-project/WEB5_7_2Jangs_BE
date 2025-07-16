@@ -2,26 +2,33 @@ package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
+import io.ejangs.docsa.domain.doc.util.PreviewExtractor;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
+import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +46,8 @@ public class DocService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
+
+    private final CommitContentAssembler commitContentAssembler;
 
     @Value("${default.branch}")
     private String defaultBranchName;
@@ -114,6 +123,58 @@ public class DocService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<DocListResponse> getList(Long userId) {
+        List<Doc> docs = docRepository.findAllByUserId(userId);
+
+        return docs.stream()
+                .map(doc -> {
+                    Branch recentBranch = getMostRecentBranch(doc);
+                    RecentActivityDto recent = getRecentActivity(recentBranch);
+                    String preview = extractPreviewSafe(recentBranch, recent);
+                    return DocMapper.toListResponse(doc, preview, recent);
+                })
+                .toList();
+    }
+
+    private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
+        if (branch == null || recent == null) {
+            return "미리보기 없음";
+        }
+
+        return switch (recent.recentType()) {
+            case COMMIT -> extractPreviewFromCommit(branch.getLeafCommit());
+            case SAVE -> extractPreviewFromSave(branch.getSave());
+            default -> "미리보기 없음";
+        };
+    }
+
+    private String extractPreviewFromCommit(Commit commit) {
+        if (commit == null) {
+            return "미리보기 없음";
+        }
+
+        List<Map<String, Object>> content = commitContentAssembler.assemble(
+                commit.getCommitMongoId());
+        return PreviewExtractor.doExtractPreview(content);
+    }
+
+    private String extractPreviewFromSave(Save save) {
+        if (save == null) {
+            return "미리보기 없음";
+        }
+
+        SaveContent saveContent = saveContentRepository.findById(save.getSaveMongoId())
+                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
+
+        List<Map<String, Object>> content = saveContent.getContent().stream()
+                .map(SaveBlock::data)
+                .toList();
+
+        return PreviewExtractor.doExtractPreview(content);
+    }
+
+
     private Branch getMostRecentBranch(Doc doc) {
         return doc.getBranches().stream()
                 .max(Comparator.comparing(Branch::getUpdatedAt))
@@ -121,9 +182,6 @@ public class DocService {
     }
 
     private RecentActivityDto getRecentActivity(Branch branch) {
-        if (branch == null) {
-            return null;
-        }
         if (branch.getSave() != null) {
             return RecentActivityDto.from(branch.getSave());
         }

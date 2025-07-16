@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.doc.api;
 
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
@@ -43,6 +44,13 @@ public class DocController {
                 .body(docService.getSimpleList(userId));
     }
 
+    @GetMapping
+    public ResponseEntity<List<DocListResponse>> readList(@RequestParam Long userId) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(docService.getList(userId));
+    }
+
     @PatchMapping("/{docId}")
     public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
             @PathVariable Long docId,
@@ -57,5 +65,4 @@ public class DocController {
     public void delete(@PathVariable Long docId, @RequestParam Long userId) {
 
     }
-
 }

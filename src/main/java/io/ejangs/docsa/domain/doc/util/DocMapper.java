@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.doc.util;
 
 import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
@@ -26,6 +27,18 @@ public class DocMapper {
                 doc.getTitle(),
                 doc.getCreatedAt(),
                 doc.getUpdatedAt(),
+                recent
+        );
+    }
+
+    public static DocListResponse toListResponse(Doc doc, String preview,
+            RecentActivityDto recent) {
+        return new DocListResponse(
+                doc.getId(),
+                doc.getTitle(),
+                doc.getCreatedAt(),
+                doc.getUpdatedAt(),
+                preview,
                 recent
         );
     }
