@@ -16,12 +16,12 @@ public class MailService {
 
     private final JavaMailSender javaMailSender;
 
-    public void sendSignupAuthCode(String to, String code) throws MessagingException {
-        MimeMessage message = createSignupCodeMail(to, code);
+    public void sendCodeMail(String to, String code) throws MessagingException {
+        MimeMessage message = createCodeMail(to, code);
         javaMailSender.send(message);
     }
 
-    private MimeMessage createSignupCodeMail(String to, String code) throws MessagingException {
+    private MimeMessage createCodeMail(String to, String code) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
 
         message.setFrom(senderEmail);

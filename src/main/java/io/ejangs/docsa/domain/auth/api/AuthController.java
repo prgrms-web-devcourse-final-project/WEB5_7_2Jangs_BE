@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.auth.api;
 
 import io.ejangs.docsa.domain.auth.app.AuthService;
 import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
+import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
 import jakarta.mail.MessagingException;
@@ -25,6 +26,13 @@ public class AuthController {
     public ResponseEntity<Void> sendSignupCode(@Valid @RequestBody SignupCodeRequest request)
             throws MessagingException {
         authService.sendSignupCode(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> sendResetPwdCode(@Valid @RequestBody PwdResetCodeRequest request)
+            throws MessagingException {
+        authService.sendResetPwdCode(request);
         return ResponseEntity.ok().build();
     }
 

@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.dto;
+package io.ejangs.docsa.domain.doc.dto.response;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;

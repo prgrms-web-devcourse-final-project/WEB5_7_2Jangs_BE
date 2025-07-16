@@ -15,10 +15,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.auth.app.AuthService;
 import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
+import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -204,5 +206,45 @@ class AuthControllerTest {
                 .andDo(print());
 
         verify(authService, never()).checkCode(any());
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 시 인증코드 전송 요청 성공")
+    void sendPwdResetCode_Success() throws Exception {
+        // given
+        PwdResetCodeRequest request = new PwdResetCodeRequest("test@example.com");
+
+        doNothing().when(authService).sendResetPwdCode(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""))
+                .andDo(print());
+
+        verify(authService).sendResetPwdCode(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 시 존재하지 않는 사용자 예외 발생")
+    void sendResetPwdCode_UserNotFound() throws Exception {
+        // given
+        PwdResetCodeRequest request = new PwdResetCodeRequest("test@example.com");
+
+        doThrow(new CustomException(UserErrorCode.USER_NOT_FOUND))
+                .when(authService).sendResetPwdCode(any(PwdResetCodeRequest.class));
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("USER_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("해당 사용자를 찾을 수 없습니다."))
+                .andDo(print());
+
+        verify(authService).sendResetPwdCode(any(PwdResetCodeRequest.class));
     }
 }
