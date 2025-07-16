@@ -44,17 +44,22 @@ public class SaveService {
 
         // MySQL 먼저 저장
         RenewUpdatedAtHelper.touch(findSave);
-        saveRepository.save(findSave);
+        saveRepository.saveAndFlush(findSave);
 
         // MongoDB 저장
         saveContent.updateContent(request.content());
         try {
             saveContentRepository.save(saveContent);
         } catch (DuplicateKeyException e) {
-            log.warn("중복 키로 Mongo 저장 실패: {}", e.getMessage());
+            log.warn("중복 키로 Mongo 저장 실패 - saveId={}, mongoId={}, message={}", findSave.getId(),
+                    findSave.getSaveMongoId(), e.getMessage());
+            saveRepository.delete(findSave); // 보상 삭제
+            saveRepository.flush(); // 실제 반영
             throw new CustomException(SaveErrorCode.SAVE_CREATE_FAIL);
         } catch (DataAccessException e) {
             log.error("Mongo 저장 실패: {}", e.getMessage(), e);
+            saveRepository.delete(findSave); // 보상 삭제
+            saveRepository.flush(); // 실제 반영
             throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
         }
 
