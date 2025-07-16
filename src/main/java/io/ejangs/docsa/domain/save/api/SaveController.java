@@ -1,8 +1,7 @@
 package io.ejangs.docsa.domain.save.api;
 
 import io.ejangs.docsa.domain.save.app.SaveService;
-import io.ejangs.docsa.domain.save.dto.SaveGetIdDto;
-import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
+import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
@@ -28,7 +27,8 @@ public class SaveController {
     public ResponseEntity<SaveGetResponse> getSave(@RequestParam Long userId,
             @PathVariable Long saveId,
             @PathVariable Long documentId) {
-        SaveGetResponse response = saveService.getSave(SaveGetIdDto.of(documentId, saveId, userId));
+        SaveGetResponse response = saveService.getSave(
+                SaveIdentifierDto.of(documentId, saveId, userId));
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
@@ -38,7 +38,7 @@ public class SaveController {
             @PathVariable Long saveId,
             @RequestBody SaveUpdateRequest saveUpdateRequest) {
         SaveUpdateResponse response = saveService.updateSave(
-                SaveUpdateIdDto.of(documentId, saveId, userId), saveUpdateRequest);
+                SaveIdentifierDto.of(documentId, saveId, userId), saveUpdateRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
