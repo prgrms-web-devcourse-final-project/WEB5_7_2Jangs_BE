@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.block.document.Block;
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
@@ -24,6 +23,7 @@ import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
+import io.ejangs.docsa.domain.commit.util.CommitTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -32,9 +32,7 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +42,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class CommitServiceMockTest {
@@ -97,54 +94,47 @@ class CommitServiceMockTest {
                 "Test commit message",
                 "",
                 1L,
-                List.of(createBlockRequest("block1"), createBlockRequest("block2")),
+                List.of(CommitTestUtils.createBlockRequest("block1"),
+                        CommitTestUtils.createBlockRequest("block2")),
                 List.of("block1", "block2")
         );
 
         // User 생성
-        user = createUser();
+        user = CommitTestUtils.createUser();
 
         // Doc 생성
-        doc = createDoc();
+        doc = CommitTestUtils.createDoc(user);
 
         // Branch 생성
-        branch = createBranch();
+        branch = CommitTestUtils.createBranch(doc, baseCommit);
 
         // Base commit 생성
-        baseCommit = createBaseCommit();
+        baseCommit = CommitTestUtils.createBaseCommit(branch);
+        baseCommit.setBranch(branch);
 
         // Blocks 생성
         savedBlocks = List.of(
-                createBlock("block1"),
-                createBlock("block2")
+                CommitTestUtils.createBlock("block1"),
+                CommitTestUtils.createBlock("block2")
         );
 
         baseCommitBlocks = List.of(
-                createBlock("baseBlock1")
+                CommitTestUtils.createBlock("baseBlock1")
         );
 
         // CommitBlockSequence 생성
-        savedCbs = createCommitBlockSequence();
+        savedCbs = CommitTestUtils.createCommitBlockSequence();
 
         // Commit 생성
-        savedCommit = createCommit();
+        savedCommit = CommitTestUtils.createCommit(branch);
 
         // Expected response 생성
         expectedResponse = new CreateCommitResponse(1L);
 
         // edge 생성
-        edge = createEdge();
+        edge = CommitTestUtils.createEdge(doc, baseCommit, savedCommit);
     }
 
-    private Edge createEdge() {
-        Edge edge = Edge.builder()
-                .doc(doc)
-                .prevCommit(baseCommit)
-                .nextCommit(savedCommit)
-                .build();
-        ReflectionTestUtils.setField(edge, "id", 1L);
-        return edge;
-    }
 
     @Test
     @DisplayName("커밋 생성 성공 - 기본")
@@ -154,7 +144,7 @@ class CommitServiceMockTest {
         when(branchService.findById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
-                Optional.of(createCommitBlockSequence()));
+                Optional.of(CommitTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
                 CommitBlockSequenceMapper.class);
@@ -190,7 +180,7 @@ class CommitServiceMockTest {
         when(branchService.findById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
-                Optional.of(createCommitBlockSequence()));
+                Optional.of(CommitTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
                 CommitBlockSequenceMapper.class);
@@ -217,7 +207,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 성공 - leafCommit이 null인 경우 fromCommit 사용")
     void createCommit_Success_UseFromCommitWhenLeafCommitIsNull() {
         // Given
-        Branch branchWithoutLeafCommit = createBranch();
+        Branch branchWithoutLeafCommit = CommitTestUtils.createBranch(doc, baseCommit);
         branchWithoutLeafCommit.updateLeafCommit(null); // leafCommit을 null로 설정
 
         when(docService.getById(docId)).thenReturn(doc);
@@ -225,7 +215,7 @@ class CommitServiceMockTest {
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(
                 branchWithoutLeafCommit.getFromCommit().getCommitMongoId())).thenReturn(
-                Optional.of(createCommitBlockSequence()));
+                Optional.of(CommitTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
                 CommitBlockSequenceMapper.class);
@@ -320,7 +310,7 @@ class CommitServiceMockTest {
                 "Test commit message",
                 "",
                 1L,
-                List.of(createBlockRequest("block1")),
+                List.of(CommitTestUtils.createBlockRequest("block1")),
                 List.of("block1", "invalidBlock") // 존재하지 않는 블록
         );
 
@@ -335,79 +325,5 @@ class CommitServiceMockTest {
 
         // MongoDB에 반영 안됨
         verify(cbsRepository, never()).save(savedCbs);
-    }
-
-    private User createUser() {
-        User user = User.builder()
-                .email("user@ejangs.io")
-                .password("userPassword123")
-                .name("user")
-                .build();
-        ReflectionTestUtils.setField(user, "id", 1L);
-        return user;
-    }
-
-    private BlockDto createBlockRequest(String blockId) {
-        Map<String, Object> blockData = new HashMap<>();
-        blockData.put("id", blockId);
-        blockData.put("type", "text");
-        blockData.put("content", "Test content");
-        return new BlockDto(blockData);
-    }
-
-    private Block createBlock(String blockId) {
-        Map<String, Object> content = new HashMap<>();
-        content.put("id", blockId);
-        content.put("type", "text");
-        content.put("content", "Test content");
-        return Block.builder()
-                .content(content)
-                .build();
-    }
-
-    private Doc createDoc() {
-        Doc doc = Doc.builder()
-                .title("doc-title")
-                .user(user)
-                .build();
-        ReflectionTestUtils.setField(doc, "id", 1L);
-        return doc;
-    }
-
-    private Branch createBranch() {
-        Branch branch = Branch.builder()
-                .fromCommit(baseCommit)
-                .doc(doc)
-                .build();
-        ReflectionTestUtils.setField(branch, "id", 1L);
-        ReflectionTestUtils.setField(branch, "leafCommit", baseCommit);
-        return branch;
-    }
-
-    private Commit createBaseCommit() {
-        Commit commit = Commit.builder()
-                .commitMongoId("mongo-commit-id")
-                .branch(branch)
-                .build();
-        ReflectionTestUtils.setField(commit, "id", 1L);
-        return commit;
-    }
-
-    private CommitBlockSequence createCommitBlockSequence() {
-        CommitBlockSequence cbs = CommitBlockSequence.builder()
-                .blockOrders(List.of("block1", "block2"))
-                .build();
-        ReflectionTestUtils.setField(cbs, "id", "cbs-id");
-        return cbs;
-    }
-
-    private Commit createCommit() {
-        Commit commit = Commit.builder()
-                .title("Test commit message")
-                .commitMongoId("mongo-commit-id")
-                .branch(branch)
-                .build();
-        ReflectionTestUtils.setField(commit, "id", 1L);
-        return commit;
     }
 }
