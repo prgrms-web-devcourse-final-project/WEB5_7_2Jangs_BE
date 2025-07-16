@@ -1,13 +1,15 @@
 package io.ejangs.docsa.domain.auth.app;
 
 import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
+import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
+import io.ejangs.docsa.domain.auth.util.AuthCodeGenerator;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.mail.MessagingException;
-import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -22,6 +24,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final MailService mailService;
     private final CacheManager cacheManager;
+    private final AuthCodeGenerator authCodeGenerator;
 
     @Value("${auth.signup-code-cache-name}")
     private String signupCacheName;
@@ -29,15 +32,18 @@ public class AuthService {
     @Value("${auth.passcode-cache-name}")
     private String passcodeCacheName;
 
+    @Value("${auth.pwd-reset-code-cache-name}")
+    private String pwdResetCacheName;
+
     public void sendSignupCode(SignupCodeRequest request) throws MessagingException {
 
         if (userRepository.existsByEmail(request.email())) {
             throw new CustomException(AuthErrorCode.DUPLICATE_EMAIL);
         }
 
-        String code = generateCode();
+        String code = authCodeGenerator.generateVerifyCode();
         cacheManager.getCache(signupCacheName).put(request.email(), code);
-        mailService.sendSignupAuthCode(request.email(), code);
+        mailService.sendCodeMail(request.email(), code);
     }
 
     public CodeCheckResponse checkCode(CodeCheckRequest request) {
@@ -54,40 +60,21 @@ public class AuthService {
             throw new CustomException(AuthErrorCode.INVALID_CODE);
         }
 
-        String passCode = generatePassCode();
+        String passCode = authCodeGenerator.generatePassCode();
         cacheManager.getCache(passcodeCacheName).put(request.email(), passCode);
         cache.evict(request.email());
 
         return new CodeCheckResponse(passCode);
     }
 
-    private String generateCode() {
-        Random random = new Random();
-        StringBuilder key = new StringBuilder();
+    public void sendResetPwdCode(PwdResetCodeRequest request) throws MessagingException {
 
-        for (int i = 0; i < 6; i++) {
-            int index = random.nextInt(2);
-
-            switch (index) {
-                case 0 -> key.append((char) (random.nextInt(26) + 65)); // A-Z
-                case 1 -> key.append(random.nextInt(10)); // 0-9
-            }
+        if (!userRepository.existsByEmail(request.email())) {
+            throw new CustomException(UserErrorCode.USER_NOT_FOUND);
         }
-        return key.toString();
-    }
 
-    private String generatePassCode() {
-        Random random = new Random();
-        StringBuilder passCode = new StringBuilder();
-
-        for (int i = 0; i < 8; i++) {
-            int index = random.nextInt(2);
-
-            switch (index) {
-                case 0 -> passCode.append((char) (random.nextInt(26) + 97)); // a-z
-                case 1 -> passCode.append(random.nextInt(10)); // 0-9
-            }
-        }
-        return passCode.toString();
+        String code = authCodeGenerator.generateVerifyCode();
+        cacheManager.getCache(pwdResetCacheName).put(request.email(), code);
+        mailService.sendCodeMail(request.email(), code);
     }
 }

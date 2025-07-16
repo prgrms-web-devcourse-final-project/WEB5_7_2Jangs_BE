@@ -1,21 +1,23 @@
 package io.ejangs.docsa.domain.branch.app;
 
+import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
-import io.ejangs.docsa.domain.branch.dto.BranchRenameResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.app.UserService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.*;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
-import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
 
 
 @Slf4j
@@ -38,8 +39,8 @@ public class BranchService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
-    private final UserRepository userRepository;
     private final DocRepository docRepository;
+
     private final CommitContentAssembler commitContentAssembler;
 
     /**
@@ -159,10 +160,16 @@ public class BranchService {
 
     }
 
+    public Branch getById(Long id) {
+        return branchRepository.findById(id)
+                .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
+    }
+
     public Branch findById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
     }
+
 
     private void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
         boolean exists = branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);

@@ -1,8 +1,8 @@
 package io.ejangs.docsa.domain.branch.util;
 
-import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
-import io.ejangs.docsa.domain.branch.dto.BranchRenameResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;

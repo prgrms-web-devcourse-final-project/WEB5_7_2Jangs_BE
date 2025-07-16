@@ -1,31 +1,39 @@
 package io.ejangs.docsa.domain.branch.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
-import io.ejangs.docsa.domain.branch.dto.BranchRenameResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.user.app.UserService;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,16 +41,26 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class BranchServiceTest {
 
     @InjectMocks
     private BranchService branchService;
 
     @Mock
+    private UserService userService;
+
+    @Mock
+    private DocService docService;
+
+    @Mock
     private CommitRepository commitRepository;
 
     @Mock
     private BranchRepository branchRepository;
+
+    @Mock
+    private DocRepository docRepository;
 
     @Mock
     private SaveRepository saveRepository;
@@ -53,21 +71,29 @@ class BranchServiceTest {
     @Mock
     private CommitContentAssembler commitContentAssembler;
 
-    @Mock
-    private DocRepository docRepository;
+    @Test
+    @DisplayName("fromCommitId가 null이면 예외 발생")
+    void testThrowWhenFromCommitIdIsNull() {
+        // given
+        Long docId = 1L;
+        Long userId = 1L;
+        BranchCreateRequest request = new BranchCreateRequest("test-branch", null);
 
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
+        // 문서가 존재하는 것으로 가정해야 INVALID_FROM_COMMIT 예외를 검증 가능
+        when(docRepository.existsByIdAndUserId(docId, userId)).thenReturn(true);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class,
+                () -> branchService.createBranchOrSave(docId, request, userId));
+        assertEquals(CommitErrorCode.INVALID_FROM_COMMIT, ex.getErrorCode());
     }
-
     @Test
     @DisplayName("leaf 커밋이면 기존 브랜치에 저장 추가")
     void testAddSaveToExistingBranch() {
         // given
         Long documentId = 1L;
-        Long userId = 1L;
         Long commitId = 10L;
+        User mockUser = mock(User.class);
         BranchCreateRequest request = new BranchCreateRequest("ignored", commitId);
 
         Doc doc = mock(Doc.class);
@@ -84,21 +110,20 @@ class BranchServiceTest {
 
         when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
 
-        when(docRepository.existsByIdAndUserId(documentId, userId)).thenReturn(true);
+        when(docRepository.existsByIdAndUserId(documentId, mockUser.getId())).thenReturn(true);
 
         Save save = Save.builder().branch(branch).build();
         when(saveRepository.save(any())).thenReturn(save);
         when(commitContentAssembler.assemble("mongo-1")).thenReturn(
                 List.of(Map.of("block", "data")));
 
-        SaveContent saveContent =
-                SaveContent.builder().content(List.of(SaveBlock.from(Map.of("key", "value"))))
-                        .build();
+        SaveContent saveContent = SaveContent.builder()
+                .content(List.of(SaveBlock.from(Map.of("key", "value"))))
+                .build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response =
-                branchService.createBranchOrSave(documentId, request, userId);
+        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, mockUser.getId());
 
         // then
         assertNotNull(response);
@@ -112,38 +137,35 @@ class BranchServiceTest {
     void testCreateNewBranchAndSave() {
         // given
         Long documentId = 1L;
-        Long userId = 1L;
         Long commitId = 10L;
+        User mockUser = mock(User.class);
         BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
 
-        Doc doc = Doc.builder().title("title").user(User.builder().build()).build();
-        ReflectionTestUtils.setField(doc, "id", documentId);
+        Doc doc = Doc.builder().user(mockUser).title("title").build();
+        ReflectionTestUtils.setField(doc, "id", 1L);
 
         Branch fromBranch = Branch.builder().doc(doc).name("from").build();
         Commit commit = mock(Commit.class);
 
-        when(commit.getId()).thenReturn(commitId);
         when(commit.getBranch()).thenReturn(fromBranch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
 
         when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
         when(branchRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        when(docRepository.existsByIdAndUserId(documentId, userId)).thenReturn(true);
+        when(docRepository.existsByIdAndUserId(documentId, mockUser.getId())).thenReturn(true);
 
         Save save = Save.builder().branch(fromBranch).build();
         when(saveRepository.save(any())).thenReturn(save);
         when(commitContentAssembler.assemble("mongo-1")).thenReturn(
                 List.of(Map.of("block", "data")));
 
-        SaveContent saveContent =
-                SaveContent.builder().content(List.of(SaveBlock.from(Map.of("block", "data"))))
-                        .build();
+        SaveContent saveContent = SaveContent.builder().content(List.of(
+                SaveBlock.from(Map.of("block", "data")))).build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response =
-                branchService.createBranchOrSave(documentId, request, userId);
+        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, mockUser.getId());
 
         // then
         assertNotNull(response);

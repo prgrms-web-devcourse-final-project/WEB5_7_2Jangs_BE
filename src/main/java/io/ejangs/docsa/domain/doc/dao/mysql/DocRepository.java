@@ -1,7 +1,8 @@
 package io.ejangs.docsa.domain.doc.dao.mysql;
 
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 public interface DocRepository extends JpaRepository<Doc, Long> {
 
     @Query("""
-                SELECT new io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse(
+                SELECT new io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse(
                   d.id, d.title, d.createdAt, d.updatedAt
                 )
                 FROM Doc d
@@ -32,7 +33,7 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     Optional<Doc> getDocByIdAndUserId(Long id, Long userId);
 
-    Boolean existsByUserIdAndTitle(Long userId, String title);
+    boolean existsByUserIdAndTitle(Long userId, String title);
 
     boolean existsByIdAndUserId(Long id, Long userId);
 }

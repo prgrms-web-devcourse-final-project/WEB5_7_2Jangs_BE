@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.branch.dto;
+package io.ejangs.docsa.domain.branch.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

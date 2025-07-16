@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.commit.app;
 
+import com.mongodb.MongoException;
 import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.branch.app.BranchService;
@@ -8,6 +9,8 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
+import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
@@ -20,8 +23,11 @@ import io.ejangs.docsa.domain.doc.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,51 +48,101 @@ public class CommitService {
     private final SaveService saveService;
     private final EdgeService edgeService;
 
-    @Transactional
+    private final CommitContentAssembler assembler;
+
+    @Transactional(rollbackFor = Exception.class)
     public CreateCommitResponse createCommit(Long docId, CreateCommitRequest commitRequest) {
 
-        // * 1. documentId로 문서가 존재하는지 검사(JPA)
-        Doc doc = docService.getById(docId);
-        // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
-        Branch branch = branchService.findById(docId);
-
-        // * 3. Commit Entity만들어서 DB에 저장
-        Commit savedCommit = saveCommit(branch, commitRequest);
-        branch.updateLeafCommit(savedCommit);
-
-        // * 4. branchId를 기반으로 Save가 있다면 삭제
-        saveService.deleteSaveIfExists(branch.getId());
-
-        // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
-        Commit baseCommit = getBaseCommit(branch);
-
-        // * 6. 새로운 간선 생성
-        Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
-        edgeService.saveEdge(newEdge);
-
-        // * 7. 변경사항이 있는 block들을 DB에 저장(MongoDB)
-        List<Block> savedBlocks = blockService.saveBlocks(commitRequest.blocks());
-
-        // * 8. baseCommit에서 사용한 block _id를 가져오기
-        // * 9. block _id 로 이전 Commit에서 사용한 block 가져오기
-        List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
-
-        // * 10. blockId는 editor.js에서 만들어주는 uniqueId
-        List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
-                baseCommitBlocks);
-
-        // * 13. MongoDB에 cbs저장
-        CommitBlockSequence savedCbs = saveCommitBlockSequence(newOrder);
-
         try {
-            // * 14. Commit에 MongoId 세팅
-            savedCommit.initializeCommitMongoId(savedCbs.getId());
-        } catch (Exception e) {
-            rollbackMongoDb(savedBlocks, savedCbs);
+            // * 1. documentId로 문서가 존재하는지 검사(JPA)
+            Doc doc = docService.getById(docId);
+            // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
+            Branch branch = branchService.getById(commitRequest.branchId());
+
+            // * 3. Commit Entity만들어서 DB에 저장
+            Commit savedCommit = saveCommit(branch, commitRequest);
+            branch.initializeRootCommitIfNull(savedCommit);
+
+            // * 4. branchId를 기반으로 Save가 있다면 삭제
+            saveService.deleteSaveIfExists(branch.getId());
+
+            // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
+            Commit baseCommit = getBaseCommit(branch);
+            branch.updateLeafCommit(savedCommit);
+
+            // * 6. 새로운 간선 생성
+            Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
+            edgeService.saveEdge(newEdge);
+
+            List<Block> savedBlocks = null;
+            CommitBlockSequence savedCbs = null;
+
+            try {
+                // * 7. 변경사항이 있는 block들을 DB에 저장(MongoDB)
+                savedBlocks = blockService.saveBlocks(commitRequest.blocks());
+
+                // * 8. baseCommit에서 사용한 block _id를 가져오기
+                // * 9. block _id 로 이전 Commit에서 사용한 block 가져오기
+                List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
+
+                // * 10. blockId는 editor.js에서 만들어주는 uniqueId
+                List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
+                        baseCommitBlocks);
+                // * 13. MongoDB에 cbs저장
+                savedCbs = saveCommitBlockSequence(newOrder);
+                // * 14. Commit에 MongoId 세팅
+                savedCommit.initializeCommitMongoId(savedCbs.getId());
+            } catch (Exception e) {
+                rollbackMongoDb(savedBlocks, savedCbs);
+                if (e instanceof MongoException) {
+                    throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
+                } else if (e instanceof CustomException) {
+                    throw (CustomException) e;
+                }
+                log.error("fail to save commit ", e);
+                throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+            }
+
+            RenewUpdatedAtHelper.touch(branch);
+            return CommitMapper.toCreateCommitResponse(savedCommit);
+        } catch (CustomException e) {
+            log.error("Create Commit 저장 실패 - {}", e.getMessage(), e);
             throw e;
+        } catch (Exception e) {
+            log.error("Create Commit 알 수 없는 오류 - {}", e.getMessage(), e);
+            throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
         }
 
-        return CommitMapper.toCreateCommitResponse(savedCommit);
+    }
+
+    @Transactional(readOnly = true)
+    public CommitResponse getCommit(Long docId, Long commitId) {
+
+        docService.notFoundDocCheck(docId);
+        List<Map<String, Object>> assemble = getWholeContent(commitId);
+
+        return new CommitResponse(assemble);
+    }
+
+    @Transactional(readOnly = true)
+    public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId,
+            Long targetId) {
+
+        docService.notFoundDocCheck(docId);
+        List<Map<String, Object>> baseContent = getWholeContent(baseId);
+        List<Map<String, Object>> targetContent = getWholeContent(targetId);
+
+        return new CompareMergeCommitResponse(baseContent, targetContent);
+    }
+
+    private List<Map<String, Object>> getWholeContent(Long commitId) {
+        Commit commit = getById(commitId);
+        return assembler.assemble(commit.getCommitMongoId());
+    }
+
+    private Commit getById(Long commitId) {
+        return commitRepository.findById(commitId)
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 
     private void rollbackMongoDb(List<Block> savedBlocks, CommitBlockSequence savedCbs) {
@@ -103,7 +159,7 @@ public class CommitService {
             }
         } catch (Exception e) {
             log.error("Failed to rollback MongoDB", e);
-            // 롤백 실패 어쩌지...
+            // TODO 롤백 실패 로직 고민 필요
         }
     }
 
@@ -117,7 +173,7 @@ public class CommitService {
             return List.of();
         }
         CommitBlockSequence cbs = getCommitBlockSequence(baseCommit);
-        return blockService.findAllById(cbs.getBlockOrders());
+        return blockService.getAllById(cbs.getBlockOrders());
     }
 
     private CommitBlockSequence getCommitBlockSequence(Commit commit) {
@@ -131,14 +187,14 @@ public class CommitService {
         List<String> newOrder = new ArrayList<>();
 
         for (String blockId : requestedBlockOrders) {
-            Block block = findBlockById(blockId, savedBlocks, baseCommitBlocks);
+            Block block = getBlockById(blockId, savedBlocks, baseCommitBlocks);
             newOrder.add(block.getId());
         }
 
         return newOrder;
     }
 
-    private Block findBlockById(String blockId, List<Block> savedBlocks,
+    private Block getBlockById(String blockId, List<Block> savedBlocks,
             List<Block> baseCommitBlocks) {
         // * 11. blockOrder의 uniqueId가 새로 저장된 블록에 있는지 찾기
         Optional<Block> block = findBlockByIdInList(blockId, savedBlocks);
@@ -167,6 +223,7 @@ public class CommitService {
         Commit commit = CommitMapper.toEntity(branch, commitRequest);
         Commit savedCommit = commitRepository.save(commit);
         commitRepository.flush();
+        branch.addCommit(savedCommit);
         return savedCommit;
     }
 }

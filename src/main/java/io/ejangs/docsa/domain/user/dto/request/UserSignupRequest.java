@@ -17,6 +17,10 @@ public record UserSignupRequest(
 
         @NotBlank(message = "비밀번호를 입력해주세요.")
         @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
+        @Pattern(
+                regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
+                message = "비밀번호는 대소문자와 숫자를 포함해야 합니다."
+        )
         String password,
 
         @NotBlank(message = "인증코드를 입력해주세요.")
