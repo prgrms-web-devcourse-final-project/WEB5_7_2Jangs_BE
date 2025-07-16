@@ -126,7 +126,7 @@ class CommitServiceMockTest {
         savedCbs = CommitTestUtils.createCommitBlockSequence();
 
         // Commit 생성
-        savedCommit = CommitTestUtils.createCommit(branch);
+        savedCommit = CommitTestUtils.createCommit(branch, 2L);
 
         // Expected response 생성
         expectedResponse = new CreateCommitResponse(1L);

@@ -66,7 +66,7 @@ public class CommitTestUtils {
         Commit commit = Commit.builder()
                 .title("Test Base Commit")
                 .description("Test Base Description")
-                .commitMongoId("mongo-commit-id")
+                .commitMongoId("base-mongo-commit-id")
                 .branch(branch)
                 .build();
         ReflectionTestUtils.setField(commit, "id", 1L);
@@ -91,14 +91,14 @@ public class CommitTestUtils {
         return cbs;
     }
 
-    public static Commit createCommit(Branch branch) {
+    public static Commit createCommit(Branch branch, Long id) {
         Commit commit = Commit.builder()
                 .title("Test commit message")
                 .description("Test commit message")
                 .commitMongoId("mongo-commit-id")
                 .branch(branch)
                 .build();
-        ReflectionTestUtils.setField(commit, "id", 1L);
+        ReflectionTestUtils.setField(commit, "id", id);
         return commit;
     }
 
