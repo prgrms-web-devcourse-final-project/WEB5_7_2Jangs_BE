@@ -1,31 +1,31 @@
 package io.ejangs.docsa.domain.branch.app;
 
-import static io.ejangs.docsa.domain.branch.util.RenewUpdatedAtHelper.touch;
-
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.user.app.UserService;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import java.util.List;
-import java.util.Map;
+import io.ejangs.docsa.global.exception.errorcode.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+
+import static io.ejangs.docsa.domain.branch.util.RenewUpdatedAtHelper.touch;
 
 
 @Slf4j
@@ -37,6 +37,9 @@ public class BranchService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
+    private final UserService userService;
+    private final DocService docService;
+
     private final CommitContentAssembler commitContentAssembler;
 
     /**
@@ -47,7 +50,11 @@ public class BranchService {
      */
 
     @Transactional
-    public BranchCreateResponse createBranchOrSave(Long documentId, BranchCreateRequest request) {
+    public BranchCreateResponse createBranchOrSave(Long documentId, BranchCreateRequest request,
+            Long userId) {
+
+        userService.checkUserOrThrow(userId);
+        docService.getDocByIdAndUserId(documentId, userId);
 
         Long fromCommitId = request.fromCommitId();
 
@@ -121,8 +128,8 @@ public class BranchService {
      */
     private void saveContentToMongoAndUpdateRDB(Save save, String commitMongoId) {
         try {
-            List<Map<String, Object>> blockContents = commitContentAssembler.assemble(
-                    commitMongoId);
+            List<Map<String, Object>> blockContents =
+                    commitContentAssembler.assemble(commitMongoId);
 
             List<SaveBlock> saveBlocks = blockContents.stream().map(SaveBlock::from).toList();
 
@@ -138,7 +145,7 @@ public class BranchService {
         }
     }
 
-    public Branch findById(Long id) {
+    public Branch getById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
     }
