@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,9 +60,10 @@ public class DocService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
-
     private final CommitContentAssembler commitContentAssembler;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${default.branch}")
     private String defaultBranchName;
@@ -270,6 +272,7 @@ public class DocService {
 
         // 이렇게만 하면 doc이 고아가 되어서 doc, branch, commit, save가 모두 삭제된다고 한다.. 불안하다.
         user.removeDocument(doc);
+        eventPublisher.publishEvent(docDeleteMongoIds);
     }
 
     private DocDeleteMongoIdsDto getDocDeleteMongoIds(List<Branch> branches) {
@@ -287,8 +290,7 @@ public class DocService {
 
         Set<String> blockIds = commitBlockSequenceIds.stream()
                 .map(commitBlockSequenceRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                .flatMap(Optional::stream) // Optional이 비어있으면 skip
                 .flatMap(cbs -> cbs.getBlockOrders().stream())
                 .collect(Collectors.toSet());
 
