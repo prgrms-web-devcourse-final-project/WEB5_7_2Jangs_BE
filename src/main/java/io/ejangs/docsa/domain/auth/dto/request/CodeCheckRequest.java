@@ -1,7 +1,9 @@
 package io.ejangs.docsa.domain.auth.dto.request;
 
+import io.ejangs.docsa.domain.auth.model.CodeType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public record CodeCheckRequest(
 
@@ -10,7 +12,10 @@ public record CodeCheckRequest(
         String email,
 
         @NotBlank(message = "인증코드를 입력해주세요.")
-        String code
+        String code,
+
+        @NotNull(message = "코드 타입을 입력해주세요.")
+        CodeType type
 ) {
 
 }
