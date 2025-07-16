@@ -3,6 +3,7 @@ package io.ejangs.docsa.domain.user.app;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -20,6 +21,7 @@ import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,13 +73,13 @@ class UserServiceTest {
         signupRequest = new UserSignupRequest(
                 "이장님",
                 "test@example.com",
-                "password123",
+                "Password123",
                 "abc12345"
         );
 
         loginRequest = new UserLoginRequest(
                 "test@example.com",
-                "password123"
+                "Password123"
         );
 
         user = User.builder()
@@ -183,7 +185,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("로그인 성공 테스트")
+    @DisplayName("로그인 성공")
     void login_Success() {
         // given
         CustomUserDetails userDetails = CustomUserDetails.from(user);
@@ -242,7 +244,7 @@ class UserServiceTest {
     void login_Fail_UserNotFound() {
         // given
         UserLoginRequest notFoundRequest = new UserLoginRequest("notfound@example.com",
-                "password123");
+                "Password123");
 
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
 
@@ -251,8 +253,32 @@ class UserServiceTest {
 
         // when & then
         assertThatThrownBy(() -> userService.login(notFoundRequest, mockRequest))
-                .isInstanceOf(InternalAuthenticationServiceException.class); // 💡 변경 포인트
+                .isInstanceOf(InternalAuthenticationServiceException.class);
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공")
+    void logout_Success() {
+        // given
+        HttpSession mockSession = mock(HttpSession.class);
+        HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        HttpServletResponse mockResponse = mock(HttpServletResponse.class);
+
+        when(mockRequest.getSession(false)).thenReturn(mockSession);
+
+        // when
+        userService.logout(mockRequest, mockResponse);
+
+        // then
+        verify(mockSession).invalidate();
+        verify(mockResponse).addCookie(argThat(cookie ->
+                cookie.getName().equals("JSESSIONID") &&
+                        cookie.getValue() == null &&
+                        cookie.getMaxAge() == 0
+        ));
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }
