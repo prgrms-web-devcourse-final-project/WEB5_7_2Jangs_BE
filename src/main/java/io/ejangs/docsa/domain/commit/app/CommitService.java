@@ -92,7 +92,7 @@ public class CommitService {
         return CommitMapper.toCreateCommitResponse(savedCommit);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteCommit(Long docId, Long commitId) {
 
         /**

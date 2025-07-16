@@ -25,6 +25,6 @@ public class EdgeService {
 
         return edges.stream()
                 .map(Edge::getPrevCommit)
-                .collect(Collectors.toList());
+                .toList();
     }
 }
