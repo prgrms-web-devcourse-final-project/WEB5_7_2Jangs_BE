@@ -45,21 +45,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 class SaveServiceUnitTest {
 
     @Mock
-    private UserRepository userRepository;
-    @Mock
-    private DocRepository docRepository;
-    @Mock
     private SaveRepository saveRepository;
     @Mock
     private SaveContentRepository saveContentRepository;
     @Mock
     private Save mockSave;
-    @Mock
-    private Doc mockDoc;
-    @Mock
-    private User mockUser;
-    @Mock
-    private Branch mockBranch;
     @Mock
     private SaveContent mockSaveContent;
     @InjectMocks
@@ -156,7 +146,7 @@ class SaveServiceUnitTest {
 
             assertEquals(expectedResponse, actualResponse);
             verify(saveContentRepository).save(mockSaveContent);
-            verify(saveRepository).save(mockSave);
+            verify(saveRepository).saveAndFlush(mockSave);
         }
     }
 
