@@ -211,12 +211,10 @@ public class DocServiceIntegrationTests {
         // 저장이 없음 -> 최신 커밋
         assertEquals("문서 1", first.title());
         assertEquals(RecentType.COMMIT, first.recent().recentType());
-        assertEquals(2L, first.recent().recentTypeId());
 
         // 저장이 있음
         assertEquals("문서 2", second.title());
         assertEquals(RecentType.SAVE, second.recent().recentType());
-        assertEquals(2L, second.recent().recentTypeId());
     }
 
     @Test

@@ -44,6 +44,7 @@ spring:
 auth:
   signup-code-cache-name: signupCodeCache
   passcode-cache-name: passCodeCache
+  pwd-reset-code-cache-name: pwdResetCodeCache
 
 default:
   branch: main

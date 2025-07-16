@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.DocService;
@@ -18,9 +17,6 @@ import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
-import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
-import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
-import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
@@ -43,18 +39,6 @@ public class DocServiceUnitTests {
 
     @Mock
     private DocRepository docRepository;
-
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private BranchRepository branchRepository;
-
-    @Mock
-    private SaveContentRepository saveContentRepository;
-
-    @Mock
-    private SaveRepository saveRepository;
 
     @Test
     @DisplayName("사이드바 문서 목록 조회 성공 테스트")
