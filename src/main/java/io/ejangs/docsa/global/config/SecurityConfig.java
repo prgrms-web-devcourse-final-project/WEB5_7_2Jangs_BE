@@ -45,14 +45,10 @@ public class SecurityConfig {
                 )
                 .formLogin(formLogin -> formLogin.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint))
-                .logout(logout -> logout
-                        .logoutUrl("/api/user/logout")
-                        .logoutSuccessUrl("/")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .clearAuthentication(true)
-                );
+                .exceptionHandling(ex ->
+                        ex.authenticationEntryPoint(customAuthenticationEntryPoint
+                        ))
+                .logout(logout -> logout.disable());
         return http.build();
     }
 
