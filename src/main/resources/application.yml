@@ -37,12 +37,14 @@ spring:
     cache-names:
       - signupCodeCache
       - passCodeCache
+      - pwdResetCodeCache
     caffeine:
       spec: maximumSize=10000, expireAfterWrite=3m
 
 auth:
   signup-code-cache-name: signupCodeCache
   passcode-cache-name: passCodeCache
+  pwd-reset-code-cache-name: pwdResetCodeCache
 
 default:
   branch: main
