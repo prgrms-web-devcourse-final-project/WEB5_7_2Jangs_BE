@@ -1,8 +1,8 @@
 package io.ejangs.docsa.domain.branch.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;

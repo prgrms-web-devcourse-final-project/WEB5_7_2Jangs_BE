@@ -2,8 +2,8 @@ package io.ejangs.docsa.domain.branch.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.branch.app.BranchService;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
