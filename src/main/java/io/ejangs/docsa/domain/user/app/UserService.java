@@ -88,8 +88,10 @@ public class UserService {
     }
 
     public void checkUserOrThrow(Long userId) {
-        if (!userRepository.existsById(userId))
+        if (!userRepository.existsById(userId)) {
             throw new CustomException(UserErrorCode.USER_NOT_FOUND);
+        }
+    }
 
     public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         SecurityContextUtil.clearAuthentication(httpRequest, httpResponse);
