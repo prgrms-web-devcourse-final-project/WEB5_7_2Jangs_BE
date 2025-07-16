@@ -4,17 +4,18 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
+import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.domain.doc.dto.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
-import io.ejangs.docsa.domain.doc.dto.EdgeDto;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.doc.util.GraphMapper;
@@ -34,6 +35,7 @@ import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -221,13 +223,7 @@ public class DocService {
     }
 
     public void checkDocByIdAndUserId(Long documentId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(documentId, userId))
-            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
-    }
-
-    @Transactional(readOnly = true)
-    public void notFoundDocCheck(Long id) {
-        if (!docRepository.existsById(id)) {
+        if (!docRepository.existsByIdAndUserId(documentId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
         }
     }
@@ -255,6 +251,35 @@ public class DocService {
                 doc.getBranches().stream().map(GraphMapper::toBranchDto).toList();
 
         return GraphMapper.toCommitGraphResponse(doc.getTitle(), commits, edges, branches);
+    }
+
+    @Transactional
+    public void delete(Long docId, Long userId) {
+        User user = getUserOrThrow(userId);
+        Doc doc = getDocByIdAndUserId(docId, userId);
+
+        List<Branch> branches = doc.getBranches();
+
+        DocDeleteMongoIdsDto docDeleteMongoIds = getDocDeleteMongoIds(branches);
+
+        // 이렇게만 하면 doc이 고아가 되어서 doc, branch, commit, save가 모두 삭제된다고 한다.. 불안하다.
+        user.removeDocument(doc);
+    }
+
+    private DocDeleteMongoIdsDto getDocDeleteMongoIds(List<Branch> branches) {
+
+        List<String> saveContentMongoIds = branches.stream()
+                .map(Branch::getSave)
+                .filter(Objects::nonNull)
+                .map(Save::getSaveMongoId)
+                .toList();
+
+        List<String> commitBlockSequenceIds = branches.stream()
+                .flatMap(branch -> branch.getCommits().stream())
+                .map(Commit::getCommitMongoId)
+                .toList();
+
+        return new DocDeleteMongoIdsDto(saveContentMongoIds, commitBlockSequenceIds);
     }
 
 }
