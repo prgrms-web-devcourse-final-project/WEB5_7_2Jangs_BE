@@ -35,6 +35,6 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     Boolean existsByUserIdAndTitle(Long userId, String title);
 
-    boolean existsByIdAndUserId(Long Id, Long userId);
+    Boolean existsByIdAndUserId(Long id, Long userId);
 }
 

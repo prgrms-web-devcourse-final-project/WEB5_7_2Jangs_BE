@@ -129,6 +129,7 @@ class BranchServiceTest {
 
         Doc doc = Doc.builder().user(mockUser).title("title").build();
         ReflectionTestUtils.setField(doc, "id", 1L);
+      
         Branch fromBranch = Branch.builder().doc(doc).name("from").build();
         Commit commit = mock(Commit.class);
 
