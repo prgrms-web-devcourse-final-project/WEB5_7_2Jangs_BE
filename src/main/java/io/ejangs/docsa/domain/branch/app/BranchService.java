@@ -145,7 +145,7 @@ public class BranchService {
         }
     }
 
-    public Branch findById(Long id) {
+    public Branch getById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
     }
