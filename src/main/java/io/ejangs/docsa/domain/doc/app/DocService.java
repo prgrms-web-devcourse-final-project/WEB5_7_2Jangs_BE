@@ -4,6 +4,7 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -32,10 +33,14 @@ import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +61,7 @@ public class DocService {
     private final SaveContentRepository saveContentRepository;
 
     private final CommitContentAssembler commitContentAssembler;
+    private final CommitBlockSequenceRepository commitBlockSequenceRepository;
 
     @Value("${default.branch}")
     private String defaultBranchName;
@@ -279,7 +285,15 @@ public class DocService {
                 .map(Commit::getCommitMongoId)
                 .toList();
 
-        return new DocDeleteMongoIdsDto(saveContentMongoIds, commitBlockSequenceIds);
+        Set<String> blockIds = commitBlockSequenceIds.stream()
+                .map(commitBlockSequenceRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .flatMap(cbs -> cbs.getBlockOrders().stream())
+                .collect(Collectors.toSet());
+
+        return new DocDeleteMongoIdsDto(saveContentMongoIds, commitBlockSequenceIds,
+                new ArrayList<>(blockIds));
     }
 
 }
