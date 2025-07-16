@@ -18,6 +18,7 @@ import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
 import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
+import io.ejangs.docsa.domain.auth.model.CodeType;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
@@ -136,7 +137,8 @@ class AuthControllerTest {
     @DisplayName("정상적인 인증코드 검증 성공")
     void checkCode_Success() throws Exception {
         // given
-        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "ABC123");
+        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "ABC123",
+                CodeType.SIGNUP);
         CodeCheckResponse response = new CodeCheckResponse("generatedPass123");
 
         when(authService.checkCode(request)).thenReturn(response);
@@ -156,7 +158,8 @@ class AuthControllerTest {
     @DisplayName("만료된 인증코드로 요청 시 400 에러 발생")
     void checkCode_Expired() throws Exception {
         // given
-        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "ABC123");
+        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "ABC123",
+                CodeType.SIGNUP);
         doThrow(new CustomException(AuthErrorCode.EXPIRED_CODE))
                 .when(authService).checkCode(request);
 
@@ -176,7 +179,8 @@ class AuthControllerTest {
     @DisplayName("잘못된 인증코드로 요청 시 400 에러 발생")
     void checkCode_Invalid() throws Exception {
         // given
-        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "WRONG123");
+        CodeCheckRequest request = new CodeCheckRequest("test@example.com", "WRONG123",
+                CodeType.SIGNUP);
         doThrow(new CustomException(AuthErrorCode.INVALID_CODE))
                 .when(authService).checkCode(request);
 
@@ -196,7 +200,7 @@ class AuthControllerTest {
     @DisplayName("이메일 또는 코드가 비어있는 경우 400 에러 발생")
     void checkCode_EmptyFields() throws Exception {
         // given
-        CodeCheckRequest request = new CodeCheckRequest("", "");
+        CodeCheckRequest request = new CodeCheckRequest("", "", CodeType.SIGNUP);
 
         // when & then
         mockMvc.perform(post("/api/auth/code/check")
@@ -246,5 +250,47 @@ class AuthControllerTest {
                 .andDo(print());
 
         verify(authService).sendResetPwdCode(any(PwdResetCodeRequest.class));
+    }
+
+    @Test
+    @DisplayName("회원가입 시 이미 가입된 사용자인 경우 400 에러 발생")
+    void checkCode_SignupWithExistingUser() throws Exception {
+        // given
+        CodeCheckRequest request = new CodeCheckRequest("existing@example.com", "CODE123", CodeType.SIGNUP);
+
+        doThrow(new CustomException(AuthErrorCode.ALREADY_REGISTERED_USER))
+                .when(authService).checkCode(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("ALREADY_REGISTERED_USER"))
+                .andExpect(jsonPath("$.message").value("이미 가입한 사용자입니다."))
+                .andDo(print());
+
+        verify(authService).checkCode(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 시 존재하지 않는 사용자인 경우 400 에러 발생")
+    void checkCode_ResetPasswordWithUnknownUser() throws Exception {
+        // given
+        CodeCheckRequest request = new CodeCheckRequest("unknown@example.com", "CODE999", CodeType.RESET_PASSWORD);
+
+        doThrow(new CustomException(AuthErrorCode.USER_NOT_FOUND_FOR_RESET))
+                .when(authService).checkCode(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/code/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("USER_NOT_FOUND_FOR_RESET"))
+                .andExpect(jsonPath("$.message").value("비밀번호 변경을 위한 사용자를 찾을 수 없습니다."))
+                .andDo(print());
+
+        verify(authService).checkCode(request);
     }
 }
