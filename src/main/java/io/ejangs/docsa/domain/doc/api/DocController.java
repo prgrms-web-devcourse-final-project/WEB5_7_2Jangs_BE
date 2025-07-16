@@ -1,11 +1,11 @@
 package io.ejangs.docsa.domain.doc.api;
 
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

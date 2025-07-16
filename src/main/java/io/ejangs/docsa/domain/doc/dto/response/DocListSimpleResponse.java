@@ -1,5 +1,6 @@
-package io.ejangs.docsa.domain.doc.dto;
+package io.ejangs.docsa.domain.doc.dto.response;
 
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

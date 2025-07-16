@@ -7,10 +7,10 @@ import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.user.entity.User;

@@ -11,12 +11,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.time.LocalDateTime;

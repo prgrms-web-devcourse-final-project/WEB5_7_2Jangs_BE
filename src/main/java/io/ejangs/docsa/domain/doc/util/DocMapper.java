@@ -1,10 +1,10 @@
 package io.ejangs.docsa.domain.doc.util;
 
-import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 
 public class DocMapper {
