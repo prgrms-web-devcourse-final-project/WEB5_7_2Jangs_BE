@@ -146,7 +146,7 @@ class SaveServiceUnitTest {
 
             assertEquals(expectedResponse, actualResponse);
             verify(saveContentRepository).save(mockSaveContent);
-            verify(saveRepository).saveAndFlush(mockSave);
+            verify(saveRepository).save(mockSave);
         }
     }
 
