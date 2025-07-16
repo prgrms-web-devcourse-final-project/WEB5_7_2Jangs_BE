@@ -4,17 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.mongodb.MongoTimeoutException;
+import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
@@ -62,6 +66,12 @@ public class DocServiceIntegrationTests {
 
     @Autowired
     private SaveContentRepository saveContentRepository;
+
+    @Autowired
+    private CommitBlockSequenceRepository commitBlockSequenceRepository;
+
+    @Autowired
+    private BlockRepository blockRepository;
 
     @Value("${default.branch}")
     private String defaultBranchName;
@@ -186,7 +196,7 @@ public class DocServiceIntegrationTests {
         User user = userRepository.save(DocTestUtils.createUser());
 
         List<Doc> docs = DocTestUtils.createDocumentListForIntegrationTest(user,
-                saveContentRepository);
+                saveContentRepository, commitBlockSequenceRepository, blockRepository);
         docRepository.saveAll(docs);
 
         // when
@@ -207,5 +217,33 @@ public class DocServiceIntegrationTests {
         assertEquals("문서 2", second.title());
         assertEquals(RecentType.SAVE, second.recent().recentType());
         assertEquals(2L, second.recent().recentTypeId());
+    }
+
+    @Test
+    @DisplayName("문서 리스트 조회 - 최신 활동 기준 정렬 및 미리보기 제공")
+    void getDocListWithPreview() throws Exception {
+        // given
+        User user = userRepository.save(DocTestUtils.createUser());
+
+        List<Doc> docs = DocTestUtils.createDocumentListForIntegrationTest(user,
+                saveContentRepository, commitBlockSequenceRepository, blockRepository);
+        docRepository.saveAll(docs);
+
+        // when
+        List<DocListResponse> results = docService.getList(user.getId());
+
+        // then
+        assertEquals(2, results.size());
+
+        DocListResponse first = results.get(0);  // updatedAt 기준 최신
+        DocListResponse second = results.get(1);
+
+        assertEquals("문서 1", first.title());
+        assertEquals(RecentType.COMMIT, first.recent().recentType());
+        assertTrue(first.preview().startsWith("문단 5: 몰라어쩌구저꺼궁롱ㄹ라알이;ㅇㄹ")); // preview 포함
+
+        assertEquals("문서 2", second.title());
+        assertEquals(RecentType.SAVE, second.recent().recentType());
+        assertTrue(second.preview().startsWith("문단 3: 테스트 코드가 너무 싫어서 미치겠다는 문단")); // preview 포함
     }
 }

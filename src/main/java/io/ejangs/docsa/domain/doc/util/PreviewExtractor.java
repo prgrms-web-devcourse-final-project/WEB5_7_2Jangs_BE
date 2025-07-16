@@ -11,7 +11,6 @@ public class PreviewExtractor {
             if (block == null) {
                 continue;
             }
-
             Object type = block.get("type");
             Object dataObj = block.get("data");
 
