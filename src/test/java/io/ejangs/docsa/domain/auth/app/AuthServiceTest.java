@@ -247,5 +247,4 @@ class AuthServiceTest {
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.USER_NOT_FOUND_FOR_RESET);
     }
-
 }
