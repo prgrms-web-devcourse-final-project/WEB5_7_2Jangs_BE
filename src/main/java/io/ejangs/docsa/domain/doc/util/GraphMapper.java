@@ -5,7 +5,10 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dto.EdgeDto;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.entity.Edge;
+
+import java.util.List;
 
 public class GraphMapper {
 
@@ -36,5 +39,13 @@ public class GraphMapper {
                 branch.getLeafCommit() != null ? branch.getLeafCommit().getId() : null,
                 branch.getSave() != null ? branch.getSave().getId() : null
         );
+    }
+
+    public static CommitGraphResponse toCommitGraphResponse(String title,
+            List<CommitDto> commits,
+            List<EdgeDto> edges,
+            List<BranchDto> branches
+    ) {
+        return new CommitGraphResponse(title, commits, edges, branches);
     }
 }

@@ -169,7 +169,7 @@ public class DocService {
         List<BranchDto> branches =
                 doc.getBranches().stream().map(GraphMapper::toBranchDto).toList();
 
-        return new CommitGraphResponse(doc.getTitle(), commits, edges, branches);
+        return GraphMapper.toCommitGraphResponse(doc.getTitle(), commits, edges, branches);
     }
 
 }
