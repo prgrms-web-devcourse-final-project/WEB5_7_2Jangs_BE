@@ -87,11 +87,11 @@ public class CommitTestUtils {
         CommitBlockSequence cbs = CommitBlockSequence.builder()
                 .blockOrders(List.of("block1", "block2"))
                 .build();
-        ReflectionTestUtils.setField(cbs, "id", "cbs-id");
+        ReflectionTestUtils.setField(cbs, "id", "base-mongo-commit-id");
         return cbs;
     }
 
-    public static Commit createCommit(Branch branch, Long id) {
+    public static Commit createMockCommit(Branch branch, Long id) {
         Commit commit = Commit.builder()
                 .title("Test commit message")
                 .description("Test commit message")
