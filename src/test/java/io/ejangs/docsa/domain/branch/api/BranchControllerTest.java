@@ -2,8 +2,8 @@ package io.ejangs.docsa.domain.branch.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.branch.app.BranchService;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateRequest;
-import io.ejangs.docsa.domain.branch.dto.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,14 +36,16 @@ class BranchControllerTest {
     void createBranchOrSave_success() throws Exception {
         // given
         Long documentId = 1L;
+        Long mockUserId = 99L;
         BranchCreateRequest request = new BranchCreateRequest("기능 브랜치", 100L);
         BranchCreateResponse response = new BranchCreateResponse(200L, 300L);
 
-        Mockito.when(branchService.createBranchOrSave(eq(documentId), any()))
+        Mockito.when(branchService.createBranchOrSave(eq(documentId), any(), eq(mockUserId)))
                 .thenReturn(response);
 
         // when + then
         mockMvc.perform(post("/api/document/{documentId}/branch", documentId)
+                        .param("userId", mockUserId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
