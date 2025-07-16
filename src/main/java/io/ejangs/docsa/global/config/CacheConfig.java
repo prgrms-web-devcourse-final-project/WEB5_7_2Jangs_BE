@@ -14,7 +14,8 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("signupCodeCache", "passCodeCache");
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager("signupCodeCache",
+                "passCodeCache", "pwdResetCodeCache");
         cacheManager.setCaffeine(
                 Caffeine.newBuilder()
                         .expireAfterWrite(3, TimeUnit.MINUTES)
