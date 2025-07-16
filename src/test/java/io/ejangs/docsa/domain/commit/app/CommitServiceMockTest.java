@@ -32,6 +32,7 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,7 @@ class CommitServiceMockTest {
     private List<Block> savedBlocks;
     private List<Block> baseCommitBlocks;
     private CommitBlockSequence savedCbs;
+    private Commit saveBeforeCommit;
     private Commit savedCommit;
     private CreateCommitResponse expectedResponse;
     private Edge edge;
@@ -127,6 +129,7 @@ class CommitServiceMockTest {
         savedCbs = createCommitBlockSequence();
 
         // Commit 생성
+        saveBeforeCommit = createBeforeCommit();
         savedCommit = createCommit();
 
         // Expected response 생성
@@ -273,15 +276,24 @@ class CommitServiceMockTest {
         when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenThrow(new RuntimeException("Block save failed"));
 
-        // When & Then
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Block save failed");
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-        verify(docService).getById(docId);
-        verify(branchService).getById(branchId);
-        verify(blockService).saveBlocks(createCommitRequest.blocks());
-        verify(cbsRepository, never()).save(any());
+            when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
+                    saveBeforeCommit);
+            when(commitRepository.save(saveBeforeCommit)).thenReturn(savedCommit);
+
+            // When & Then
+            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
+
+            verify(docService).getById(docId);
+            verify(branchService).getById(branchId);
+            verify(blockService).saveBlocks(createCommitRequest.blocks());
+            verify(cbsRepository, never()).save(any());
+        }
     }
 
     @Test
@@ -305,7 +317,7 @@ class CommitServiceMockTest {
             // When & Then
             assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
                     .isInstanceOf(RuntimeException.class)
-                    .hasMessage("JPA save failed");
+                    .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
             // MongoDB에 반영 안됨
             verify(cbsRepository, never()).save(savedCbs);
@@ -327,14 +339,28 @@ class CommitServiceMockTest {
         when(docService.getById(docId)).thenReturn(doc);
         when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
+        when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
+                Optional.of(createCommitBlockSequence()));
 
-        // When & Then
-        assertThatThrownBy(() -> commitService.createCommit(docId, invalidRequest))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining(BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-        // MongoDB에 반영 안됨
-        verify(cbsRepository, never()).save(savedCbs);
+            when(CommitMapper.toEntity(branch, invalidRequest)).thenReturn(
+                    saveBeforeCommit);
+            when(commitRepository.save(saveBeforeCommit)).thenReturn(savedCommit);
+
+            // When & Then
+            assertThatThrownBy(() -> commitService.createCommit(docId, invalidRequest))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessageContaining(
+                            BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());
+
+            // MongoDB에 반영 안됨
+            verify(cbsRepository, never()).save(savedCbs);
+        }
+
+
     }
 
     private User createUser() {
@@ -399,6 +425,14 @@ class CommitServiceMockTest {
                 .build();
         ReflectionTestUtils.setField(cbs, "id", "cbs-id");
         return cbs;
+    }
+
+    private Commit createBeforeCommit() {
+        return Commit.builder()
+                .title("Test commit message")
+                .commitMongoId("mongo-commit-id")
+                .branch(branch)
+                .build();
     }
 
     private Commit createCommit() {

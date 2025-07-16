@@ -91,7 +91,10 @@ public class CommitService {
                 rollbackMongoDb(savedBlocks, savedCbs);
                 if (e instanceof MongoException) {
                     throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
+                } else if (e instanceof CustomException) {
+                    throw (CustomException) e;
                 }
+                log.error("fail to save commit ", e);
                 throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
             }
 
