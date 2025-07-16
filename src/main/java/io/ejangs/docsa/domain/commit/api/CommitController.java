@@ -2,14 +2,18 @@ package io.ejangs.docsa.domain.commit.api;
 
 import io.ejangs.docsa.domain.commit.app.CommitService;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
+import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,5 +29,24 @@ public class CommitController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(commitService.createCommit(docId, commitRequest));
+    }
+
+    @GetMapping("/api/document/{docId}/commit/{commitId}")
+    public ResponseEntity<CommitResponse> getCommit(
+            @PathVariable("docId") Long docId,
+            @PathVariable("commitId") Long commitId) {
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(commitService.getCommit(docId, commitId));
+    }
+
+    @GetMapping("/api/document/{docId}/merge")
+    public ResponseEntity<CompareMergeCommitResponse> compareMergeCommit(
+            @PathVariable("docId") Long docId,
+            @RequestParam("base") Long baseId,
+            @RequestParam("target") Long targetId) {
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(commitService.compareCommitForMerge(docId, baseId, targetId));
     }
 }

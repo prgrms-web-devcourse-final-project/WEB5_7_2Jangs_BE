@@ -147,6 +147,7 @@ public class DocService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Doc getById(Long id) {
         return docRepository.findById(id)
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
