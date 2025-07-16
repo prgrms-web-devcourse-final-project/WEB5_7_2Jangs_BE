@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
+import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -51,5 +54,27 @@ class BranchControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.branchId").value(200L))
                 .andExpect(jsonPath("$.saveId").value(300L));
+    }
+    @Test
+    @DisplayName("브랜치 이름 수정 API 성공")
+    void renameBranch_success() throws Exception {
+        Long documentId = 1L;
+        Long branchId = 2L;
+        Long userId = 3L;
+        String newName = "수정된 이름";
+
+        BranchRenameRequest request = new BranchRenameRequest(newName);
+        BranchRenameResponse response = new BranchRenameResponse(branchId, newName);
+
+        Mockito.when(branchService.renameBranch(documentId, branchId, newName, userId))
+                .thenReturn(response);
+
+        mockMvc.perform(patch("/api/document/{documentId}/branch/{branchId}", documentId, branchId)
+                        .param("userId", String.valueOf(userId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(branchId))
+                .andExpect(jsonPath("$.name").value(newName));
     }
 }

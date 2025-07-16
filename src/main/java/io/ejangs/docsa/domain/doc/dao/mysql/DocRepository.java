@@ -33,8 +33,7 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     Optional<Doc> getDocByIdAndUserId(Long id, Long userId);
 
-    Boolean existsByUserIdAndTitle(Long userId, String title);
+    boolean existsByUserIdAndTitle(Long userId, String title);
 
-    Boolean existsByIdAndUserId(Long id, Long userId);
+    boolean existsByIdAndUserId(Long id, Long userId);
 }
-

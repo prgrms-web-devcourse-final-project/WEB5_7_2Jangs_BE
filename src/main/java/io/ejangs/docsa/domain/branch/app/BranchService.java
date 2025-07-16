@@ -1,13 +1,16 @@
 package io.ejangs.docsa.domain.branch.app;
 
+import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
@@ -25,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
-import static io.ejangs.docsa.domain.branch.util.RenewUpdatedAtHelper.touch;
 
 
 @Slf4j
@@ -37,8 +39,7 @@ public class BranchService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
-    private final UserService userService;
-    private final DocService docService;
+    private final DocRepository docRepository;
 
     private final CommitContentAssembler commitContentAssembler;
 
@@ -53,8 +54,7 @@ public class BranchService {
     public BranchCreateResponse createBranchOrSave(Long documentId, BranchCreateRequest request,
             Long userId) {
 
-        userService.checkUserOrThrow(userId);
-        docService.getDocByIdAndUserId(documentId, userId);
+        checkDocByIdAndUserId(documentId, userId);
 
         Long fromCommitId = request.fromCommitId();
 
@@ -145,10 +145,44 @@ public class BranchService {
         }
     }
 
+    // 브랜치 이름 수정
+    @Transactional
+    public BranchRenameResponse renameBranch(Long documentId, Long branchId, String newName,
+            Long userId) {
+
+        checkBranchInDocOwnedByUser(documentId, branchId, userId);
+
+        Branch branch = findById(branchId);
+        branch.updateName(newName);
+        touch(branch);
+
+        return BranchMapper.toBranchRenameResponse(branch);
+
+    }
+
     public Branch getById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
     }
+
+    public Branch findById(Long id) {
+        return branchRepository.findById(id)
+                .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
+    }
+
+
+    private void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
+        boolean exists = branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);
+        if (!exists) {
+            throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN);
+        }
+    }
+
+    private void checkDocByIdAndUserId(Long docId, Long userId) {
+        if (!docRepository.existsByIdAndUserId(docId, userId))
+            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+    }
+
 }
 
 
