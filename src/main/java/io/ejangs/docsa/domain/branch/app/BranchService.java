@@ -149,7 +149,7 @@ public class BranchService {
     public BranchRenameResponse renameBranch(Long documentId, Long branchId, String newName,
             Long userId) {
 
-        checkDocByIdAndUserId(documentId, userId);
+        checkBranchInDocOwnedByUser(documentId, branchId, userId);
 
         Branch branch = findById(branchId);
         branch.updateName(newName);
@@ -162,6 +162,13 @@ public class BranchService {
     public Branch findById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
+    }
+
+    private void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
+        boolean exists = branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);
+        if (!exists) {
+            throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN);
+        }
     }
 
     private void checkDocByIdAndUserId(Long docId, Long userId) {

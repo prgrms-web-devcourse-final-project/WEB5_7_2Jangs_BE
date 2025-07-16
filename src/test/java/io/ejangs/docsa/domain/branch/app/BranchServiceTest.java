@@ -17,7 +17,7 @@ import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -160,7 +160,8 @@ class BranchServiceTest {
         String newName = "수정된 이름";
 
         Branch branch = Branch.builder().name("기존이름").doc(mock(Doc.class)).fromCommit(null).build();
-        when(docRepository.existsByIdAndUserId(docId, userId)).thenReturn(true);
+        when(branchRepository.existsByIdAndDocIdAndDocUserId(branchId, docId, userId)).thenReturn(
+                true);
         when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
 
         BranchRenameResponse response =
@@ -170,11 +171,13 @@ class BranchServiceTest {
     }
 
     @Test
-    @DisplayName("문서가 존재하지 않으면 예외 발생")
-    void renameBranch_documentNotFound() {
-        when(docRepository.existsByIdAndUserId(anyLong(), anyLong())).thenReturn(false);
+    @DisplayName("브랜치가 문서에 없거나 유저 소유가 아니면 예외 발생")
+    void renameBranch_branchOwnershipCheckFailed() {
+        when(branchRepository.existsByIdAndDocIdAndDocUserId(anyLong(), anyLong(),
+                anyLong())).thenReturn(false);
+
         CustomException e = assertThrows(CustomException.class,
                 () -> branchService.renameBranch(1L, 2L, "new", 3L));
-        assertEquals(DocErrorCode.DOCUMENT_NOT_FOUND, e.getErrorCode());
+        assertEquals(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN, e.getErrorCode());
     }
 }
