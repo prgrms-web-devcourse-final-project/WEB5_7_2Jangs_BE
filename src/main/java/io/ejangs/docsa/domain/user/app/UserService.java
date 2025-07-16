@@ -11,6 +11,7 @@ import io.ejangs.docsa.domain.user.util.SecurityContextUtil;
 import io.ejangs.docsa.domain.user.util.UserMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -83,5 +84,10 @@ public class UserService {
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         return new UserLoginResponse(userDetails.getId());
+    }
+
+    public void checkUserOrThrow(Long userId) {
+        if (!userRepository.existsById(userId))
+            throw new CustomException(UserErrorCode.USER_NOT_FOUND);
     }
 }

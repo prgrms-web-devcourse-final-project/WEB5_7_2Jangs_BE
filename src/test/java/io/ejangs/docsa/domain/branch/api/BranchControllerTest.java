@@ -36,14 +36,16 @@ class BranchControllerTest {
     void createBranchOrSave_success() throws Exception {
         // given
         Long documentId = 1L;
+        Long mockUserId = 99L;
         BranchCreateRequest request = new BranchCreateRequest("기능 브랜치", 100L);
         BranchCreateResponse response = new BranchCreateResponse(200L, 300L);
 
-        Mockito.when(branchService.createBranchOrSave(eq(documentId), any()))
+        Mockito.when(branchService.createBranchOrSave(eq(documentId), any(), eq(mockUserId)))
                 .thenReturn(response);
 
         // when + then
         mockMvc.perform(post("/api/document/{documentId}/branch", documentId)
+                        .param("userId", mockUserId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())

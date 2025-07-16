@@ -5,7 +5,12 @@ import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dto.*;
+import io.ejangs.docsa.domain.doc.dto.EdgeDto;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.doc.util.GraphMapper;
@@ -19,13 +24,14 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -52,9 +58,7 @@ public class DocService {
         Doc doc = createDoc(user, title);
         Branch defaultBranch = createDefaultBranch(doc);
 
-        Save defaultSave = Save.builder()
-                .branch(defaultBranch)
-                .build();
+        Save defaultSave = Save.builder().branch(defaultBranch).build();
 
         //Mongo 저장을 RDB 저장 이 후에 진행하여 실패시 예외 발생으로 인한 종료
         SaveContent defaultSaveContent = createDefaultSaveContent();
@@ -65,20 +69,15 @@ public class DocService {
     }
 
     private Doc createDoc(User user, String title) {
-        Doc doc = docRepository.save(Doc.builder()
-                .title(title)
-                .user(user)
-                .build());
+        Doc doc = docRepository.save(Doc.builder().title(title).user(user).build());
         docRepository.flush();
         user.addDocument(doc);
         return doc;
     }
 
     private Branch createDefaultBranch(Doc doc) {
-        Branch branch = branchRepository.save(Branch.builder()
-                .name(defaultBranchName)
-                .doc(doc)
-                .build());
+        Branch branch =
+                branchRepository.save(Branch.builder().name(defaultBranchName).doc(doc).build());
         doc.addBranch(branch);
         RenewUpdatedAtHelper.touch(branch);
         return branch;
@@ -86,10 +85,7 @@ public class DocService {
 
     private SaveContent createDefaultSaveContent() {
         try {
-            return saveContentRepository.save(
-                    SaveContent.builder()
-                            .build()
-            );
+            return saveContentRepository.save(SaveContent.builder().build());
         } catch (DataAccessException e) {
             log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
             throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
@@ -107,8 +103,7 @@ public class DocService {
     }
 
     @Transactional
-    public DocTitleUpdateResponse updateTitle(Long userId, Long docId,
-            DocTitleRequest request) {
+    public DocTitleUpdateResponse updateTitle(Long userId, Long docId, DocTitleRequest request) {
         String title = request.title();
 
         Doc doc = getDocByIdAndUserId(docId, userId);
@@ -135,9 +130,14 @@ public class DocService {
                 .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     }
 
-    private Doc getDocByIdAndUserId(Long documentId, Long userId) {
+    public Doc getDocByIdAndUserId(Long documentId, Long userId) {
         return docRepository.getDocByIdAndUserId(documentId, userId)
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+    }
+
+    public void checkDocByIdAndUserId(Long documentId, Long userId) {
+        if (!docRepository.existsByIdAndUserId(documentId, userId))
+            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
     }
 
     @Transactional(readOnly = true)
@@ -154,22 +154,20 @@ public class DocService {
 
     // 문서 조회시 그래프를 그리기 위한 응답 생성
     @Transactional(readOnly = true)
-    public CommitGraphResponse getGraph(Long documentId) {
+    public CommitGraphResponse getGraph(Long userId, Long documentId) {
+
+        checkDocByIdAndUserId(documentId, userId);
+
         Doc doc = docRepository.findByIdWithBranchesAndEdges(documentId)
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
 
-        List<CommitDto> commits = doc.getBranches().stream()
-                .flatMap(b -> b.getCommits().stream())
-                .map(GraphMapper::toCommitDto)
-                .toList();
+        List<CommitDto> commits = doc.getBranches().stream().flatMap(b -> b.getCommits().stream())
+                .map(GraphMapper::toCommitDto).toList();
 
-        List<EdgeDto> edges = doc.getEdges().stream()
-                .map(GraphMapper::toEdgeDto)
-                .toList();
+        List<EdgeDto> edges = doc.getEdges().stream().map(GraphMapper::toEdgeDto).toList();
 
-        List<BranchDto> branches = doc.getBranches().stream()
-                .map(GraphMapper::toBranchDto)
-                .toList();
+        List<BranchDto> branches =
+                doc.getBranches().stream().map(GraphMapper::toBranchDto).toList();
 
         return new CommitGraphResponse(doc.getTitle(), commits, edges, branches);
     }

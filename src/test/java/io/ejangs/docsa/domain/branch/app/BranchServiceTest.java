@@ -7,19 +7,23 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.user.app.UserService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
@@ -30,10 +34,17 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class BranchServiceTest {
 
     @InjectMocks
     private BranchService branchService;
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private DocService docService;
 
     @Mock
     private CommitRepository commitRepository;
@@ -50,20 +61,17 @@ class BranchServiceTest {
     @Mock
     private CommitContentAssembler commitContentAssembler;
 
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
     @DisplayName("fromCommitId가 null이면 예외 발생")
     void testThrowWhenFromCommitIdIsNull() {
+
         // given
+        User mockUser = mock(User.class);
         BranchCreateRequest request = new BranchCreateRequest("test-branch", null);
 
         // when & then
         CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranchOrSave(1L, request));
+                () -> branchService.createBranchOrSave(1L, request, mockUser.getId()));
         assertEquals(CommitErrorCode.INVALID_FROM_COMMIT, ex.getErrorCode());
     }
 
@@ -73,6 +81,7 @@ class BranchServiceTest {
         // given
         Long documentId = 1L;
         Long commitId = 10L;
+        User mockUser = mock(User.class);
         BranchCreateRequest request = new BranchCreateRequest("ignored", commitId);
 
         Doc doc = mock(Doc.class);
@@ -100,7 +109,7 @@ class BranchServiceTest {
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request);
+        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, mockUser.getId());
 
         // then
         assertNotNull(response);
@@ -123,10 +132,8 @@ class BranchServiceTest {
         Branch fromBranch = Branch.builder().doc(doc).name("from").build();
         Commit commit = mock(Commit.class);
 
-        when(commit.getId()).thenReturn(commitId);
         when(commit.getBranch()).thenReturn(fromBranch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
-        when(mockUser.getDocs()).thenReturn(new ArrayList<>());
 
         when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
         when(branchRepository.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -141,7 +148,7 @@ class BranchServiceTest {
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request);
+        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, mockUser.getId());
 
         // then
         assertNotNull(response);

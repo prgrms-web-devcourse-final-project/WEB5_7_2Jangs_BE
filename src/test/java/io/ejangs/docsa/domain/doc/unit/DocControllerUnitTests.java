@@ -14,6 +14,11 @@ import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.*;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.time.LocalDateTime;
@@ -182,6 +187,7 @@ class DocControllerUnitTests {
     void getGraphSuccess() throws Exception {
         // given
         Long docId = 1L;
+        Long userId = 99L;
 
         CommitDto commit = new CommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
         EdgeDto edge = new EdgeDto(11L, 12L);
@@ -194,10 +200,11 @@ class DocControllerUnitTests {
                 List.of(branch)
         );
 
-        when(docService.getGraph(docId)).thenReturn(response);
+        when(docService.getGraph(userId, docId)).thenReturn(response);
 
         // when & then
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{documentId}/graph", docId))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph",docId)
+                .param("userId", String.valueOf(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("문서 제목"))
                 .andExpect(jsonPath("$.commits").isArray())
@@ -211,11 +218,12 @@ class DocControllerUnitTests {
     void getGraphFailByNotFound() throws Exception {
         // given
         Long docId = 999L;
-        when(docService.getGraph(docId))
+        Long userId = 99L;
+        when(docService.getGraph(docId, userId))
                 .thenThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
 
         // when & then
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{documentId}/graph", docId))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{documentId}/graph", docId, userId))
                 .andExpect(status().isBadRequest())
                 .andDo(print());
     }

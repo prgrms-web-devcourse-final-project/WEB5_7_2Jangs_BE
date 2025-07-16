@@ -8,13 +8,13 @@ import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.app.UserService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.*;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +37,9 @@ public class BranchService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
-    private final UserRepository userRepository;
-    private final DocRepository docRepository;
+    private final UserService userService;
+    private final DocService docService;
+
     private final CommitContentAssembler commitContentAssembler;
 
     /**
@@ -52,8 +53,8 @@ public class BranchService {
     public BranchCreateResponse createBranchOrSave(Long documentId, BranchCreateRequest request,
             Long userId) {
 
-        getUserOrThrow(userId);
-        getDocByIdAndUserId(documentId, userId);
+        userService.checkUserOrThrow(userId);
+        docService.getDocByIdAndUserId(documentId, userId);
 
         Long fromCommitId = request.fromCommitId();
 
@@ -148,17 +149,6 @@ public class BranchService {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
     }
-
-    private void getUserOrThrow(Long userId) {
-        if (!userRepository.existsById(userId))
-            throw new CustomException(UserErrorCode.USER_NOT_FOUND);
-    }
-
-    private void getDocByIdAndUserId(Long docId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(docId, userId))
-            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
-    }
-
 }
 
 

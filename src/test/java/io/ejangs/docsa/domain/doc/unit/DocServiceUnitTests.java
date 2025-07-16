@@ -2,21 +2,18 @@ package io.ejangs.docsa.domain.doc.unit;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dto.CommitGraphResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
-import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -169,14 +166,18 @@ public class DocServiceUnitTests {
         Commit commit2 = Commit.builder().commitMongoId("c2").title("커밋2").description("desc").branch(branch).build();
         ReflectionTestUtils.setField(commit1, "id", commit1Id);
         ReflectionTestUtils.setField(commit2, "id", commit2Id);
+        ReflectionTestUtils.setField(commit1, "createdAt", LocalDateTime.now());
+        ReflectionTestUtils.setField(commit2, "createdAt", LocalDateTime.now());
+        ReflectionTestUtils.setField(branch, "createdAt", LocalDateTime.now());
 
         Edge edge = Edge.builder().doc(doc).prevCommit(commit1).nextCommit(commit2).build();
         ReflectionTestUtils.setField(edge, "id", edgeId);
 
+        when(docRepository.existsByIdAndUserId(docId, userId)).thenReturn(true);
         when(docRepository.findByIdWithBranchesAndEdges(docId)).thenReturn(Optional.of(doc));
 
         // when
-        CommitGraphResponse graph = docService.getGraph(docId);
+        CommitGraphResponse graph = docService.getGraph(userId, docId);
 
         // then
         assertEquals("그래프 문서", graph.title());
@@ -192,10 +193,12 @@ public class DocServiceUnitTests {
     void getGraphFailByNotFound() {
         // given
         Long docId = 999L;
+        Long userId = 1L;
+        when(docRepository.existsByIdAndUserId(docId, userId)).thenReturn(true);
         when(docRepository.findByIdWithBranchesAndEdges(docId)).thenReturn(Optional.empty());
 
         // when & then
-        CustomException ex = assertThrows(CustomException.class, () -> docService.getGraph(docId));
+        CustomException ex = assertThrows(CustomException.class, () -> docService.getGraph( userId, docId));
 
         assertEquals(DocErrorCode.DOCUMENT_NOT_FOUND, ex.getErrorCode());
     }
