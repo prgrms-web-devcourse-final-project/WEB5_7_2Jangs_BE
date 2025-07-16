@@ -9,6 +9,8 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
+import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
@@ -25,6 +27,7 @@ import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +47,8 @@ public class CommitService {
     private final BlockService blockService;
     private final SaveService saveService;
     private final EdgeService edgeService;
+
+    private final CommitContentAssembler assembler;
 
     @Transactional(rollbackFor = Exception.class)
     public CreateCommitResponse createCommit(Long docId, CreateCommitRequest commitRequest) {
@@ -108,6 +113,36 @@ public class CommitService {
             throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
         }
 
+    }
+
+    @Transactional(readOnly = true)
+    public CommitResponse getCommit(Long docId, Long commitId) {
+
+        docService.notFoundDocCheck(docId);
+        List<Map<String, Object>> assemble = getWholeContent(commitId);
+
+        return new CommitResponse(assemble);
+    }
+
+    @Transactional(readOnly = true)
+    public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId,
+            Long targetId) {
+
+        docService.notFoundDocCheck(docId);
+        List<Map<String, Object>> baseContent = getWholeContent(baseId);
+        List<Map<String, Object>> targetContent = getWholeContent(targetId);
+
+        return new CompareMergeCommitResponse(baseContent, targetContent);
+    }
+
+    private List<Map<String, Object>> getWholeContent(Long commitId) {
+        Commit commit = getById(commitId);
+        return assembler.assemble(commit.getCommitMongoId());
+    }
+
+    private Commit getById(Long commitId) {
+        return commitRepository.findById(commitId)
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 
     private void rollbackMongoDb(List<Block> savedBlocks, CommitBlockSequence savedCbs) {

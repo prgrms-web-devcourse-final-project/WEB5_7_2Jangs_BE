@@ -6,6 +6,7 @@ import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -39,5 +40,15 @@ public class UserController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse
+    ) {
+        userService.logout(httpRequest, httpResponse);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .build();
     }
 }

@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
-import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
+import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import java.time.OffsetDateTime;
@@ -42,13 +42,13 @@ class SaveControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private SaveUpdateIdDto dto;
+    private SaveIdentifierDto dto;
     private List<SaveBlock> data;
     private SaveUpdateRequest request;
 
     @BeforeEach
     void setUp() {
-        dto = SaveUpdateIdDto.of(1L, 1L, 1L);
+        dto = SaveIdentifierDto.of(1L, 1L, 1L);
         data = List.of(
                 new SaveBlock(Map.of("text1", "Key features")),
                 new SaveBlock(Map.of("text2", "Key features"))

@@ -9,12 +9,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.ejangs.docsa.domain.branch.dto.BranchDto;
+import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.*;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.time.LocalDateTime;
@@ -177,6 +181,53 @@ class DocControllerUnitTests {
                 .andExpect(jsonPath("$.message").value("문서제목은 50자를 초과 할 수 없습니다."))
                 .andDo(print());
     }
+
+    @Test
+    @DisplayName("기록 그래프 조회 성공")
+    void getGraphSuccess() throws Exception {
+        // given
+        Long docId = 1L;
+        Long userId = 99L;
+
+        CommitDto commit = new CommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
+        EdgeDto edge = new EdgeDto(11L, 12L);
+        BranchDto branch = new BranchDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
+
+        CommitGraphResponse response = new CommitGraphResponse(
+                "문서 제목",
+                List.of(commit),
+                List.of(edge),
+                List.of(branch)
+        );
+
+        when(docService.getGraph(userId, docId)).thenReturn(response);
+
+        // when & then
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph",docId)
+                .param("userId", String.valueOf(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("문서 제목"))
+                .andExpect(jsonPath("$.commits").isArray())
+                .andExpect(jsonPath("$.branches").isArray())
+                .andExpect(jsonPath("$.edges").isArray())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("기록 그래프 조회 실패 - 문서 없음")
+    void getGraphFailByNotFound() throws Exception {
+        // given
+        Long docId = 999L;
+        Long userId = 99L;
+        when(docService.getGraph(docId, userId))
+                .thenThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+
+        // when & then
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{documentId}/graph", docId, userId))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
 
 
 }
