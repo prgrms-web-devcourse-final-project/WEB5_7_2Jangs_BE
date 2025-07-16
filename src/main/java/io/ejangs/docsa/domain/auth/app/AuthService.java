@@ -104,7 +104,6 @@ public class AuthService {
         return switch (type) {
             case SIGNUP -> getRequiredCache(signupCacheName);
             case RESET_PASSWORD -> getRequiredCache(pwdResetCacheName);
-            default -> throw new CustomException(AuthErrorCode.UNSUPPORTED_CODE_TYPE);
         };
     }
 
