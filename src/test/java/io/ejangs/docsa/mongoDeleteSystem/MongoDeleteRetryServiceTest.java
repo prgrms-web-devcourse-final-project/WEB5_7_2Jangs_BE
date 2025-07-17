@@ -112,7 +112,7 @@ class MongoDeleteRetryServiceTest {
         // then - 3회 모두 실패했으므로 MongoDeleteFailure가 저장되어야 함
         await()
                 .atMost(Duration.ofSeconds(30))
-                .pollInterval(Duration.ofMillis(100))
+                .pollInterval(Duration.ofMillis(500))
                 .untilAsserted(() -> {
                     // 메서드가 3번 호출되었는지 확인
                     verify(retryService, times(3)).deleteMongoData(any());

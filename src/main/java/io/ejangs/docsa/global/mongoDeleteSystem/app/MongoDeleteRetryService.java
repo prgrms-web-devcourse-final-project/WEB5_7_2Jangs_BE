@@ -29,6 +29,7 @@ public class MongoDeleteRetryService {
 
     @Retryable(
             retryFor = {Exception.class},
+            recover = "recover",
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000) // 2초 간격 재시도
     )
@@ -48,17 +49,19 @@ public class MongoDeleteRetryService {
     }
 
     @Recover
-    @Transactional
     public void recover(Exception e, DocDeleteMongoIdsDto dto) {
         log.error("Mongo 삭제 3회 재시도 실패 - {}", e.getMessage());
-        // 실패 정보 DB 저장
-        MongoDeleteFailure failure = MongoDeleteFailure.builder()
-                .saveContentIds(dto.saveContentsIds())
-                .commitBlockSequenceIds(dto.commitBlockSequenceIds())
-                .blockIds(dto.blockIds())
-                .build();
+        try {
+            MongoDeleteFailure failure = MongoDeleteFailure.builder()
+                    .saveContentIds(dto.saveContentsIds())
+                    .commitBlockSequenceIds(dto.commitBlockSequenceIds())
+                    .blockIds(dto.blockIds())
+                    .build();
 
-        mongoDeleteFailureRepository.save(failure);
-        log.info("Mongo삭제 실패 정보 저장 성공");
+            mongoDeleteFailureRepository.saveAndFlush(failure);
+            log.info("Mongo삭제 실패 정보 저장 성공");
+        } catch (Exception ex) {
+            log.error("복구 중 예외 발생: {}", ex.getMessage(), ex);
+        }
     }
 }
