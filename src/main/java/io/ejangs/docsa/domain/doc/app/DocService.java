@@ -4,17 +4,17 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
+import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.dto.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
-import io.ejangs.docsa.domain.doc.dto.EdgeDto;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.doc.util.GraphMapper;
@@ -57,6 +57,8 @@ public class DocService {
 
     @Value("${default.branch}")
     private String defaultBranchName;
+
+    private static final String DEFAULT_PREVIEW = "미리보기 없음";
 
     @Transactional(rollbackFor = Exception.class)
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
@@ -135,19 +137,19 @@ public class DocService {
 
     private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
         if (branch == null || recent == null) {
-            return "미리보기 없음";
+            return DEFAULT_PREVIEW;
         }
 
         return switch (recent.recentType()) {
             case COMMIT -> extractPreviewFromCommit(branch.getLeafCommit());
             case SAVE -> extractPreviewFromSave(branch.getSave());
-            default -> "미리보기 없음";
+            default -> DEFAULT_PREVIEW;
         };
     }
 
     private String extractPreviewFromCommit(Commit commit) {
         if (commit == null) {
-            return "미리보기 없음";
+            return DEFAULT_PREVIEW;
         }
 
         List<Map<String, Object>> content = commitContentAssembler.assemble(
@@ -157,7 +159,7 @@ public class DocService {
 
     private String extractPreviewFromSave(Save save) {
         if (save == null) {
-            return "미리보기 없음";
+            return DEFAULT_PREVIEW;
         }
 
         SaveContent saveContent = saveContentRepository.findById(save.getSaveMongoId())
@@ -221,8 +223,9 @@ public class DocService {
     }
 
     public void checkDocByIdAndUserId(Long documentId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(documentId, userId))
+        if (!docRepository.existsByIdAndUserId(documentId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+        }
     }
 
     @Transactional(readOnly = true)
