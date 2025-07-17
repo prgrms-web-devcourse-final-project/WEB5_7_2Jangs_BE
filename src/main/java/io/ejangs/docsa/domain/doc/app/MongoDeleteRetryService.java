@@ -21,12 +21,12 @@ public class MongoDeleteRetryService {
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final BlockRepository blockRepository;
 
-    @Transactional
     @Retryable(
             retryFor = {Exception.class},
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000) // 2초 간격 재시도
     )
+    @Transactional(transactionManager = "mongoTransactionManager")
     public void deleteMongoData(DocDeleteMongoIdsDto dto) {
         for (String saveContentId : dto.saveContentsIds()) {
             saveContentRepository.deleteById(saveContentId);
