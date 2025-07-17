@@ -1,0 +1,36 @@
+package io.ejangs.docsa.global.mongoDeleteSystem.app;
+
+import io.ejangs.docsa.global.mongoDeleteSystem.dao.mysql.MongoDeleteFailureRepository;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.entity.MongoDeleteFailure;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MongoDeleteFailureService {
+
+    private final MongoDeleteFailureRepository failureRepository;
+
+    @Async
+    @Transactional
+    public void saveFailure(DocDeleteMongoIdsDto dto) {
+        try {
+            MongoDeleteFailure failure = MongoDeleteFailure.builder()
+                    .saveContentIds(dto.saveContentsIds())
+                    .commitBlockSequenceIds(dto.commitBlockSequenceIds())
+                    .blockIds(dto.blockIds())
+                    .build();
+
+            failureRepository.saveAndFlush(failure);
+            log.info("Mongo 삭제 실패 정보 저장 성공");
+        } catch (Exception e) {
+            log.error("실패내역 저장 중 예외 발생: {}", e.getMessage(), e);
+        }
+
+    }
+}

@@ -27,6 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -52,6 +54,9 @@ class MongoDeleteRetryServiceTest {
 
     @Autowired
     private MongoDeleteFailureRepository mongoDeleteFailureRepository;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     @MockitoSpyBean
     private MongoDeleteRetryService retryService;
@@ -108,7 +113,11 @@ class MongoDeleteRetryServiceTest {
                 .when(retryService).deleteMongoData(any());
 
         // when
-        docService.delete(docId, user.getId());
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            docService.delete(docId, user.getId());
+        });
+
         // then - 3회 모두 실패했으므로 MongoDeleteFailure가 저장되어야 함
         await()
                 .atMost(Duration.ofSeconds(30))
@@ -118,6 +127,11 @@ class MongoDeleteRetryServiceTest {
                     verify(retryService, times(3)).deleteMongoData(any());
 
                     List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAll();
+                    failures.forEach(f -> {
+                        f.getSaveContentIds().size();
+                        f.getCommitBlockSequenceIds().size();
+                        f.getBlockIds().size();
+                    });
                     assertThat(failures).hasSize(1);
 
                     MongoDeleteFailure failure = failures.get(0);

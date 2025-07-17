@@ -4,6 +4,7 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,17 +27,17 @@ public class MongoDeleteFailure {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "mongo_failure_save_ids", joinColumns = @JoinColumn(name = "failure_id"))
     @Column(name = "save_id")
     private List<String> saveContentIds;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "mongo_failure_commit_ids", joinColumns = @JoinColumn(name = "failure_id"))
     @Column(name = "commit_id")
     private List<String> commitBlockSequenceIds;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "mongo_failure_block_ids", joinColumns = @JoinColumn(name = "failure_id"))
     @Column(name = "block_id")
     private List<String> blockIds;
