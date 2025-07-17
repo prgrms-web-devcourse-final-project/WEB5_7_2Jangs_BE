@@ -50,6 +50,5 @@ public class MongoDeleteRetryService {
     public void recover(Exception e, DocDeleteMongoIdsDto dto) {
         log.error("Mongo 삭제 3회 재시도 실패 - {}", e.getMessage());
         mongoDeleteFailureService.saveFailure(dto);
-
     }
 }

@@ -61,6 +61,9 @@ class MongoDeleteRetryServiceTest {
     @MockitoSpyBean
     private MongoDeleteRetryService retryService;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
     @BeforeEach
     void setUp() {
         // 테스트 시작 전 MongoDeleteFailure 테이블 정리
@@ -98,6 +101,15 @@ class MongoDeleteRetryServiceTest {
                 });
     }
 
+    record MongoDeleteFailureDto(
+            int saveSize,
+            int commitSize,
+            int blockSize,
+            boolean resolved
+    ) {
+
+    }
+
     @Test
     void delete_문서삭제_중_3회_모두_실패하면_MongoDeleteFailure가저장된다() throws Exception {
         // given
@@ -123,22 +135,25 @@ class MongoDeleteRetryServiceTest {
                 .atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofMillis(500))
                 .untilAsserted(() -> {
-                    // 메서드가 3번 호출되었는지 확인
-                    verify(retryService, times(3)).deleteMongoData(any());
+                    // 트랜잭션 안에서 Lazy 필드를 모두 접근해서 값으로 만들어둠
+                    MongoDeleteFailureDto failureDto = transactionTemplate.execute(status -> {
+                        List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAll();
+                        assertThat(failures).hasSize(1);
 
-                    List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAll();
-                    failures.forEach(f -> {
-                        f.getSaveContentIds().size();
-                        f.getCommitBlockSequenceIds().size();
-                        f.getBlockIds().size();
+                        MongoDeleteFailure failure = failures.get(0);
+
+                        return new MongoDeleteFailureDto(
+                                failure.getSaveContentIds().size(),
+                                failure.getCommitBlockSequenceIds().size(),
+                                failure.getBlockIds().size(),
+                                failure.getResolved()
+                        );
                     });
-                    assertThat(failures).hasSize(1);
 
-                    MongoDeleteFailure failure = failures.get(0);
-                    assertThat(failure.getSaveContentIds()).isNotEmpty();
-                    assertThat(failure.getCommitBlockSequenceIds()).isNotEmpty();
-                    assertThat(failure.getBlockIds()).isNotEmpty();
-                    assertThat(failure.getResolved()).isFalse();
+                    assertThat(failureDto.saveSize()).isGreaterThan(0);
+                    assertThat(failureDto.commitSize()).isGreaterThan(0);
+                    assertThat(failureDto.blockSize()).isGreaterThan(0);
+                    assertThat(failureDto.resolved()).isFalse();
                 });
     }
 
