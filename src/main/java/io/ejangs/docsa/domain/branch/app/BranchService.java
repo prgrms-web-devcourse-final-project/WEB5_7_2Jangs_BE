@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.branch.app;
 
 import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
+
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
@@ -11,23 +12,21 @@ import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.user.app.UserService;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.*;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
-
 
 
 @Slf4j
@@ -131,9 +130,7 @@ public class BranchService {
             List<Map<String, Object>> blockContents =
                     commitContentAssembler.assemble(commitMongoId);
 
-            List<SaveBlock> saveBlocks = blockContents.stream().map(SaveBlock::from).toList();
-
-            SaveContent saveContent = SaveContent.builder().content(saveBlocks).build();
+            SaveContent saveContent = SaveContent.builder().content(blockContents).build();
             SaveContent saved = saveContentRepository.save(saveContent);
 
             // mongoId를 RDB Save 엔티티에 설정
@@ -172,15 +169,17 @@ public class BranchService {
 
 
     private void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
-        boolean exists = branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);
+        boolean exists = branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId,
+                userId);
         if (!exists) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN);
         }
     }
 
     private void checkDocByIdAndUserId(Long docId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(docId, userId))
+        if (!docRepository.existsByIdAndUserId(docId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+        }
     }
 
 }
