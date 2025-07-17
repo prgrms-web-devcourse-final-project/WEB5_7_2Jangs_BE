@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.user.app.UserService;
+import io.ejangs.docsa.domain.user.dto.request.PasswordResetRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -39,31 +40,38 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private UserSignupRequest request;
-    private UserSignupResponse response;
+    private UserSignupRequest signupRequest;
+    private PasswordResetRequest passwordResetRequest;
+    private UserSignupResponse signupResponse;
 
     @BeforeEach
     void setUp() {
-        request = new UserSignupRequest(
+        signupRequest = new UserSignupRequest(
                 "이장님",
                 "test@example.com",
-                "password123",
+                "Password123",
                 "abc12345"
         );
 
-        response = new UserSignupResponse(1L, "이장님");
+        passwordResetRequest = new PasswordResetRequest(
+                "test@example.com",
+                "NewPassword123",
+                "abc12345"
+        );
+
+        signupResponse = new UserSignupResponse(1L, "이장님");
     }
 
     @Test
     @DisplayName("회원가입 성공")
     void signup_Success() throws Exception {
         // given
-        when(userService.signup(any(UserSignupRequest.class))).thenReturn(response);
+        when(userService.signup(any(UserSignupRequest.class))).thenReturn(signupResponse);
 
         // when & then
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value("이장님"))
@@ -82,7 +90,7 @@ class UserControllerTest {
         // when & then
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("이미 가입된 이메일입니다."))
@@ -102,7 +110,7 @@ class UserControllerTest {
         // when & then
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("EXPIRED_CODE"))
                 .andExpect(jsonPath("$.message").value("인증 코드가 만료되었습니다."))
@@ -121,7 +129,7 @@ class UserControllerTest {
         // when & then
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVALID_CODE"))
                 .andExpect(jsonPath("$.message").value("인증 코드가 일치하지 않습니다."))
@@ -168,7 +176,7 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("이메일이 빈 문자열인 경우 400 에러")
+    @DisplayName("이메일이 빈 문자열인 경우 400 에러 발생")
     void signup_EmptyEmail() throws Exception {
         // given
         UserSignupRequest invalidRequest = new UserSignupRequest(
@@ -189,7 +197,7 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("이름이 빈 문자열인 경우 400 에러")
+    @DisplayName("이름이 빈 문자열인 경우 400 에러 발생")
     void signup_EmptyName() throws Exception {
         // given
         UserSignupRequest invalidRequest = new UserSignupRequest(
@@ -210,7 +218,7 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("비밀번호가 8자 미만인 경우 400 에러")
+    @DisplayName("비밀번호가 8자 미만인 경우 400 에러 발생")
     void signup_ShortPassword() throws Exception {
         // given
         UserSignupRequest invalidRequest = new UserSignupRequest(
@@ -228,5 +236,35 @@ class UserControllerTest {
                 .andDo(print());
 
         verify(userService, never()).signup(any());
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 성공")
+    void resetPassword_Success() throws Exception {
+        // when & then
+        mockMvc.perform(post("/api/user/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordResetRequest)))
+                .andExpect(status().isOk())
+                .andDo(print());
+
+        verify(userService).resetPassword(any(PasswordResetRequest.class));
+    }
+
+    @Test
+    @DisplayName("기존 비밀번호와 동일한 경우 400 에러 발생")
+    void resetPassword_SameAsOldPassword() throws Exception {
+        // given
+        doThrow(new CustomException(AuthErrorCode.SAME_AS_OLD_PASSWORD))
+                .when(userService).resetPassword(any(PasswordResetRequest.class));
+
+        // when & then
+        mockMvc.perform(post("/api/user/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordResetRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("SAME_AS_OLD_PASSWORD"))
+                .andExpect(jsonPath("$.message").value("기존 비밀번호와 동일한 비밀번호입니다."))
+                .andDo(print());
     }
 }

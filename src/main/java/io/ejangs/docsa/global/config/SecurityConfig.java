@@ -1,5 +1,6 @@
 package io.ejangs.docsa.global.config;
 
+import io.ejangs.docsa.domain.user.security.CustomAccessDeniedHandler;
 import io.ejangs.docsa.domain.user.security.CustomAuthenticationEntryPoint;
 import io.ejangs.docsa.domain.user.security.CustomUserDetailsService;
 import java.util.List;
@@ -26,6 +27,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -39,15 +41,22 @@ public class SecurityConfig {
                                 .maximumSessions(1)
                                 .maxSessionsPreventsLogin(false))
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/api/user/signup", "/api/user/login",
-                                "/api/auth/code/signup-email", "/api/auth/code/check").anonymous()
+                        .requestMatchers(
+                                "/api/auth/code/signup-email",
+                                "/api/user/signup",
+                                "/api/user/login",
+                                "/api/auth/code/check",
+                                "/api/auth/code/reset-password",
+                                "/api/user/password"
+                        ).anonymous()
                         .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
-                .exceptionHandling(ex ->
-                        ex.authenticationEntryPoint(customAuthenticationEntryPoint
-                        ))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                )
                 .logout(logout -> logout.disable());
         return http.build();
     }

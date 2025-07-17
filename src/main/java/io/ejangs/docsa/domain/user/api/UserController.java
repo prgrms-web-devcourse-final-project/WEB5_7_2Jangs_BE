@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.user.api;
 
 import io.ejangs.docsa.domain.user.app.UserService;
+import io.ejangs.docsa.domain.user.dto.request.PasswordResetRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
@@ -44,9 +45,16 @@ public class UserController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest httpRequest,
-            HttpServletResponse httpResponse
-    ) {
+            HttpServletResponse httpResponse) {
         userService.logout(httpRequest, httpResponse);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .build();
+    }
+
+    @PostMapping("/password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        userService.resetPassword(request);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .build();

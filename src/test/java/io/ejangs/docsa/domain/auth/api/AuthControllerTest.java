@@ -279,7 +279,7 @@ class AuthControllerTest {
         // given
         CodeCheckRequest request = new CodeCheckRequest("unknown@example.com", "CODE999", CodeType.RESET_PASSWORD);
 
-        doThrow(new CustomException(AuthErrorCode.USER_NOT_FOUND_FOR_RESET))
+        doThrow(new CustomException(UserErrorCode.USER_NOT_FOUND))
                 .when(authService).checkCode(request);
 
         // when & then
