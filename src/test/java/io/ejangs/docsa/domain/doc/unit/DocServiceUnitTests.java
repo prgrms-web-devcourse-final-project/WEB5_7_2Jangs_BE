@@ -1,23 +1,28 @@
 package io.ejangs.docsa.domain.doc.unit;
 
-import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
+import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
-import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
-import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
-import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,16 +30,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class DocServiceUnitTests {
@@ -45,44 +40,34 @@ public class DocServiceUnitTests {
     @Mock
     private DocRepository docRepository;
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private BranchRepository branchRepository;
-
-    @Mock
-    private SaveContentRepository saveContentRepository;
-
-    @Mock
-    private SaveRepository saveRepository;
-
     @Test
     @DisplayName("사이드바 문서 목록 조회 성공 테스트")
     void getSimpleDocumentListSuccess() throws Exception {
 
-        //given
+        // given
         Long userId = 1L;
         User user = DocTestUtils.createUser();
-        ReflectionTestUtils.setField(user, "id", 1L);
+        ReflectionTestUtils.setField(user, "id", userId);
 
-        List<DocListSimpleResponse> simpleDocuementList =
-                List.of(new DocListSimpleResponse(1L, "문서1", LocalDateTime.now(),
-                                LocalDateTime.now().plusHours(3)),
-                        new DocListSimpleResponse(2L, "문서2", LocalDateTime.now().plusHours(1),
-                                LocalDateTime.now().plusDays(3)));
+        Long docId = 10L;
+        List<Doc> docs = DocTestUtils.createDocumentList(2, user);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(docRepository.getSimpleList(userId)).thenReturn(simpleDocuementList);
+        when(docRepository.findAllByUserId(userId)).thenReturn(docs);
 
-        //when
+        // when
         List<DocListSimpleResponse> result = docService.getSimpleList(userId);
 
-        //then
+        // then
         assertEquals(2, result.size());
-        assertEquals("문서1", result.getFirst().title());
-        verify(userRepository).findById(userId);
-        verify(docRepository).getSimpleList(userId);
+        assertEquals("테스트 문서 1", result.getFirst().title());
+
+        assertEquals(RecentType.SAVE, result.getFirst().recent().recentType());
+        assertEquals(10L, result.getFirst().recent().recentTypeId());
+
+        assertEquals(RecentType.COMMIT, result.getLast().recent().recentType());
+        assertEquals(200L, result.getLast().recent().recentTypeId());
+
+        verify(docRepository).findAllByUserId(userId);
     }
 
     @Test
@@ -162,8 +147,10 @@ public class DocServiceUnitTests {
         Branch branch = Branch.builder().name("main").doc(doc).build();
         ReflectionTestUtils.setField(branch, "id", branchId);
 
-        Commit commit1 = Commit.builder().commitMongoId("c1").title("커밋1").description("desc").branch(branch).build();
-        Commit commit2 = Commit.builder().commitMongoId("c2").title("커밋2").description("desc").branch(branch).build();
+        Commit commit1 = Commit.builder().commitMongoId("c1").title("커밋1").description("desc")
+                .branch(branch).build();
+        Commit commit2 = Commit.builder().commitMongoId("c2").title("커밋2").description("desc")
+                .branch(branch).build();
         ReflectionTestUtils.setField(commit1, "id", commit1Id);
         ReflectionTestUtils.setField(commit2, "id", commit2Id);
         ReflectionTestUtils.setField(commit1, "createdAt", LocalDateTime.now());
@@ -187,7 +174,6 @@ public class DocServiceUnitTests {
     }
 
 
-
     @Test
     @DisplayName("문서 그래프 조회 실패 - 문서 없음")
     void getGraphFailByNotFound() {
@@ -198,11 +184,10 @@ public class DocServiceUnitTests {
         when(docRepository.findByIdWithBranchesAndEdges(docId)).thenReturn(Optional.empty());
 
         // when & then
-        CustomException ex = assertThrows(CustomException.class, () -> docService.getGraph( userId, docId));
+        CustomException ex = assertThrows(CustomException.class,
+                () -> docService.getGraph(userId, docId));
 
         assertEquals(DocErrorCode.DOCUMENT_NOT_FOUND, ex.getErrorCode());
     }
-
-
 
 }

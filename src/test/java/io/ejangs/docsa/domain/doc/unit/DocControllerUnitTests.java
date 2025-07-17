@@ -14,6 +14,7 @@ import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.*;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
@@ -92,26 +93,32 @@ class DocControllerUnitTests {
                 new DocListSimpleResponse(
                         1L,
                         "마이크로소프트",
-                        LocalDateTime.now(),
-                        LocalDateTime.now().plusDays(1)
+                        LocalDateTime.of(2025, 7, 6, 12, 0),
+                        LocalDateTime.of(2025, 7, 7, 9, 0),
+                        new RecentActivityDto(RecentType.SAVE, 10L)
                 ),
                 new DocListSimpleResponse(
                         2L,
                         "구글",
-                        LocalDateTime.now(),
-                        LocalDateTime.now().plusDays(2)
+                        LocalDateTime.of(2025, 6, 28, 15, 30),
+                        LocalDateTime.of(2025, 7, 1, 10, 45),
+                        new RecentActivityDto(RecentType.COMMIT, 11L)
                 )
         );
 
         when(docService.getSimpleList(anyLong())).thenReturn(responseList);
 
-        //when, then
+        // when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar")
                         .param("userId", String.valueOf(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(2))
                 .andExpect(jsonPath("$[0].title").value("마이크로소프트"))
-                .andExpect(jsonPath("$.[1].title").value("구글"))
+                .andExpect(jsonPath("$[0].recent.recentType").value("SAVE"))
+                .andExpect(jsonPath("$[0].recent.recentTypeId").value(10))
+                .andExpect(jsonPath("$[1].title").value("구글"))
+                .andExpect(jsonPath("$[1].recent.recentType").value("COMMIT"))
+                .andExpect(jsonPath("$[1].recent.recentTypeId").value(11))
                 .andDo(print());
     }
 
