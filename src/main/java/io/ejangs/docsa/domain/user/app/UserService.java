@@ -122,7 +122,7 @@ public class UserService {
 
         Cache cache = cacheManager.getCache(passcodeCacheName);
         if (cache == null) {
-            throw new CustomException(AuthErrorCode.CACHE_NOT_FOUND);
+            throw new CustomException(AuthErrorCode.INTERNAL_ERROR);
         }
 
         Cache.ValueWrapper cachedValue = cache.get(user.getEmail());
