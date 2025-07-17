@@ -1,4 +1,4 @@
-package io.ejangs.docsa.mongo;
+package io.ejangs.docsa.mongoDeleteSystem;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MongoTxTestServiceTest {
+class MongoTransactionTests {
 
     @Autowired
     MongoTransactionTestService mongoTransactionTestService;

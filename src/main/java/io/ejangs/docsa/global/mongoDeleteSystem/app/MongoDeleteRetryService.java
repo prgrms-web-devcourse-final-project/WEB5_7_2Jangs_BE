@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MongoDeleteRetryService {
 
+    private int retryCnt = 1;
+
     private final SaveContentRepository saveContentRepository;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final BlockRepository blockRepository;
@@ -32,6 +34,8 @@ public class MongoDeleteRetryService {
     )
     @Transactional(transactionManager = "mongoTransactionManager")
     public void deleteMongoData(DocDeleteMongoIdsDto dto) {
+        log.info("MongoDelete Retry : {}", retryCnt++);
+
         for (String saveContentId : dto.saveContentsIds()) {
             saveContentRepository.deleteById(saveContentId);
         }
@@ -55,5 +59,6 @@ public class MongoDeleteRetryService {
                 .build();
 
         mongoDeleteFailureRepository.save(failure);
+        log.info("Mongo삭제 실패 정보 저장 성공");
     }
 }

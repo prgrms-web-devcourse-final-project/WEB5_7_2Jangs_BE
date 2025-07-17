@@ -41,7 +41,7 @@ public class MongoDeleteFailure {
     @Column(name = "block_id")
     private List<String> blockIds;
 
-    private boolean resolved = false;
+    private Boolean resolved = false;
 
     private LocalDateTime createdAt;
 
