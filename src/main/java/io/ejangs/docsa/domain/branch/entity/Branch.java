@@ -18,6 +18,8 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -98,5 +100,9 @@ public class Branch extends BaseEntity {
     }
     public void updateName(String name){
         this.name = name;
+    }
+
+    public Optional<Save> getSaveOptional() {
+        return Optional.ofNullable(this.save);
     }
 }

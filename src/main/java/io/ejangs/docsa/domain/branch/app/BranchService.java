@@ -1,6 +1,9 @@
 package io.ejangs.docsa.domain.branch.app;
 
 import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
+import static java.util.stream.Collectors.toList;
+
+import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
@@ -8,6 +11,8 @@ import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.commit.app.CommitService;
+import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -22,11 +27,12 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 
@@ -35,18 +41,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class BranchService {
 
-    private final CommitRepository commitRepository;
+    private final CommitService commitService;
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
     private final DocRepository docRepository;
+    private final CommitBlockSequenceRepository commitBlockSequenceRepository;
+    private final BlockRepository blockRepository;
 
     private final CommitContentAssembler commitContentAssembler;
+
+    @Value("${default.branch}")
+    private String defaultBranchName;
 
     /**
      * '이어서 작업하기' 로직으로, 브랜치를 생성하고 저장을 추가하거나 기존 브랜치에 저장을 추가합니다.
      * <p>
-     * fromCommitId가 존재하면 기존 커밋에서 분기(branch)를 만들거나 저장(save)을 추가하는 상황입니다. fromCommitId가 null이면 최초 브랜치
+     * fromCommitId가 존재하면 기존 커밋에서 브랜치를 만들거나 저장(save)을 추가하는 상황입니다. fromCommitId가 null이면 최초 브랜치
      * 생성으로, 이 경우는 doc 도메인에서 처리합니다.
      */
 
@@ -58,23 +69,22 @@ public class BranchService {
 
         Long fromCommitId = request.fromCommitId();
 
-        // fromCommitId가 null이면 최초 브랜치 생성 시도 -> 여기서는 허용하지 않음
+        // 1. fromCommitId가 null이면 최초 브랜치 생성 시도 -> 여기서는 허용하지 않음
         if (fromCommitId == null) {
             throw new CustomException(CommitErrorCode.INVALID_FROM_COMMIT);
         }
 
-        // 분기 기준이 되는 커밋을 조회
-        Commit fromCommit = commitRepository.findById(fromCommitId)
-                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
+        // 2. '이어서 작업하기' 를 시도하는 커밋 검증,
+        Commit fromCommit = commitService.getById(fromCommitId);
 
         Branch fromBranch = fromCommit.getBranch();
 
-        // 커밋이 요청한 문서에 속해 있는지 검증
+        // 3. 커밋이 요청한 문서에 속해 있는지 검증
         if (!fromBranch.getDoc().getId().equals(documentId)) {
             throw new CustomException(DocErrorCode.COMMIT_NOT_IN_DOCUMENT);
         }
 
-        // fromCommit이 브랜치의 최신 커밋(leaf)인지 여부 판단
+        // 4. '이어서 작업하기' 를 시도하려는 커밋이 브랜치의 최신 커밋(leaf)인지 여부 판단
         boolean isLeaf = fromBranch.getLeafCommit() != null && fromBranch.getLeafCommit().getId()
                 .equals(fromCommitId);
 
@@ -85,6 +95,7 @@ public class BranchService {
             // 저장과 브랜치, 문서의 updatedAt 동시 갱신
             touch(save);
             return BranchMapper.toBranchCreateResponse(fromBranch, save);
+
         } else {
             // 중간 커밋에서 작업을 이어가는 경우 → 새로운 브랜치를 생성하고 저장도 함께 생성
             Branch newBranch = Branch.builder().name(request.name()).doc(fromBranch.getDoc())
@@ -104,8 +115,7 @@ public class BranchService {
     /**
      * 새로운 저장(Save)을 생성합니다.
      * <p>
-     * 1. 먼저 RDB에 Save 엔티티를 저장합니다 (MongoId는 null). 2. 이후 MongoDB에 내용을 저장합니다. 3. Mongo 저장 성공 시, 해당
-     * MongoId를 RDB Save 엔티티에 업데이트합니다.
+     * 먼저 RDB에 Save의 메타데이터 저장 후, MongoDB 저장이 성공하면 MongoId를 RDB Save 엔티티에 업데이트합니다.
      */
     private Save createSave(Branch branch, String commitMongoId) {
         Save save = saveToRDB(branch); // RDB에 먼저 저장
@@ -113,16 +123,13 @@ public class BranchService {
         return save;
     }
 
-    /**
-     * Save 엔티티를 MongoId 없이 RDB에 먼저 저장합니다.
-     */
     private Save saveToRDB(Branch branch) {
         Save save = Save.builder().branch(branch).build();
         return saveRepository.save(save);
     }
 
     /**
-     * 커밋의 블록을 조립해 MongoDB에 저장하고, 그 결과로 받은 mongoId를 RDB save에 반영(update)합니다.
+     * 커밋의 블록을 조립해 MongoDB에 저장하고, 그 결과로 받은 mongoId를 RDB save에 반영합니다.
      * <p>
      * Mongo 저장 실패 시 예외가 발생하고 트랜잭션 전체가 롤백됩니다.
      */
@@ -140,19 +147,24 @@ public class BranchService {
             save.updateSaveMongoId(saved.getId());
             // 트랜잭션 내에서 JPA의 더치체킹으로 update 됨
         } catch (Exception e) {
+            // MongoDB 롤백까지 실패할 경우 에러 로그
             log.error("MongoDB 저장 실패로 인해 save(id={}) 에 MongoId 갱신 실패", save.getId(), e);
             throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
         }
     }
 
-    // 브랜치 이름 수정
+    /**
+     * 브랜치 이름 수정 기능입니다.
+     */
     @Transactional
     public BranchRenameResponse renameBranch(Long documentId, Long branchId, String newName,
             Long userId) {
 
+        // 1. 브랜치 검증
         checkBranchInDocOwnedByUser(documentId, branchId, userId);
 
-        Branch branch = findById(branchId);
+        // 2. 브랜치 이름 수정 후 브랜치와 문서의 수정시각 갱신
+        Branch branch = getById(branchId);
         branch.updateName(newName);
         touch(branch);
 
@@ -160,25 +172,101 @@ public class BranchService {
 
     }
 
+    /**
+     * 브랜치 삭제 기능입니다.
+     * <p>
+     *  삭제하려는 브랜치는 메인 브랜치가 아니며 파생된 서브브랜치 또한 가지고 있지 않아야 합니다.
+     *  삭제 가능한 브랜치임을 확인 후 오직 해당 브랜치에서만 존재하는 블록을 삭제한 후 나머지 브랜치 관련 정보를 삭제합니다.
+     */
+    @Transactional
+    public void deleteBranch(Long documentId, Long branchId, Long userId) {
+
+        // 1. 브랜치 검증
+        checkBranchInDocOwnedByUser(documentId, branchId, userId);
+        Branch branch = getById(branchId);
+
+        // 2. main브랜치는 삭제가 불가능하도록 함
+        if (branch.getName().equals(defaultBranchName)) {
+            throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
+        }
+
+        // 3. 삭제하려는 브랜치의 커밋 중 다른 브랜치의 fromdCommit이 없는지 확인.
+        List<Commit> branchCommits = branch.getCommits();
+        List<Long> commitsIds = branchCommits.stream().map(Commit::getId).toList();
+
+        boolean hasSubBranch = branchRepository.existsByFromCommitIdIn(commitsIds);
+        if (hasSubBranch) {
+            throw new CustomException(BranchErrorCode.SUB_BRANCH_DELETE_UNAVAILABLE);
+        }
+
+        // 4. 삭제 가능한 blockID 찾기
+        // 차집합 {브랜치에 속한 커밋에 존재하는 모든 blockId} - {브랜치의 from_commit 에 존재하는 모든 blockid}
+        List<String> sequenceIdsToDelete = new ArrayList<>();
+        Set<String> allBlockIds = new HashSet<>();
+
+        // 커밋 시퀀스 ID 수집
+        for (Commit commit : branchCommits) {
+            String seqId = commit.getCommitMongoId();
+            if (seqId != null) {
+                sequenceIdsToDelete.add(seqId);
+                commitBlockSequenceRepository.findById(seqId).ifPresent(seq -> {
+                    allBlockIds.addAll(seq.getBlockOrders());
+                });
+
+            }
+        }
+
+        // 삭제 대상에서 제외하기 위한 브랜치 생성 이전 존재하던 블록 필터링
+        Set<String> baseBlockIds = new HashSet<>();
+        if (branch.getFromCommit() != null) {
+            String baseSeqId = branch.getFromCommit().getCommitMongoId();
+            if (baseSeqId != null) {
+                commitBlockSequenceRepository.findById(baseSeqId).ifPresent(seq -> {
+                    baseBlockIds.addAll(seq.getBlockOrders());
+                });
+            }
+        }
+
+        // 5. 블록 삭제
+        allBlockIds.removeAll(baseBlockIds);
+        blockRepository.deleteAllById(allBlockIds);
+
+
+        // 6. 시퀀스 삭제
+        commitBlockSequenceRepository.deleteAllById(sequenceIdsToDelete);
+
+        // 7. SaveContent 삭제
+        branch.getSaveOptional()
+                .map(Save::getSaveMongoId)
+                .ifPresent(saveContentRepository::deleteById);
+
+        /* 8. Edge 삭제
+        잠시 보류
+        */
+
+        // 9. 브랜치가 속한 문서의 수정시간 갱신
+        touch(branch);
+
+        // 10. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
+        branchRepository.delete(branch);
+
+    }
+
+    //  브랜치 관련 검증로직 메서드들
+
     public Branch getById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
     }
 
-    public Branch findById(Long id) {
-        return branchRepository.findById(id)
-                .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
-    }
-
-
-    private void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
+    public void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
         boolean exists = branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);
         if (!exists) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN);
         }
     }
 
-    private void checkDocByIdAndUserId(Long docId, Long userId) {
+    public void checkDocByIdAndUserId(Long docId, Long userId) {
         if (!docRepository.existsByIdAndUserId(docId, userId))
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
     }

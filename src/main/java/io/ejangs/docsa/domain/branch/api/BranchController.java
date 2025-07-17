@@ -35,4 +35,12 @@ public class BranchController {
                 .body(branchService.renameBranch(documentId, branchId, request.newName(), userId));
     }
 
+    // 브랜치 삭제
+    @DeleteMapping("/branchId")
+    public ResponseEntity<Void> deleteBranch(@RequestParam Long userId,
+            @PathVariable Long documentId, @PathVariable Long branchId){
+        branchService.deleteBranch(documentId, branchId, userId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
 }
