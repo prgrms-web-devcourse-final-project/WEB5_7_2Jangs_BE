@@ -46,7 +46,7 @@ public class MongoDeleteFailure {
     private LocalDateTime createdAt;
 
     @Builder
-    public MongoDeleteFailure(List<String> saveContentIds, List<String> commitBlockSequenceIds,
+    private MongoDeleteFailure(List<String> saveContentIds, List<String> commitBlockSequenceIds,
             List<String> blockIds) {
         this.saveContentIds = saveContentIds;
         this.commitBlockSequenceIds = commitBlockSequenceIds;

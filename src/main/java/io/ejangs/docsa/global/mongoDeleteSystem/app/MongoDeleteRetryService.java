@@ -3,7 +3,9 @@ package io.ejangs.docsa.global.mongoDeleteSystem.app;
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
+import io.ejangs.docsa.global.mongoDeleteSystem.dao.mysql.MongoDeleteFailureRepository;
 import io.ejangs.docsa.global.mongoDeleteSystem.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.entity.MongoDeleteFailure;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
@@ -20,6 +22,8 @@ public class MongoDeleteRetryService {
     private final SaveContentRepository saveContentRepository;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final BlockRepository blockRepository;
+
+    private final MongoDeleteFailureRepository mongoDeleteFailureRepository;
 
     @Retryable(
             retryFor = {Exception.class},
@@ -40,8 +44,16 @@ public class MongoDeleteRetryService {
     }
 
     @Recover
+    @Transactional
     public void recover(Exception e, DocDeleteMongoIdsDto dto) {
         log.error("Mongo 삭제 3회 재시도 실패 - {}", e.getMessage());
         // 실패 정보 DB 저장
+        MongoDeleteFailure failure = MongoDeleteFailure.builder()
+                .saveContentIds(dto.saveContentsIds())
+                .commitBlockSequenceIds(dto.commitBlockSequenceIds())
+                .blockIds(dto.blockIds())
+                .build();
+
+        mongoDeleteFailureRepository.save(failure);
     }
 }

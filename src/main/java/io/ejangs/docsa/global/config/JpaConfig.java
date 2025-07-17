@@ -15,7 +15,8 @@ import org.springframework.transaction.PlatformTransactionManager;
         "io.ejangs.docsa.domain.commit.dao.mysql",
         "io.ejangs.docsa.domain.doc.dao.mysql",
         "io.ejangs.docsa.domain.save.dao.mysql",
-        "io.ejangs.docsa.domain.user.dao.mysql"
+        "io.ejangs.docsa.domain.user.dao.mysql",
+        "io.ejangs.docsa.global.mongoDeleteSystem.dao.mysql"
 })
 public class JpaConfig {
 
