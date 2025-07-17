@@ -26,11 +26,10 @@ public class MongoDeleteFailureService {
                     .blockIds(dto.blockIds())
                     .build();
 
-            failureRepository.saveAndFlush(failure);
+            failureRepository.save(failure);
             log.info("Mongo 삭제 실패 정보 저장 성공");
         } catch (Exception e) {
             log.error("실패내역 저장 중 예외 발생: {}", e.getMessage(), e);
         }
-
     }
 }
