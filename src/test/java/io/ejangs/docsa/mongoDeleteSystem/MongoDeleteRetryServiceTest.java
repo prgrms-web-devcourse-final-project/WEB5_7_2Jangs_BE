@@ -66,7 +66,6 @@ class MongoDeleteRetryServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 테스트 시작 전 MongoDeleteFailure 테이블 정리
         mongoDeleteFailureRepository.deleteAll();
     }
 
@@ -80,7 +79,6 @@ class MongoDeleteRetryServiceTest {
 
         Long docId = docs.get(1).getId();
 
-        // 첫 번째 호출에서만 예외 발생, 두 번째 호출부터는 정상 처리
         doThrow(new RuntimeException("첫 번째 시도 실패"))
                 .doCallRealMethod()
                 .when(retryService).deleteMongoData(any());
@@ -88,12 +86,11 @@ class MongoDeleteRetryServiceTest {
         // when
         docService.delete(docId, user.getId());
 
-        // then - 재시도 후 성공했으므로 MongoDeleteFailure는 저장되지 않아야 함
+        // then
         await()
                 .atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofMillis(100))
                 .untilAsserted(() -> {
-                    // 메서드가 2번 호출되었는지 확인 (첫 번째 실패, 두 번째 성공)
                     verify(retryService, times(2)).deleteMongoData(any());
 
                     List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAll();
@@ -130,7 +127,7 @@ class MongoDeleteRetryServiceTest {
             docService.delete(docId, user.getId());
         });
 
-        // then - 3회 모두 실패했으므로 MongoDeleteFailure가 저장되어야 함
+        // then
         await()
                 .atMost(Duration.ofSeconds(30))
                 .pollInterval(Duration.ofMillis(500))
@@ -167,10 +164,10 @@ class MongoDeleteRetryServiceTest {
 
         Long docId = docs.get(1).getId();
 
-        // when - 정상 처리 (mocking하지 않음)
+        // when
         docService.delete(docId, user.getId());
 
-        // then - 정상 처리되었으므로 MongoDeleteFailure는 저장되지 않아야 함
+        // then
         await()
                 .atMost(Duration.ofSeconds(10))
                 .pollInterval(Duration.ofMillis(100))
@@ -182,7 +179,6 @@ class MongoDeleteRetryServiceTest {
                 });
     }
 
-    // 디버깅을 위한 테스트 메서드 추가
     @Test
     void 이벤트_리스너가_정상적으로_동작하는지_확인() throws Exception {
         // given
