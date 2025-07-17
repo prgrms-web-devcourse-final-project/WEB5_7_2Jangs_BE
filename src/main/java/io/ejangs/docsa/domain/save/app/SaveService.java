@@ -1,56 +1,97 @@
 package io.ejangs.docsa.domain.save.app;
 
-import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.save.dao.SaveRepositoryAdapter;
+import com.mongodb.DuplicateKeyException;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
+import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveUpdateIdDto;
+import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
+import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SaveService {
 
-    private final DocRepository docRepository;
-    private final UserRepository userRepository;
-    private final SaveRepositoryAdapter saveRepository;
+    private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
 
-    @Transactional
-    public SaveUpdateResponse updateSave(SaveUpdateIdDto dto, SaveUpdateRequest request) {
-        userRepository.findById(dto.userId())
-                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+    @Transactional(readOnly = true)
+    public SaveGetResponse getSave(SaveIdentifierDto dto) {
+        Save findSave = getValidSave(dto);
 
-        docRepository.findById(dto.documentId())
-                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+        SaveContent saveContent = getSaveContentById(findSave.getSaveMongoId());
 
-        Save findSave = saveRepository.findSaveById(dto.saveId());
+        return SaveMapper.toSaveGetResponse(findSave.getUpdatedAt(), saveContent.getContent());
+    }
 
-        // SAVE 소유자인지 검사
-        if (!findSave.getBranch().getDoc().getUser().getId().equals(dto.userId())) {
-            throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
+    @Transactional(rollbackFor = Exception.class)
+    public SaveUpdateResponse updateSave(SaveIdentifierDto dto, SaveUpdateRequest request) {
+        Save findSave = getValidSave(dto);
+
+        SaveContent saveContent = getSaveContentById(findSave.getSaveMongoId());
+
+        // MySQL 먼저 저장
+        RenewUpdatedAtHelper.touch(findSave);
+        saveRepository.save(findSave);
+
+        // MongoDB 저장
+        saveContent.updateContent(request.content());
+        try {
+            saveContentRepository.save(saveContent);
+        } catch (DuplicateKeyException e) {
+            log.warn("중복 키로 Mongo 저장 실패 - saveId={}, mongoId={}, message={}", findSave.getId(),
+                    findSave.getSaveMongoId(), e.getMessage());
+            throw new CustomException(SaveErrorCode.SAVE_CREATE_FAIL);
+        } catch (DataAccessException e) {
+            log.error("Mongo 저장 실패: {}", e.getMessage(), e);
+            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
         }
 
-        SaveContent saveContent = saveRepository.findSaveContentById(findSave.getSaveMongoId());
+        return SaveMapper.toSaveUpdateResponse(findSave);
+    }
 
-        return saveRepository.updateSave(findSave, saveContent, request.content());
+    public Save getSaveById(Long id) {
+        return saveRepository.findById(id)
+                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
+    }
+
+    public SaveContent getSaveContentById(String id) {
+        return saveContentRepository.findById(id)
+                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
     }
 
     public void deleteSaveIfExists(Long branchId) {
-        saveRepository.findSaveByBranchId(branchId).ifPresent(save -> {
-            saveRepository.deleteSave(save);
+        saveRepository.findByBranchId(branchId).ifPresent(save -> {
+            saveRepository.delete(save);
             saveContentRepository.findById(save.getSaveMongoId())
                     .ifPresent(saveContentRepository::delete);
         });
+    }
+
+    private Save getValidSave(SaveIdentifierDto dto) {
+        // 존재하는 user, document 인지 검사
+        Save findSave = getSaveById(dto.saveId());
+
+        // SAVE 소유자인지 검사
+        checkSaveAndDocOwner(findSave, dto.userId(), dto.documentId());
+        return findSave;
+    }
+
+    private void checkSaveAndDocOwner(Save save, Long userId, Long documentId) {
+        if (!saveRepository.validateSaveOwnership(save.getId(), documentId, userId)) {
+            throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
+        }
     }
 }

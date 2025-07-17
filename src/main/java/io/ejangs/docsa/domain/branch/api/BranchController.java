@@ -2,7 +2,9 @@ package io.ejangs.docsa.domain.branch.api;
 
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
+import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,4 +25,14 @@ public class BranchController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(branchService.createBranchOrSave(documentId, request, userId));
     }
+
+    // 브랜치 이름 수정
+    @PatchMapping("/{branchId}")
+    public ResponseEntity<BranchRenameResponse> renameBranch(@RequestParam Long userId,
+            @PathVariable Long documentId, @PathVariable Long branchId,
+            @Valid @RequestBody BranchRenameRequest request) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(branchService.renameBranch(documentId, branchId, request.newName(), userId));
+    }
+
 }
