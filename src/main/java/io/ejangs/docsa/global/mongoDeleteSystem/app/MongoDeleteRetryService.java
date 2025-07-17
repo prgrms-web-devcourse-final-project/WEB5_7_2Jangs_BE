@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.app;
+package io.ejangs.docsa.global.mongoDeleteSystem.app;
 
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
