@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.dto;
+package io.ejangs.docsa.global.mongoDeleteSystem.dto;
 
 import java.util.List;
 
