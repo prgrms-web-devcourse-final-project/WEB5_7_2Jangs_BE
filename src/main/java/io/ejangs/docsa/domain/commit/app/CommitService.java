@@ -61,7 +61,6 @@ public class CommitService {
 
             // * 3. Commit Entity만들어서 DB에 저장
             Commit savedCommit = saveCommit(branch, commitRequest);
-            branch.updateLeafCommit(savedCommit);
             branch.initializeRootCommitIfNull(savedCommit);
 
             // * 4. branchId를 기반으로 Save가 있다면 삭제
@@ -69,6 +68,7 @@ public class CommitService {
 
             // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
             Commit baseCommit = getBaseCommit(branch);
+            branch.updateLeafCommit(savedCommit);
 
             // * 6. 새로운 간선 생성
             Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);

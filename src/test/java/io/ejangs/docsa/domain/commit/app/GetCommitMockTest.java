@@ -67,7 +67,7 @@ class GetCommitMockTest {
         baseCommit = CommitTestUtils.createBaseCommit(branch);
         baseCommit.setBranch(branch);
 
-        targetCommit = CommitTestUtils.createCommit(branch, 2L);
+        targetCommit = CommitTestUtils.createMockCommit(branch, 2L);
         mockContent = CommitTestUtils.createMockContent();
     }
 

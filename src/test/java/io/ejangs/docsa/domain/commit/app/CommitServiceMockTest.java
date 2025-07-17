@@ -32,6 +32,7 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,7 +127,7 @@ class CommitServiceMockTest {
         savedCbs = CommitTestUtils.createCommitBlockSequence();
 
         // Commit 생성
-        savedCommit = CommitTestUtils.createCommit(branch, 2L);
+        savedCommit = CommitTestUtils.createMockCommit(branch, 2L);
 
         // Expected response 생성
         expectedResponse = new CreateCommitResponse(1L);
@@ -141,9 +142,9 @@ class CommitServiceMockTest {
     void createCommit_Success() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
+        when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
-        when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
+        lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
                 Optional.of(CommitTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
@@ -165,7 +166,7 @@ class CommitServiceMockTest {
             assertThat(result).isEqualTo(expectedResponse);
 
             verify(docService).getById(docId);
-            verify(branchService).findById(branchId);
+            verify(branchService).getById(branchId);
             verify(blockService).saveBlocks(createCommitRequest.blocks());
             verify(cbsRepository).save(savedCbs);
             verify(commitRepository).save(savedCommit);
@@ -177,9 +178,9 @@ class CommitServiceMockTest {
     void createCommit_Success_DeleteExistingSave() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
+        when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
-        when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
+        lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
                 Optional.of(CommitTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
@@ -211,7 +212,7 @@ class CommitServiceMockTest {
         branchWithoutLeafCommit.updateLeafCommit(null); // leafCommit을 null로 설정
 
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branchWithoutLeafCommit);
+        when(branchService.getById(branchId)).thenReturn(branchWithoutLeafCommit);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(
                 branchWithoutLeafCommit.getFromCommit().getCommitMongoId())).thenReturn(
@@ -251,7 +252,7 @@ class CommitServiceMockTest {
                 .isInstanceOf(CustomException.class);
 
         verify(docService).getById(docId);
-        verify(branchService, never()).findById(any());
+        verify(branchService, never()).getById(any());
         verify(blockService, never()).saveBlocks(any());
     }
 
@@ -260,18 +261,27 @@ class CommitServiceMockTest {
     void createCommit_Fail_BlockSaveFails_ShouldRollback() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
+        when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenThrow(new RuntimeException("Block save failed"));
 
-        // When & Then
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Block save failed");
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-        verify(docService).getById(docId);
-        verify(branchService).findById(branchId);
-        verify(blockService).saveBlocks(createCommitRequest.blocks());
-        verify(cbsRepository, never()).save(any());
+            when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
+                    savedCommit);
+            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
+
+            // When & Then
+            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
+
+            verify(docService).getById(docId);
+            verify(branchService).getById(branchId);
+            verify(blockService).saveBlocks(createCommitRequest.blocks());
+            verify(cbsRepository, never()).save(any());
+        }
     }
 
     @Test
@@ -279,7 +289,7 @@ class CommitServiceMockTest {
     void createCommit_Fail_JpaSaveFails_ShouldRollbackMongoDB() {
         // Given
         when(docService.getById(docId)).thenReturn(doc);
-        lenient().when(branchService.findById(branchId)).thenReturn(branch);
+        lenient().when(branchService.getById(branchId)).thenReturn(branch);
         lenient().when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
@@ -290,12 +300,12 @@ class CommitServiceMockTest {
             when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
                     savedCommit);
             when(commitRepository.save(savedCommit)).thenThrow(
-                    new RuntimeException("JPA save failed"));
+                    new RuntimeException("Block save failed"));
 
             // When & Then
             assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
                     .isInstanceOf(RuntimeException.class)
-                    .hasMessage("JPA save failed");
+                    .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
             // MongoDB에 반영 안됨
             verify(cbsRepository, never()).save(savedCbs);
@@ -313,17 +323,25 @@ class CommitServiceMockTest {
                 List.of(CommitTestUtils.createBlockRequest("block1")),
                 List.of("block1", "invalidBlock") // 존재하지 않는 블록
         );
+        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
+                CommitBlockSequenceMapper.class);
+                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-        when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.findById(branchId)).thenReturn(branch);
-        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
+            when(docService.getById(docId)).thenReturn(doc);
+            when(branchService.getById(branchId)).thenReturn(branch);
+            when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
+            when(CommitMapper.toEntity(branch, invalidRequest)).thenReturn(
+                    savedCommit);
+            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
 
-        // When & Then
-        assertThatThrownBy(() -> commitService.createCommit(docId, invalidRequest))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining(BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());
+            // When & Then
+            assertThatThrownBy(() -> commitService.createCommit(docId, invalidRequest))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessageContaining(
+                            BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());
 
-        // MongoDB에 반영 안됨
-        verify(cbsRepository, never()).save(savedCbs);
+            // MongoDB에 반영 안됨
+            verify(cbsRepository, never()).save(savedCbs);
+        }
     }
 }
