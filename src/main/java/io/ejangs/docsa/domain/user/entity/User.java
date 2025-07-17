@@ -54,4 +54,8 @@ public class User extends BaseEntity {
             doc.setUser(this);
         }
     }
+
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+    }
 }
