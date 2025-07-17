@@ -4,6 +4,7 @@ import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import jakarta.validation.Valid;
@@ -43,6 +44,13 @@ public class DocController {
                 .body(docService.getSimpleList(userId));
     }
 
+    @GetMapping
+    public ResponseEntity<List<DocListResponse>> readList(@RequestParam Long userId) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(docService.getList(userId));
+    }
+
     @PatchMapping("/{docId}")
     public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
             @PathVariable Long docId,
@@ -54,8 +62,8 @@ public class DocController {
     }
 
     @GetMapping("/{docId}/graph")
-    public ResponseEntity<CommitGraphResponse> getGraph(@RequestParam Long userId,@PathVariable Long docId){
+    public ResponseEntity<CommitGraphResponse> getGraph(@RequestParam Long userId,
+            @PathVariable Long docId) {
         return ResponseEntity.status(HttpStatus.OK).body(docService.getGraph(userId, docId));
     }
-
 }

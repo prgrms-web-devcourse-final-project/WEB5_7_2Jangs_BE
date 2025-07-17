@@ -245,7 +245,6 @@ class AuthServiceTest {
         // when & then
         assertThatThrownBy(() -> authService.checkCode(checkRequest))
                 .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.USER_NOT_FOUND_FOR_RESET);
+                .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
     }
-
 }

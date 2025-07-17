@@ -93,9 +93,10 @@ public class AuthService {
             }
             case RESET_PASSWORD -> {
                 if (!exists) {
-                    throw new CustomException(AuthErrorCode.USER_NOT_FOUND_FOR_RESET);
+                    throw new CustomException(UserErrorCode.USER_NOT_FOUND);
                 }
             }
+            default -> throw new CustomException(AuthErrorCode.UNSUPPORTED_CODE_TYPE);
         }
     }
 
