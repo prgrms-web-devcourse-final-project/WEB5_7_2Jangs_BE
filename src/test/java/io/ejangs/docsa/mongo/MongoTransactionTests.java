@@ -2,6 +2,7 @@ package io.ejangs.docsa.mongo;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.doc.app.MongoTransactionTestService;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,9 +19,13 @@ class MongoTxTestServiceTest {
     @Autowired
     SaveContentRepository saveContentRepository;
 
+    @Autowired
+    CommitRepository commitRepository;
+
     @BeforeEach
     void setUp() {
         saveContentRepository.deleteAll();
+        commitRepository.deleteAll();
     }
 
     @Test
@@ -37,6 +42,19 @@ class MongoTxTestServiceTest {
         // then
         long after = saveContentRepository.count();
 
+        assertThat(after).isEqualTo(before);
+    }
+
+    @Test
+    void rdbTransactionShouldRollbackOnException() {
+        long before = saveContentRepository.count();
+
+        try {
+            mongoTransactionTestService.saveCommit();
+        } catch (Exception ignored) {
+        }
+
+        long after = saveContentRepository.count();
         assertThat(after).isEqualTo(before);
     }
 }
