@@ -9,4 +9,11 @@ public record DocDeleteMongoIdsDto(
         List<String> blockIds
 ) {
 
+    public DocDeleteMongoIdsDto {
+        saveContentsIds = saveContentsIds == null ? List.of() : saveContentsIds;
+        commitBlockSequenceIds =
+                commitBlockSequenceIds == null ? List.of() : commitBlockSequenceIds;
+        blockIds = blockIds == null ? List.of() : blockIds;
+    }
+
 }
