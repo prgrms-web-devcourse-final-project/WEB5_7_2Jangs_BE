@@ -138,6 +138,7 @@ public class CommitService {
         return new CompareMergeCommitResponse(baseContent, targetContent);
     }
 
+    @Transactional
     public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest) {
         /**
          * Block을 저장하고
@@ -159,6 +160,9 @@ public class CommitService {
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());
 
+            /**
+             * ToDo: 만약 정상작동하지 않는다면 여기서 이벤트 기반 처리로 넘기는게 나을 수 있을것 같습니다
+             */
             // Commit을 저장
             Commit saveMergeCommit = saveMergeCommit(doc, baseBranch, targetBranch,
                     mergeRequest, commitMongoIds.cbsId());
@@ -181,7 +185,7 @@ public class CommitService {
         }
     }
 
-    @Transactional(transactionManager = "jpaTransactionManager")
+    @Transactional//(transactionManager = "jpaTransactionManager")
     public Commit saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
             MergeCommitRequest request, String commitMongoId) {
 
@@ -207,7 +211,7 @@ public class CommitService {
     }
 
     // ToDo: MongoTransactionManager 적용 필요
-    @Transactional(transactionManager = "mongoTransactionManager")
+    @Transactional//(transactionManager = "mongoTransactionManager")
     public CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {
         List<Block> savedBlocks = blockService.saveBlocks(blocks);
         List<String> blockSequence = savedBlocks.stream()
@@ -220,7 +224,7 @@ public class CommitService {
         return new CommitMongoIdsDto(savedCbs.getId(), blockSequence);
     }
 
-    @Transactional(transactionManager = "mongoTransactionManager")
+    @Transactional//(transactionManager = "mongoTransactionManager")
     public void rollbackMongoTransaction(CommitMongoIdsDto commitMongoIds) {
         try {
             // 관련된 Block들도 삭제 (필요한 경우)
