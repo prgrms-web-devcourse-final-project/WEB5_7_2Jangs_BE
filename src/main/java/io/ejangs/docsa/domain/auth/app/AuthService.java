@@ -111,7 +111,7 @@ public class AuthService {
     private Cache getRequiredCache(String name) {
         Cache cache = cacheManager.getCache(name);
         if (cache == null) {
-            throw new CustomException(AuthErrorCode.CACHE_NOT_FOUND);
+            throw new CustomException(AuthErrorCode.INTERNAL_ERROR);
         }
         return cache;
     }
