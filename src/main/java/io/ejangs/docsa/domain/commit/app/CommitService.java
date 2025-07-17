@@ -3,12 +3,15 @@ package io.ejangs.docsa.domain.commit.app;
 import com.mongodb.MongoException;
 import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.block.document.Block;
+import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
+import io.ejangs.docsa.domain.commit.dto.CommitMongoIdsDto;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
@@ -133,6 +136,107 @@ public class CommitService {
         List<Map<String, Object>> targetContent = getWholeContent(targetId);
 
         return new CompareMergeCommitResponse(baseContent, targetContent);
+    }
+
+    public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest) {
+        /**
+         * Block을 저장하고
+         * CommitSequence를 저장하고
+         *
+         * Commit을 생성하고
+         * Commit에 CommitSequence의 _id를 저장하고
+         * 간선을 2개 저장하고
+         * baseBranch의 leaf를 업데이트
+         */
+        CommitMongoIdsDto commitMongoIds = null;
+        try {
+            // 문서가 존재하는지 검사
+            Doc doc = docService.getById(docId);
+            // 브랜치가 존재하는지 검사
+            Branch baseBranch = branchService.getById(mergeRequest.baseBranchId());
+            Branch targetBranch = branchService.getById(mergeRequest.targetBranchId());
+
+            // Block과 Cbs를 저장
+            commitMongoIds = saveBlockAndSequence(mergeRequest.content());
+
+            // Commit을 저장
+            Commit saveMergeCommit = saveMergeCommit(doc, baseBranch, targetBranch,
+                    mergeRequest, commitMongoIds.cbsId());
+
+            return CommitMapper.toCreateCommitResponse(saveMergeCommit);
+        } catch (Exception e) {
+            if (commitMongoIds != null) {
+                /**
+                 * 롤백 시도
+                 * ToDo : MongoDeleteHandler를 적용시 변경될 예정
+                 * eventPublisher.publishEvent(docDeleteMongoIds)?
+                 */
+                rollbackMongoTransaction(commitMongoIds);
+            }
+            if (e instanceof CustomException) {
+                throw (CustomException) e;
+            }
+            log.error("Create Commit 알 수 없는 오류 - {}", e.getMessage(), e);
+            throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+        }
+    }
+
+    @Transactional(transactionManager = "jpaTransactionManager")
+    public Commit saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
+            MergeCommitRequest request, String commitMongoId) {
+
+        Commit commit = CommitMapper.toEntity(baseBranch, request);
+        commit.initializeCommitMongoId(commitMongoId);
+        Commit savedCommit = commitRepository.save(commit);
+        commitRepository.flush();
+
+        baseBranch.addCommit(savedCommit);
+
+        Commit baseCommit = getLeafCommit(baseBranch);
+        Commit targetCommit = getLeafCommit(targetBranch);
+
+        Edge edge1 = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
+        Edge edge2 = EdgeMapper.toEntity(doc, targetCommit, savedCommit);
+        edgeService.saveEdge(edge1);
+        edgeService.saveEdge(edge2);
+
+        baseBranch.updateLeafCommit(savedCommit);
+        branchService.saveBranch(baseBranch);
+
+        return savedCommit;
+    }
+
+    // ToDo: MongoTransactionManager 적용 필요
+    @Transactional(transactionManager = "mongoTransactionManager")
+    public CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {
+        List<Block> savedBlocks = blockService.saveBlocks(blocks);
+        List<String> blockSequence = savedBlocks.stream()
+                .map(Block::getId)
+                .toList();
+
+        CommitBlockSequence cbs = CommitBlockSequenceMapper.toEntity(blockSequence);
+        CommitBlockSequence savedCbs = cbsRepository.save(cbs);
+
+        return new CommitMongoIdsDto(savedCbs.getId(), blockSequence);
+    }
+
+    @Transactional(transactionManager = "mongoTransactionManager")
+    public void rollbackMongoTransaction(CommitMongoIdsDto commitMongoIds) {
+        try {
+            // 관련된 Block들도 삭제 (필요한 경우)
+            commitMongoIds.blockIds().forEach(blockService::deleteBlock);
+
+            // CommitBlockSequence 삭제
+            cbsRepository.deleteById(commitMongoIds.cbsId());
+        } catch (Exception e) {
+            log.error("Failed to rollback MongoDB", e);
+            // TODO 롤백 실패 로직 고민 필요
+        }
+    }
+
+    private Commit getLeafCommit(Branch branch) {
+        return Optional.ofNullable(branch.getLeafCommit())
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 
     private List<Map<String, Object>> getWholeContent(Long commitId) {

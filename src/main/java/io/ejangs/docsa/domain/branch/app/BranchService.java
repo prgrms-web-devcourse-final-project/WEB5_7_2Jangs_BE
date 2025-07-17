@@ -183,6 +183,9 @@ public class BranchService {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
     }
 
+    public Branch saveBranch(Branch branch) {
+        return branchRepository.save(branch);
+    }
 }
 
 
