@@ -35,7 +35,7 @@ public class MongoConfig {
         return converter;
     }
 
-    @Bean
+    @Bean(name = "mongoTransactionManager")
     public MongoTransactionManager mongoTransactionManager(
             MongoDatabaseFactory mongoDatabaseFactory) {
         return new MongoTransactionManager(mongoDatabaseFactory);
