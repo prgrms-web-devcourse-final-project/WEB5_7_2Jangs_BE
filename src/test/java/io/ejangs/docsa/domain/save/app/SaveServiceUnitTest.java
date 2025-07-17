@@ -7,25 +7,17 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
-import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
-import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -39,7 +31,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class SaveServiceUnitTest {
@@ -56,7 +47,7 @@ class SaveServiceUnitTest {
     private SaveService saveService;
 
     private SaveIdentifierDto idDto;
-    private List<SaveBlock> data;
+    private List<Map<String, Object>> data;
     private SaveUpdateRequest request;
 
     private Long userId = 1L;
@@ -66,10 +57,7 @@ class SaveServiceUnitTest {
     @BeforeEach
     void setUp() {
         idDto = SaveIdentifierDto.of(docId, saveId, userId);
-        data = List.of(
-                new SaveBlock(Map.of("text1", "Key features")),
-                new SaveBlock(Map.of("text2", "Key features"))
-        );
+        data = List.of(Map.of("text1", "Key features"), Map.of("text2", "Key features"));
         request = new SaveUpdateRequest(data);
     }
 
@@ -103,25 +91,22 @@ class SaveServiceUnitTest {
     void getSave_fail_invalidUser() {
         when(saveRepository.findById(idDto.saveId())).thenReturn(Optional.of(mockSave));
         when(saveRepository.validateSaveOwnership(idDto.saveId(), idDto.documentId(),
-                idDto.userId())).thenReturn(
-                false);
+                idDto.userId())).thenReturn(false);
 
         when(mockSave.getId()).thenReturn(idDto.saveId());
         // when & then
-        assertThatThrownBy(() -> saveService.getSave(idDto))
-                .isInstanceOf(CustomException.class)
+        assertThatThrownBy(() -> saveService.getSave(idDto)).isInstanceOf(CustomException.class)
                 .hasMessageContaining("잘못된 접근입니다.");
     }
 
     @Test
     @DisplayName("존재하지 않는 저장 ID로 수정 요청 시 예외가 발생한다")
     void getSave_fail_invalidSave() {
-        when(saveRepository.findById(idDto.saveId()))
-                .thenThrow(new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
+        when(saveRepository.findById(idDto.saveId())).thenThrow(
+                new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
 
         // when & then
-        assertThatThrownBy(() -> saveService.getSave(idDto))
-                .isInstanceOf(CustomException.class)
+        assertThatThrownBy(() -> saveService.getSave(idDto)).isInstanceOf(CustomException.class)
                 .hasMessageContaining("해당 저장 데이터를 찾을 수 없습니다.");
     }
 
@@ -137,9 +122,9 @@ class SaveServiceUnitTest {
                 idDto.userId())).thenReturn(true);
 
         when(mockSave.getId()).thenReturn(idDto.saveId());
-
+        when(mockSave.getUpdatedAt()).thenReturn(LocalDateTime.now());
         try (MockedStatic<SaveMapper> mockedMapper = mockStatic(SaveMapper.class)) {
-            mockedMapper.when(() -> SaveMapper.toSaveUpdateResponse(mockSave))
+            mockedMapper.when(() -> SaveMapper.toSaveUpdateResponse(mockSave.getUpdatedAt()))
                     .thenReturn(expectedResponse);
 
             SaveUpdateResponse actualResponse = saveService.updateSave(idDto, request);
@@ -155,26 +140,23 @@ class SaveServiceUnitTest {
     void updateSave_fail_invalidUser() {
         when(saveRepository.findById(idDto.saveId())).thenReturn(Optional.of(mockSave));
         when(saveRepository.validateSaveOwnership(idDto.saveId(), idDto.documentId(),
-                idDto.userId())).thenReturn(
-                false);
+                idDto.userId())).thenReturn(false);
         when(mockSave.getId()).thenReturn(idDto.saveId());
 
         // when & then
-        assertThatThrownBy(() -> saveService.updateSave(idDto, request))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining("잘못된 접근입니다.");
+        assertThatThrownBy(() -> saveService.updateSave(idDto, request)).isInstanceOf(
+                CustomException.class).hasMessageContaining("잘못된 접근입니다.");
     }
 
     @Test
     @DisplayName("존재하지 않는 저장 ID로 수정 요청 시 예외가 발생한다")
     void updateSave_fail_invalidSave() {
-        when(saveRepository.findById(idDto.saveId()))
-                .thenThrow(new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
+        when(saveRepository.findById(idDto.saveId())).thenThrow(
+                new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
 
         // when & then
-        assertThatThrownBy(() -> saveService.updateSave(idDto, request))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining("해당 저장 데이터를 찾을 수 없습니다.");
+        assertThatThrownBy(() -> saveService.updateSave(idDto, request)).isInstanceOf(
+                CustomException.class).hasMessageContaining("해당 저장 데이터를 찾을 수 없습니다.");
     }
 
     @Test
@@ -187,12 +169,11 @@ class SaveServiceUnitTest {
         when(saveRepository.findById(dto.saveId())).thenReturn(Optional.of(mockSave));
 
         // when & then
-        assertThatThrownBy(() -> saveService.updateSave(dto, request))
-                .isInstanceOf(CustomException.class)
-                .satisfies(e -> {
-                    CustomException ce = (CustomException) e;
-                    assertThat(ce.getErrorCode()).isEqualTo(SaveErrorCode.SAVE_NOT_OWNER);
-                });
+        assertThatThrownBy(() -> saveService.updateSave(dto, request)).isInstanceOf(
+                CustomException.class).satisfies(e -> {
+            CustomException ce = (CustomException) e;
+            assertThat(ce.getErrorCode()).isEqualTo(SaveErrorCode.SAVE_NOT_OWNER);
+        });
     }
 
     @Test
@@ -211,12 +192,11 @@ class SaveServiceUnitTest {
         when(mockSave.getId()).thenReturn(dto.saveId());
 
         // when & then
-        assertThatThrownBy(() -> saveService.updateSave(dto, request))
-                .isInstanceOf(CustomException.class)
-                .satisfies(e -> {
-                    CustomException ce = (CustomException) e;
-                    assertThat(ce.getErrorCode()).isEqualTo(SaveErrorCode.SAVE_NOT_OWNER);
-                });
+        assertThatThrownBy(() -> saveService.updateSave(dto, request)).isInstanceOf(
+                CustomException.class).satisfies(e -> {
+            CustomException ce = (CustomException) e;
+            assertThat(ce.getErrorCode()).isEqualTo(SaveErrorCode.SAVE_NOT_OWNER);
+        });
     }
 
 }

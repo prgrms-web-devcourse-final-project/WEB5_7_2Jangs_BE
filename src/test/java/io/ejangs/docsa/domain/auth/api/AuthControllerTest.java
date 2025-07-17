@@ -256,7 +256,8 @@ class AuthControllerTest {
     @DisplayName("회원가입 시 이미 가입된 사용자인 경우 400 에러 발생")
     void checkCode_SignupWithExistingUser() throws Exception {
         // given
-        CodeCheckRequest request = new CodeCheckRequest("existing@example.com", "CODE123", CodeType.SIGNUP);
+        CodeCheckRequest request = new CodeCheckRequest("existing@example.com", "CODE123",
+                CodeType.SIGNUP);
 
         doThrow(new CustomException(AuthErrorCode.ALREADY_REGISTERED_USER))
                 .when(authService).checkCode(request);
@@ -277,9 +278,10 @@ class AuthControllerTest {
     @DisplayName("비밀번호 변경 시 존재하지 않는 사용자인 경우 400 에러 발생")
     void checkCode_ResetPasswordWithUnknownUser() throws Exception {
         // given
-        CodeCheckRequest request = new CodeCheckRequest("unknown@example.com", "CODE999", CodeType.RESET_PASSWORD);
+        CodeCheckRequest request = new CodeCheckRequest("unknown@example.com", "CODE999",
+                CodeType.RESET_PASSWORD);
 
-        doThrow(new CustomException(AuthErrorCode.USER_NOT_FOUND_FOR_RESET))
+        doThrow(new CustomException(UserErrorCode.USER_NOT_FOUND))
                 .when(authService).checkCode(request);
 
         // when & then

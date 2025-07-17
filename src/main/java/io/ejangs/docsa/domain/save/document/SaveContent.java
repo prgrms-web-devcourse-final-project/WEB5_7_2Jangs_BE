@@ -1,8 +1,8 @@
 package io.ejangs.docsa.domain.save.document;
 
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,14 +18,14 @@ public class SaveContent {
     @Id
     private String id;
 
-    private List<SaveBlock> content;
+    private List<Map<String, Object>> content;
 
     @Builder
-    private SaveContent(List<SaveBlock> content) {
+    private SaveContent(List<Map<String, Object>> content) {
         this.content = content != null ? content : new ArrayList<>();
     }
 
-    public void updateContent(List<SaveBlock> content) {
+    public void updateContent(List<Map<String, Object>> content) {
         this.content = content;
     }
 }
