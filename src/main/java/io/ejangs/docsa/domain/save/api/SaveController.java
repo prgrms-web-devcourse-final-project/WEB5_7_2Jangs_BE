@@ -24,6 +24,7 @@ public class SaveController {
     private final SaveService saveService;
 
     @GetMapping
+    @GetSaveDocs
     public ResponseEntity<SaveGetResponse> getSave(@RequestParam Long userId,
             @PathVariable Long saveId,
             @PathVariable Long documentId) {
