@@ -7,11 +7,13 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -30,42 +32,45 @@ public class DocController {
     private final DocService docService;
 
     @PostMapping
-    public ResponseEntity<DocCreateResponse> create(@RequestParam Long userId,
+    public ResponseEntity<DocCreateResponse> create(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(docService.create(request, userId));
+                .body(docService.create(request, userDetails.getId()));
     }
 
     @GetMapping("/sidebar")
     public ResponseEntity<List<DocListSimpleResponse>> readListSidebar(
-            @RequestParam Long userId) {
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getSimpleList(userId));
+                .body(docService.getSimpleList(userDetails.getId()));
     }
 
     @GetMapping
-    public ResponseEntity<List<DocListResponse>> readList(@RequestParam Long userId) {
+    public ResponseEntity<List<DocListResponse>> readList(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getList(userId));
+                .body(docService.getList(userDetails.getId()));
     }
 
     @PatchMapping("/{docId}")
     public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
             @PathVariable Long docId,
-            @RequestParam Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.updateTitle(userId, docId, request));
+                .body(docService.updateTitle(userDetails.getId(), docId, request));
     }
 
     @GetMapping("/{docId}/graph")
-    public ResponseEntity<CommitGraphResponse> getGraph(@RequestParam Long userId,
+    public ResponseEntity<CommitGraphResponse> getGraph(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
-        return ResponseEntity.status(HttpStatus.OK).body(docService.getGraph(userId, docId));
+        return ResponseEntity.status(HttpStatus.OK).body(docService.getGraph(userDetails.getId(), docId));
     }
 
     @DeleteMapping("/{docId}")
