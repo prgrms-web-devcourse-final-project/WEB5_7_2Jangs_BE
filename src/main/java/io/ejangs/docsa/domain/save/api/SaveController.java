@@ -34,6 +34,7 @@ public class SaveController {
     }
 
     @PutMapping
+    @UpdateSaveDocs
     public ResponseEntity<SaveUpdateResponse> updateSave(@RequestParam Long userId,
             @PathVariable Long documentId,
             @PathVariable Long saveId,
