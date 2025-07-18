@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
 import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
+import io.ejangs.docsa.domain.auth.model.CodeType;
 import io.ejangs.docsa.domain.auth.util.AuthCodeGenerator;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
@@ -137,7 +138,7 @@ class AuthServiceTest {
         when(cacheManager.getCache("passCodeCache")).thenReturn(passCodeCache);
         when(authCodeGenerator.generatePassCode()).thenReturn(passCode);
 
-        CodeCheckRequest checkRequest = new CodeCheckRequest(email, code);
+        CodeCheckRequest checkRequest = new CodeCheckRequest(email, code, CodeType.SIGNUP);
 
         // when
         CodeCheckResponse response = authService.checkCode(checkRequest);
@@ -156,7 +157,7 @@ class AuthServiceTest {
         String email = signupRequest.email();
         when(signupCodeCache.get(email)).thenReturn(null); // 캐시에 없음
 
-        CodeCheckRequest checkRequest = new CodeCheckRequest(email, "ANYCODE");
+        CodeCheckRequest checkRequest = new CodeCheckRequest(email, "ANYCODE", CodeType.SIGNUP);
 
         // when & then
         assertThatThrownBy(() -> authService.checkCode(checkRequest))
@@ -176,7 +177,7 @@ class AuthServiceTest {
 
         when(signupCodeCache.get(email)).thenReturn(() -> realCode);
 
-        CodeCheckRequest checkRequest = new CodeCheckRequest(email, wrongCode);
+        CodeCheckRequest checkRequest = new CodeCheckRequest(email, wrongCode, CodeType.SIGNUP);
 
         // when & then
         assertThatThrownBy(() -> authService.checkCode(checkRequest))
@@ -214,5 +215,36 @@ class AuthServiceTest {
 
         verify(pwdResetCodeCache, never()).put(any(), any());
         verify(mailService, never()).sendCodeMail(any(), any());
+    }
+
+    @Test
+    @DisplayName("회원가입 - 이미 존재하는 이메일로 SIGNUP 타입 인증 요청 시 예외 발생")
+    void checkCode_SignupWithExistingEmail() {
+        // given
+        String email = "existing@example.com";
+        when(userRepository.existsByEmail(email)).thenReturn(true);
+
+        CodeCheckRequest checkRequest = new CodeCheckRequest(email, "CODE123", CodeType.SIGNUP);
+
+        // when & then
+        assertThatThrownBy(() -> authService.checkCode(checkRequest))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.ALREADY_REGISTERED_USER);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 - 존재하지 않는 사용자로 요청 시 예외 발생")
+    void checkCode_ResetPasswordWithUnknownEmail() {
+        // given
+        String email = "unknown@example.com";
+        when(userRepository.existsByEmail(email)).thenReturn(false);
+
+        CodeCheckRequest checkRequest = new CodeCheckRequest(email, "CODE321",
+                CodeType.RESET_PASSWORD);
+
+        // when & then
+        assertThatThrownBy(() -> authService.checkCode(checkRequest))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
     }
 }

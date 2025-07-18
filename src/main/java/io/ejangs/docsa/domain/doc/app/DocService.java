@@ -62,6 +62,8 @@ public class DocService {
     @Value("${default.branch}")
     private String defaultBranchName;
 
+    private static final String DEFAULT_PREVIEW = "미리보기 없음";
+
     @Transactional(rollbackFor = Exception.class)
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
 
@@ -139,19 +141,19 @@ public class DocService {
 
     private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
         if (branch == null || recent == null) {
-            return "미리보기 없음";
+            return DEFAULT_PREVIEW;
         }
 
         return switch (recent.recentType()) {
             case COMMIT -> extractPreviewFromCommit(branch.getLeafCommit());
             case SAVE -> extractPreviewFromSave(branch.getSave());
-            default -> "미리보기 없음";
+            default -> DEFAULT_PREVIEW;
         };
     }
 
     private String extractPreviewFromCommit(Commit commit) {
         if (commit == null) {
-            return "미리보기 없음";
+            return DEFAULT_PREVIEW;
         }
 
         List<Map<String, Object>> content = commitContentAssembler.assemble(
@@ -161,7 +163,7 @@ public class DocService {
 
     private String extractPreviewFromSave(Save save) {
         if (save == null) {
-            return "미리보기 없음";
+            return DEFAULT_PREVIEW;
         }
 
         SaveContent saveContent = saveContentRepository.findById(save.getSaveMongoId())
@@ -230,6 +232,7 @@ public class DocService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Doc getById(Long id) {
         return docRepository.findById(id)
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));

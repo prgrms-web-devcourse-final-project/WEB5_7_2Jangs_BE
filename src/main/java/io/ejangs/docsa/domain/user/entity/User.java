@@ -59,4 +59,8 @@ public class User extends BaseEntity {
         this.docs.remove(doc);
     }
 
+
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+    }
 }

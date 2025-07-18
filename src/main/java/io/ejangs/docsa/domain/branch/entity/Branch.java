@@ -33,7 +33,7 @@ public class Branch extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 100, nullable = false)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -70,6 +70,12 @@ public class Branch extends BaseEntity {
         this.leafCommit = leafCommit;
     }
 
+    public void initializeRootCommitIfNull(Commit commit) {
+        if (this.rootCommit == null) {
+            this.rootCommit = commit;
+        }
+    }
+
     public void setSave(Save save) {
         this.save = save;
         if (save.getBranch() != this) {
@@ -89,5 +95,8 @@ public class Branch extends BaseEntity {
         if (commit.getBranch() != this) {
             commit.setBranch(this);
         }
+    }
+    public void updateName(String name){
+        this.name = name;
     }
 }
