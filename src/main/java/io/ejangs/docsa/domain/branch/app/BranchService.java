@@ -1,8 +1,5 @@
 package io.ejangs.docsa.domain.branch.app;
 
-import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
-import static java.util.stream.Collectors.toList;
-
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
@@ -13,18 +10,20 @@ import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.app.CommitService;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
-import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.user.app.UserService;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.*;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
 
 
 
@@ -48,6 +48,7 @@ public class BranchService {
     private final DocRepository docRepository;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final BlockRepository blockRepository;
+    private final EdgeRepository edgeRepository;
 
     private final CommitContentAssembler commitContentAssembler;
 
@@ -57,8 +58,8 @@ public class BranchService {
     /**
      * '이어서 작업하기' 로직으로, 브랜치를 생성하고 저장을 추가하거나 기존 브랜치에 저장을 추가합니다.
      * <p>
-     * fromCommitId가 존재하면 기존 커밋에서 브랜치를 만들거나 저장(save)을 추가하는 상황입니다. fromCommitId가 null이면 최초 브랜치
-     * 생성으로, 이 경우는 doc 도메인에서 처리합니다.
+     * fromCommitId가 존재하면 기존 커밋에서 브랜치를 만들거나 저장(save)을 추가하는 상황입니다. fromCommitId가 null이면 최초 브랜치 생성으로,
+     * 이 경우는 doc 도메인에서 처리합니다.
      */
 
     @Transactional
@@ -74,7 +75,7 @@ public class BranchService {
             throw new CustomException(CommitErrorCode.INVALID_FROM_COMMIT);
         }
 
-        // 2. '이어서 작업하기' 를 시도하는 커밋 검증,
+        // 2. '이어서 작업하기' 를 시도하는 커밋 검증
         Commit fromCommit = commitService.getById(fromCommitId);
 
         Branch fromBranch = fromCommit.getBranch();
@@ -175,8 +176,8 @@ public class BranchService {
     /**
      * 브랜치 삭제 기능입니다.
      * <p>
-     *  삭제하려는 브랜치는 메인 브랜치가 아니며 파생된 서브브랜치 또한 가지고 있지 않아야 합니다.
-     *  삭제 가능한 브랜치임을 확인 후 오직 해당 브랜치에서만 존재하는 블록을 삭제한 후 나머지 브랜치 관련 정보를 삭제합니다.
+     * 삭제하려는 브랜치는 메인 브랜치가 아니며 파생된 서브브랜치 또한 가지고 있지 않아야 합니다. 삭제 가능한 브랜치임을 확인 후 오직 해당 브랜치에서만 존재하는 블록을
+     * 삭제한 후 나머지 브랜치 관련 정보를 삭제합니다.
      */
     @Transactional
     public void deleteBranch(Long documentId, Long branchId, Long userId) {
@@ -190,7 +191,7 @@ public class BranchService {
             throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
         }
 
-        // 3. 삭제하려는 브랜치의 커밋 중 다른 브랜치의 fromdCommit이 없는지 확인.
+        // 3. 삭제하려는 브랜치의 커밋 중 다른 브랜치의 fromdCommit이 없는지 확인
         List<Commit> branchCommits = branch.getCommits();
         List<Long> commitsIds = branchCommits.stream().map(Commit::getId).toList();
 
@@ -231,18 +232,18 @@ public class BranchService {
         allBlockIds.removeAll(baseBlockIds);
         blockRepository.deleteAllById(allBlockIds);
 
-
         // 6. 시퀀스 삭제
         commitBlockSequenceRepository.deleteAllById(sequenceIdsToDelete);
 
         // 7. SaveContent 삭제
-        branch.getSaveOptional()
-                .map(Save::getSaveMongoId)
+        branch.getSaveOptional().map(Save::getSaveMongoId)
                 .ifPresent(saveContentRepository::deleteById);
 
-        /* 8. Edge 삭제
-        잠시 보류
-        */
+        // 8. Edge 삭제
+        List<Long> commitIds = branchCommits.stream().map(Commit::getId).toList();
+        List<Edge> edgesToDelete = edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitIds, commitIds);
+        edgeRepository.deleteAll(edgesToDelete);
+
 
         // 9. 브랜치가 속한 문서의 수정시간 갱신
         touch(branch);
@@ -260,7 +261,8 @@ public class BranchService {
     }
 
     public void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
-        boolean exists = branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);
+        boolean exists =
+                branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);
         if (!exists) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN);
         }
