@@ -6,6 +6,7 @@ import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
+import io.ejangs.docsa.global.security.WithCustomMockUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BranchController.class)
+@WithCustomMockUser
 @AutoConfigureMockMvc(addFilters = false)
 class BranchControllerTest {
 
@@ -39,7 +41,7 @@ class BranchControllerTest {
     void createBranchOrSave_success() throws Exception {
         // given
         Long documentId = 1L;
-        Long mockUserId = 99L;
+        Long mockUserId = 1L;
         BranchCreateRequest request = new BranchCreateRequest("기능 브랜치", 100L);
         BranchCreateResponse response = new BranchCreateResponse(200L, 300L);
 
@@ -48,7 +50,6 @@ class BranchControllerTest {
 
         // when + then
         mockMvc.perform(post("/api/document/{documentId}/branch", documentId)
-                        .param("userId", mockUserId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -60,7 +61,7 @@ class BranchControllerTest {
     void renameBranch_success() throws Exception {
         Long documentId = 1L;
         Long branchId = 2L;
-        Long userId = 3L;
+        Long userId = 1L;
         String newName = "수정된 이름";
 
         BranchRenameRequest request = new BranchRenameRequest(newName);
@@ -70,7 +71,6 @@ class BranchControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(patch("/api/document/{documentId}/branch/{branchId}", documentId, branchId)
-                        .param("userId", String.valueOf(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

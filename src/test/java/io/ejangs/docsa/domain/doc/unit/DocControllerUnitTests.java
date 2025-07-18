@@ -22,6 +22,7 @@ import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.security.WithCustomMockUser;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @WebMvcTest(DocController.class)
+@WithCustomMockUser
 @AutoConfigureMockMvc(addFilters = false)
 class DocControllerUnitTests {
 
@@ -60,7 +62,6 @@ class DocControllerUnitTests {
                 .thenReturn(new DocCreateResponse(documentId));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
-                        .param("userId", "1")
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
@@ -75,7 +76,6 @@ class DocControllerUnitTests {
         DocTitleRequest request = new DocTitleRequest("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
-                        .param("userId", "1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -87,8 +87,6 @@ class DocControllerUnitTests {
     @DisplayName("문서 리스트 조회 컨트롤러 테스트 - 사이드바")
     void getSimpleDocList() throws Exception {
         // given
-        Long userId = 1L;
-
         List<DocListSimpleResponse> responseList = List.of(
                 new DocListSimpleResponse(
                         1L,
@@ -109,8 +107,7 @@ class DocControllerUnitTests {
         when(docService.getSimpleList(anyLong())).thenReturn(responseList);
 
         // when, then
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar")
-                        .param("userId", String.valueOf(userId)))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(2))
                 .andExpect(jsonPath("$[0].title").value("마이크로소프트"))
@@ -142,7 +139,6 @@ class DocControllerUnitTests {
 
         //when & then
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/document/" + docId)
-                        .param("userId", userId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -165,7 +161,6 @@ class DocControllerUnitTests {
 
         // when & then
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/document/{documentId}", documentId)
-                        .param("userId", userId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -175,13 +170,11 @@ class DocControllerUnitTests {
     @DisplayName("문서 제목 수정 - 문서 제목이 50자 초과")
     void updateDocTitleFailByTooLongTitle() throws Exception {
         //given
-        Long userId = 1L;
         Long documentId = 10L;
         String tooLongTitle = "ThisTitleIsDefinitelyLongerThanFiftyCharactersInTotalLength!";
         DocTitleRequest request = new DocTitleRequest(tooLongTitle);
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/document/{documentId}", documentId)
-                        .param("userId", userId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -194,7 +187,7 @@ class DocControllerUnitTests {
     void getGraphSuccess() throws Exception {
         // given
         Long docId = 1L;
-        Long userId = 99L;
+        Long userId = 1L;
 
         CommitDto commit = new CommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
         EdgeDto edge = new EdgeDto(11L, 12L);
@@ -210,8 +203,7 @@ class DocControllerUnitTests {
         when(docService.getGraph(userId, docId)).thenReturn(response);
 
         // when & then
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph",docId)
-                .param("userId", String.valueOf(userId)))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph", docId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("문서 제목"))
                 .andExpect(jsonPath("$.commits").isArray())
@@ -225,17 +217,13 @@ class DocControllerUnitTests {
     void getGraphFailByNotFound() throws Exception {
         // given
         Long docId = 999L;
-        Long userId = 99L;
-        when(docService.getGraph(docId, userId))
+        Long userId = 1L;
+        when(docService.getGraph(userId, docId))
                 .thenThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
-
         // when & then
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{documentId}/graph", docId, userId))
-                .andExpect(status().isBadRequest())
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph", docId))
+                .andExpect(status().isNotFound())
                 .andDo(print());
     }
-
-
-
 }
 
