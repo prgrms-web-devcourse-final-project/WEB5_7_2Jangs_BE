@@ -13,6 +13,7 @@ import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
+import io.ejangs.docsa.global.security.WithCustomMockUser;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @WebMvcTest(controllers = SaveController.class)
+@WithCustomMockUser
 @AutoConfigureMockMvc(addFilters = false)
 class SaveControllerTest {
 

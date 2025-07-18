@@ -274,7 +274,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("비밀번호 변경 시 존재하지 않는 사용자인 경우 400 에러 발생")
+    @DisplayName("비밀번호 변경 시 존재하지 않는 사용자인 경우 404 에러 발생")
     void checkCode_ResetPasswordWithUnknownUser() throws Exception {
         // given
         CodeCheckRequest request = new CodeCheckRequest("unknown@example.com", "CODE999", CodeType.RESET_PASSWORD);
@@ -286,9 +286,9 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/code/check")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("USER_NOT_FOUND_FOR_RESET"))
-                .andExpect(jsonPath("$.message").value("비밀번호 변경을 위한 사용자를 찾을 수 없습니다."))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("USER_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("해당 사용자를 찾을 수 없습니다."))
                 .andDo(print());
 
         verify(authService).checkCode(request);
