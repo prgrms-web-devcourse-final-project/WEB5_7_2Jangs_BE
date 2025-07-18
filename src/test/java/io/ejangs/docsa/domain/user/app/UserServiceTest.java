@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.dto.request.PasswordResetRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
@@ -23,6 +24,7 @@ import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,6 +67,7 @@ class UserServiceTest {
 
     private UserSignupRequest signupRequest;
     private UserLoginRequest loginRequest;
+    private PasswordResetRequest passwordResetRequest;
     private User user;
     private UserSignupResponse signupResponse;
 
@@ -80,6 +83,12 @@ class UserServiceTest {
         loginRequest = new UserLoginRequest(
                 "test@example.com",
                 "Password123"
+        );
+
+        passwordResetRequest = new PasswordResetRequest(
+                "test@example.com",
+                "NewPassword123",
+                "abc12345"
         );
 
         user = User.builder()
@@ -280,5 +289,47 @@ class UserServiceTest {
         ));
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 성공")
+    void resetPassword_Success() {
+        //given
+        when(userRepository.findByEmail(passwordResetRequest.email())).thenReturn(Optional.of(user));
+        when(passCodeCache.get(passwordResetRequest.email())).thenReturn(() -> passwordResetRequest.passCode());
+        when(passwordEncoder.matches(passwordResetRequest.password(), user.getPassword())).thenReturn(false);
+        when(passwordEncoder.encode(passwordResetRequest.password())).thenReturn("newEncodedPassword");
+
+        // when
+        userService.resetPassword(passwordResetRequest);
+
+        // then
+        verify(userRepository).findByEmail(passwordResetRequest.email());
+        verify(passCodeCache).get(passwordResetRequest.email());
+        verify(passwordEncoder).encode(passwordResetRequest.password());
+        verify(userRepository).save(user);
+        verify(passCodeCache).evict(passwordResetRequest.email());
+
+        // 실제 user 객체에 변경된 비밀번호가 반영되었는지 확인
+        assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 실패 - 기존 비밀번호와 동일")
+    void resetPassword_SameAsOldPassword() {
+        // given
+        when(userRepository.findByEmail(passwordResetRequest.email())).thenReturn(
+                Optional.of(user));
+        when(passCodeCache.get(passwordResetRequest.email())).thenReturn(
+                () -> passwordResetRequest.passCode());
+        when(passwordEncoder.matches(passwordResetRequest.password(),
+                user.getPassword())).thenReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> userService.resetPassword(passwordResetRequest))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.SAME_AS_OLD_PASSWORD);
+
+        verify(userRepository, never()).save(any());
     }
 }

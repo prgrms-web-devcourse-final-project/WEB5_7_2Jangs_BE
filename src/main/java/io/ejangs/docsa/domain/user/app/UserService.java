@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.user.app;
 
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
+import io.ejangs.docsa.domain.user.dto.request.PasswordResetRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
@@ -88,13 +89,52 @@ public class UserService {
     }
 
     public void checkUserOrThrow(Long userId) {
+
         if (!userRepository.existsById(userId)) {
             throw new CustomException(UserErrorCode.USER_NOT_FOUND);
         }
     }
 
     public void logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        SecurityContextUtil.clearAuthentication(httpRequest, httpResponse);
 
+        SecurityContextUtil.clearAuthentication(httpRequest, httpResponse);
+    }
+
+    public void resetPassword(PasswordResetRequest request) {
+
+        User user = validatePasswordResetRequest(request);
+
+        if (passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new CustomException(AuthErrorCode.SAME_AS_OLD_PASSWORD);
+        }
+
+        String encodedPassword = passwordEncoder.encode(request.password());
+        user.updatePassword(encodedPassword);
+        userRepository.save(user);
+
+        cacheManager.getCache(passcodeCacheName).evict(request.email());
+    }
+
+    private User validatePasswordResetRequest(PasswordResetRequest request) {
+
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+        Cache cache = cacheManager.getCache(passcodeCacheName);
+        if (cache == null) {
+            throw new CustomException(AuthErrorCode.INTERNAL_ERROR);
+        }
+
+        Cache.ValueWrapper cachedValue = cache.get(user.getEmail());
+        if (ObjectUtils.isEmpty(cachedValue)) {
+            throw new CustomException(AuthErrorCode.EXPIRED_CODE);
+        }
+
+        String cachedCode = (String) cachedValue.get();
+        if (!cachedCode.equals(request.passCode())) {
+            throw new CustomException(AuthErrorCode.INVALID_CODE);
+        }
+
+        return user;
     }
 }
