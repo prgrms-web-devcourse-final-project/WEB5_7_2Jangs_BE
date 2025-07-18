@@ -160,9 +160,6 @@ public class CommitService {
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());
 
-            /**
-             * ToDo: 만약 정상작동하지 않는다면 여기서 이벤트 기반 처리로 넘기는게 나을 수 있을것 같습니다
-             */
             // Commit을 저장
             Commit saveMergeCommit = saveMergeCommit(doc, baseBranch, targetBranch,
                     mergeRequest, commitMongoIds.cbsId());
@@ -170,11 +167,6 @@ public class CommitService {
             return CommitMapper.toCreateCommitResponse(saveMergeCommit);
         } catch (Exception e) {
             if (commitMongoIds != null) {
-                /**
-                 * 롤백 시도
-                 * ToDo : MongoDeleteHandler를 적용시 변경될 예정
-                 * eventPublisher.publishEvent(docDeleteMongoIds)?
-                 */
                 rollbackMongoTransaction(commitMongoIds);
             }
             if (e instanceof CustomException) {
@@ -185,8 +177,7 @@ public class CommitService {
         }
     }
 
-    @Transactional//(transactionManager = "jpaTransactionManager")
-    public Commit saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
+    private Commit saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
             MergeCommitRequest request, String commitMongoId) {
 
         Commit commit = CommitMapper.toEntity(baseBranch, request);
@@ -210,22 +201,27 @@ public class CommitService {
         return savedCommit;
     }
 
-    // ToDo: MongoTransactionManager 적용 필요
-    @Transactional//(transactionManager = "mongoTransactionManager")
-    public CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {
-        List<Block> savedBlocks = blockService.saveBlocks(blocks);
-        List<String> blockSequence = savedBlocks.stream()
-                .map(Block::getId)
-                .toList();
+    private CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {
+        List<Block> savedBlocks = null;
+        try {
+            savedBlocks = blockService.saveBlocks(blocks);
+            List<String> blockSequence = savedBlocks.stream()
+                    .map(Block::getId)
+                    .toList();
 
-        CommitBlockSequence cbs = CommitBlockSequenceMapper.toEntity(blockSequence);
-        CommitBlockSequence savedCbs = cbsRepository.save(cbs);
+            CommitBlockSequence cbs = CommitBlockSequenceMapper.toEntity(blockSequence);
+            CommitBlockSequence savedCbs = cbsRepository.save(cbs);
 
-        return new CommitMongoIdsDto(savedCbs.getId(), blockSequence);
+            return new CommitMongoIdsDto(savedCbs.getId(), blockSequence);
+        } catch (Exception e) {
+            if (savedBlocks != null) {
+                savedBlocks.forEach(block -> blockService.deleteBlock(block.getId()));
+            }
+            throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+        }
     }
 
-    @Transactional//(transactionManager = "mongoTransactionManager")
-    public void rollbackMongoTransaction(CommitMongoIdsDto commitMongoIds) {
+    private void rollbackMongoTransaction(CommitMongoIdsDto commitMongoIds) {
         try {
             // 관련된 Block들도 삭제 (필요한 경우)
             commitMongoIds.blockIds().forEach(blockService::deleteBlock);
