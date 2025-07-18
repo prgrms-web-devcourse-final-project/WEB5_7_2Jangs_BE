@@ -1,6 +1,8 @@
 package io.ejangs.docsa.domain.user.security;
 
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import java.util.Collection;
 import java.util.Collections;
 import lombok.Getter;
@@ -60,5 +62,13 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public Long getId() {
+        if (this.id != null) {
+            return this.id;
+        } else {
+            throw new CustomException(AuthErrorCode.AUTHENTICATION_FAILED);
+        }
     }
 }
