@@ -3,7 +3,7 @@ package io.ejangs.docsa.global.mongoDeleteSystem.app;
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
@@ -32,7 +32,7 @@ public class MongoDeleteRetryService {
             backoff = @Backoff(delay = 2000) // 2초 간격 재시도
     )
     @Transactional(transactionManager = "mongoTransactionManager")
-    public void deleteMongoData(DocDeleteMongoIdsDto dto) {
+    public void deleteMongoData(MongoIdsDto dto) {
         log.info("MongoDelete Retry : {}", retryCnt++);
 
         for (String saveContentId : dto.saveContentsIds()) {
@@ -47,7 +47,7 @@ public class MongoDeleteRetryService {
     }
 
     @Recover
-    public void recover(Exception e, DocDeleteMongoIdsDto dto) {
+    public void recover(Exception e, MongoIdsDto dto) {
         log.error("Mongo 삭제 3회 재시도 실패 - {}", e.getMessage());
         mongoDeleteFailureService.saveFailure(dto);
     }

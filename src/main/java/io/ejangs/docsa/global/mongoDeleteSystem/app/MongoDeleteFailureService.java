@@ -1,7 +1,7 @@
 package io.ejangs.docsa.global.mongoDeleteSystem.app;
 
 import io.ejangs.docsa.global.mongoDeleteSystem.dao.mysql.MongoDeleteFailureRepository;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongoDeleteSystem.entity.MongoDeleteFailure;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ public class MongoDeleteFailureService {
 
     @Async
     @Transactional
-    public void saveFailure(DocDeleteMongoIdsDto dto) {
+    public void saveFailure(MongoIdsDto dto) {
         try {
             MongoDeleteFailure failure = MongoDeleteFailure.builder()
                     .saveContentIds(dto.saveContentsIds())

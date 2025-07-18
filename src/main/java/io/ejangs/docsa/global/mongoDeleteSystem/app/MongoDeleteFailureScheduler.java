@@ -1,7 +1,7 @@
 package io.ejangs.docsa.global.mongoDeleteSystem.app;
 
 import io.ejangs.docsa.global.mongoDeleteSystem.dao.mysql.MongoDeleteFailureRepository;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongoDeleteSystem.entity.MongoDeleteFailure;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class MongoDeleteFailureScheduler {
 
         for (MongoDeleteFailure failure : failures) {
             try {
-                DocDeleteMongoIdsDto dto = new DocDeleteMongoIdsDto(
+                MongoIdsDto dto = new MongoIdsDto(
                         failure.getSaveContentIds(),
                         failure.getCommitBlockSequenceIds(),
                         failure.getBlockIds()

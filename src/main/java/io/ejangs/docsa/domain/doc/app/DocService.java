@@ -4,7 +4,6 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -31,16 +30,12 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoIdsMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,8 +56,7 @@ public class DocService {
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
     private final CommitContentAssembler commitContentAssembler;
-    private final CommitBlockSequenceRepository commitBlockSequenceRepository;
-
+    private final MongoIdsMapper mongoIdsMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${default.branch}")
@@ -268,34 +262,9 @@ public class DocService {
 
         List<Branch> branches = doc.getBranches();
 
-        DocDeleteMongoIdsDto docDeleteMongoIds = getDocDeleteMongoIds(branches);
+        MongoIdsDto docDeleteMongoIds = mongoIdsMapper.toMongoIdsDto(branches);
 
-        // 이렇게만 하면 doc이 고아가 되어서 doc, branch, commit, save가 모두 삭제된다고 한다.. 불안하다.
         user.removeDocument(doc);
         eventPublisher.publishEvent(docDeleteMongoIds);
     }
-
-    private DocDeleteMongoIdsDto getDocDeleteMongoIds(List<Branch> branches) {
-
-        List<String> saveContentMongoIds = branches.stream()
-                .map(Branch::getSave)
-                .filter(Objects::nonNull)
-                .map(Save::getSaveMongoId)
-                .toList();
-
-        List<String> commitBlockSequenceIds = branches.stream()
-                .flatMap(branch -> branch.getCommits().stream())
-                .map(Commit::getCommitMongoId)
-                .toList();
-
-        Set<String> blockIds = commitBlockSequenceIds.stream()
-                .map(commitBlockSequenceRepository::findById)
-                .flatMap(Optional::stream) // Optional이 비어있으면 skip
-                .flatMap(cbs -> cbs.getBlockOrders().stream())
-                .collect(Collectors.toSet());
-
-        return new DocDeleteMongoIdsDto(saveContentMongoIds, commitBlockSequenceIds,
-                new ArrayList<>(blockIds));
-    }
-
 }

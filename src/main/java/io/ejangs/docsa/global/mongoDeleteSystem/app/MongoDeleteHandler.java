@@ -1,6 +1,6 @@
 package io.ejangs.docsa.global.mongoDeleteSystem.app;
 
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.DocDeleteMongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,8 +15,8 @@ public class MongoDeleteHandler {
     private final MongoDeleteRetryService retryService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleDeleteEvent(DocDeleteMongoIdsDto deleteMongoIdsDto) {
+    public void handleDeleteEvent(MongoIdsDto mongoIdsDto) {
         log.info("MongoDeleteHandler Listened");
-        retryService.deleteMongoData(deleteMongoIdsDto);
+        retryService.deleteMongoData(mongoIdsDto);
     }
 }
