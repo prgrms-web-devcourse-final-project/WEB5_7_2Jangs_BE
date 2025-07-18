@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @OpenAPIDefinition(
         info = @Info(
@@ -12,6 +15,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
                 description = "Docsa의 백엔드 API 명세입니다."
         )
 )
+@EnableAsync
+@EnableRetry
+@EnableScheduling
 @SpringBootApplication
 public class DocsaApplication {
 

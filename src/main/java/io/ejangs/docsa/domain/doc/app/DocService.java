@@ -30,6 +30,8 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.Comparator;
 import java.util.List;
@@ -37,6 +39,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,8 +55,9 @@ public class DocService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
-
     private final CommitContentAssembler commitContentAssembler;
+    private final MongoIdsCollector mongoIdsCollector;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${default.branch}")
     private String defaultBranchName;
@@ -229,13 +233,6 @@ public class DocService {
     }
 
     @Transactional(readOnly = true)
-    public void notFoundDocCheck(Long id) {
-        if (!docRepository.existsById(id)) {
-            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
-        }
-    }
-
-    @Transactional(readOnly = true)
     public Doc getById(Long id) {
         return docRepository.findById(id)
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
@@ -261,4 +258,16 @@ public class DocService {
         return GraphMapper.toCommitGraphResponse(doc.getTitle(), commits, edges, branches);
     }
 
+    @Transactional
+    public void delete(Long docId, Long userId) {
+        User user = getUserOrThrow(userId);
+        Doc doc = getDocByIdAndUserId(docId, userId);
+
+        List<Branch> branches = doc.getBranches();
+
+        MongoIdsDto docDeleteMongoIds = mongoIdsCollector.collectFrom(branches);
+
+        user.removeDocument(doc);
+        eventPublisher.publishEvent(docDeleteMongoIds);
+    }
 }

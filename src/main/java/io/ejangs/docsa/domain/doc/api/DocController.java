@@ -12,6 +12,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,5 +66,12 @@ public class DocController {
     public ResponseEntity<CommitGraphResponse> getGraph(@RequestParam Long userId,
             @PathVariable Long docId) {
         return ResponseEntity.status(HttpStatus.OK).body(docService.getGraph(userId, docId));
+    }
+
+    @DeleteMapping("/{docId}")
+    public ResponseEntity<Void> delete(@PathVariable Long docId, @RequestParam Long userId) {
+        docService.delete(userId, docId);
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT).build();
     }
 }
