@@ -154,6 +154,7 @@ public class CommitService {
             // 문서가 존재하는지 검사
             Doc doc = docService.getById(docId);
             // 브랜치가 존재하는지 검사
+            checkBranch(mergeRequest.baseBranchId(), mergeRequest.targetBranchId());
             Branch baseBranch = branchService.getById(mergeRequest.baseBranchId());
             Branch targetBranch = branchService.getById(mergeRequest.targetBranchId());
 
@@ -174,6 +175,12 @@ public class CommitService {
             }
             log.error("Create Commit 알 수 없는 오류 - {}", e.getMessage(), e);
             throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+        }
+    }
+
+    private void checkBranch(Long baseBranchId, Long targetBranchId) {
+        if (baseBranchId == null || targetBranchId == null || baseBranchId.equals(targetBranchId)) {
+            throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
         }
     }
 
