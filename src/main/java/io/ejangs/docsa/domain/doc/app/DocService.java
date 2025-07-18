@@ -31,7 +31,7 @@ import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoIdsMapper;
+import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.Comparator;
 import java.util.List;
@@ -56,7 +56,7 @@ public class DocService {
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
     private final CommitContentAssembler commitContentAssembler;
-    private final MongoIdsMapper mongoIdsMapper;
+    private final MongoIdsCollector mongoIdsCollector;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${default.branch}")
@@ -262,7 +262,7 @@ public class DocService {
 
         List<Branch> branches = doc.getBranches();
 
-        MongoIdsDto docDeleteMongoIds = mongoIdsMapper.toMongoIdsDto(branches);
+        MongoIdsDto docDeleteMongoIds = mongoIdsCollector.collectFrom(branches);
 
         user.removeDocument(doc);
         eventPublisher.publishEvent(docDeleteMongoIds);

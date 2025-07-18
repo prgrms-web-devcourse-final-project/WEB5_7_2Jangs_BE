@@ -16,11 +16,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class MongoIdsMapper {
+public class MongoIdsCollector {
 
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
 
-    public MongoIdsDto toMongoIdsDto(List<Branch> branches) {
+    public MongoIdsDto collectFrom(List<Branch> branches) {
         List<String> saveContentMongoIds = branches.stream()
                 .map(Branch::getSave)
                 .filter(Objects::nonNull)
