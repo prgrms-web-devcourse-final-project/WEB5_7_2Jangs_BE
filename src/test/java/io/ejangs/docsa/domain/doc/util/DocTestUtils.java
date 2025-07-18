@@ -12,7 +12,6 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import java.time.LocalDateTime;
@@ -141,7 +140,7 @@ public class DocTestUtils {
 
             Map<String, Object> saveJson = (i % 2 == 0) ? parsedJson2.get(2) : parsedJson1.get(2);
             SaveContent saveContent = SaveContent.builder()
-                    .content(List.of(SaveBlock.from(saveJson)))
+                    .content(List.of(saveJson))
                     .build();
             saveContent = saveContentRepository.save(saveContent);
 

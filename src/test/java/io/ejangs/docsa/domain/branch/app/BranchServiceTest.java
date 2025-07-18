@@ -1,5 +1,14 @@
 package io.ejangs.docsa.domain.branch.app;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
@@ -8,38 +17,28 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.app.UserService;
-import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class BranchServiceTest {
@@ -87,6 +86,7 @@ class BranchServiceTest {
                 () -> branchService.createBranchOrSave(docId, request, userId));
         assertEquals(CommitErrorCode.INVALID_FROM_COMMIT, ex.getErrorCode());
     }
+
     @Test
     @DisplayName("leaf 커밋이면 기존 브랜치에 저장 추가")
     void testAddSaveToExistingBranch() {
@@ -118,12 +118,13 @@ class BranchServiceTest {
                 List.of(Map.of("block", "data")));
 
         SaveContent saveContent = SaveContent.builder()
-                .content(List.of(SaveBlock.from(Map.of("key", "value"))))
+                .content(List.of(Map.of("key", "value")))
                 .build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, mockUser.getId());
+        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request,
+                mockUser.getId());
 
         // then
         assertNotNull(response);
@@ -161,11 +162,12 @@ class BranchServiceTest {
                 List.of(Map.of("block", "data")));
 
         SaveContent saveContent = SaveContent.builder().content(List.of(
-                SaveBlock.from(Map.of("block", "data")))).build();
+                Map.of("block", "data"))).build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, mockUser.getId());
+        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request,
+                mockUser.getId());
 
         // then
         assertNotNull(response);
