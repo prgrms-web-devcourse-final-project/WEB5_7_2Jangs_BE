@@ -270,4 +270,11 @@ public class DocService {
         user.removeDocument(doc);
         eventPublisher.publishEvent(docDeleteMongoIds);
     }
+
+    @Transactional(readOnly = true)
+    public void notFoundDocCheck(Long id) {
+        if (!docRepository.existsById(id)) {
+            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+        }
+    }
 }
