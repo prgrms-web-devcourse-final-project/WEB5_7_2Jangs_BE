@@ -59,7 +59,7 @@ public class SaveService {
             throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
         }
 
-        return SaveMapper.toSaveUpdateResponse(findSave);
+        return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
     }
 
     public Save getSaveById(Long id) {
