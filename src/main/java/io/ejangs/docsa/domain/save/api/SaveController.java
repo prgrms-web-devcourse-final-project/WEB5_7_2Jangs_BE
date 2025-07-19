@@ -5,6 +5,8 @@ import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
+import io.ejangs.docsa.domain.save.swagger.GetSaveDocs;
+import io.ejangs.docsa.domain.save.swagger.UpdateSaveDocs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

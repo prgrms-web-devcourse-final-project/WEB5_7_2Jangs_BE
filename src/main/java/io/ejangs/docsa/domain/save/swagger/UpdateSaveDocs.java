@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.save.api;
+package io.ejangs.docsa.domain.save.swagger;
 
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;

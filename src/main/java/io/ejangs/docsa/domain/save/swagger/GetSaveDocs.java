@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.save.api;
+package io.ejangs.docsa.domain.save.swagger;
 
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
@@ -148,6 +148,6 @@ import java.lang.annotation.Target;
                 ),
         }
 )
-@interface GetSaveDocs {
+public @interface GetSaveDocs {
 
 }
