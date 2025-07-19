@@ -87,8 +87,6 @@ class MergeCommitIntegrationTest {
         commitRepository.save(targetCommit);
         targetBranch.updateLeafCommit(targetCommit);
         targetBranch.initializeRootCommitIfNull(targetCommit);
-
-        System.out.println("before Test");
     }
 
     @Test
@@ -115,8 +113,6 @@ class MergeCommitIntegrationTest {
         Branch updatedBaseBranch = branchRepository.findById(baseBranch.getId()).orElse(null);
         assertThat(updatedBaseBranch.getLeafCommit().getId()).isEqualTo(response.id());
 
-        branchRepository.flush();
-        System.out.println("updatedBaseBranch = " + updatedBaseBranch.getLeafCommit().getId());
         // 두 개의 간선이 생성되었는지 확인
         List<Edge> edges = edgeRepository.findByNextCommitId(response.id());
 
