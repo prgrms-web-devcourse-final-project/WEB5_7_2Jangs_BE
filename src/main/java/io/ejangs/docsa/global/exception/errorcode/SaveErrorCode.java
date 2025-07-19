@@ -10,7 +10,7 @@ public enum SaveErrorCode implements ErrorCode {
 
     SAVE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 저장 데이터를 찾을 수 없습니다.", "SAVE_NOT_FOUND"),
     SAVE_NOT_OWNER(HttpStatus.BAD_REQUEST, "잘못된 접근입니다.", "SAVE_NOT_OWNER"),
-    SAVE_CREATE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "저장에 실패했습니다.", "SAVE_CREATE_MYSQL_FAIL"),
+    FAIL_TO_SAVE_IN_MYSQL(HttpStatus.INTERNAL_SERVER_ERROR, "저장에 실패했습니다.", "SAVE_CREATE_MYSQL_FAIL"),
     FAILED_TO_SAVE_IN_MONGO(HttpStatus.INTERNAL_SERVER_ERROR, "저장을 실패했습니다.", "SAVE_CREATE_MONGO_FAIL");
 
     private final HttpStatus status;
