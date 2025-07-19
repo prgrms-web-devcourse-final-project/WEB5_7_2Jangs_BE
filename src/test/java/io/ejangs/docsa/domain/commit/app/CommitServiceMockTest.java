@@ -23,7 +23,7 @@ import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
-import io.ejangs.docsa.domain.commit.util.CommitTestUtils;
+import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -95,45 +95,45 @@ class CommitServiceMockTest {
                 "Test commit message",
                 "",
                 1L,
-                List.of(CommitTestUtils.createBlockRequest("block1"),
-                        CommitTestUtils.createBlockRequest("block2")),
+                List.of(CommitMockTestUtils.createBlockRequest("block1"),
+                        CommitMockTestUtils.createBlockRequest("block2")),
                 List.of("block1", "block2")
         );
 
         // User 생성
-        user = CommitTestUtils.createUser();
+        user = CommitMockTestUtils.createUser();
 
         // Doc 생성
-        doc = CommitTestUtils.createDoc(user);
+        doc = CommitMockTestUtils.createDoc(user);
 
         // Branch 생성
-        branch = CommitTestUtils.createBranch(doc, baseCommit);
+        branch = CommitMockTestUtils.createBranch(doc, baseCommit);
 
         // Base commit 생성
-        baseCommit = CommitTestUtils.createBaseCommit(branch);
+        baseCommit = CommitMockTestUtils.createBaseCommit(branch);
         baseCommit.setBranch(branch);
 
         // Blocks 생성
         savedBlocks = List.of(
-                CommitTestUtils.createBlock("block1"),
-                CommitTestUtils.createBlock("block2")
+                CommitMockTestUtils.createBlock("block1"),
+                CommitMockTestUtils.createBlock("block2")
         );
 
         baseCommitBlocks = List.of(
-                CommitTestUtils.createBlock("baseBlock1")
+                CommitMockTestUtils.createBlock("baseBlock1")
         );
 
         // CommitBlockSequence 생성
-        savedCbs = CommitTestUtils.createCommitBlockSequence();
+        savedCbs = CommitMockTestUtils.createCommitBlockSequence();
 
         // Commit 생성
-        savedCommit = CommitTestUtils.createMockCommit(branch, 2L);
+        savedCommit = CommitMockTestUtils.createMockCommit(branch, 2L);
 
         // Expected response 생성
         expectedResponse = new CreateCommitResponse(1L);
 
         // edge 생성
-        edge = CommitTestUtils.createEdge(doc, baseCommit, savedCommit);
+        edge = CommitMockTestUtils.createEdge(doc, baseCommit, savedCommit);
     }
 
 
@@ -145,7 +145,7 @@ class CommitServiceMockTest {
         when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
-                Optional.of(CommitTestUtils.createCommitBlockSequence()));
+                Optional.of(CommitMockTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
                 CommitBlockSequenceMapper.class);
@@ -181,7 +181,7 @@ class CommitServiceMockTest {
         when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
-                Optional.of(CommitTestUtils.createCommitBlockSequence()));
+                Optional.of(CommitMockTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
                 CommitBlockSequenceMapper.class);
@@ -208,7 +208,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 성공 - leafCommit이 null인 경우 fromCommit 사용")
     void createCommit_Success_UseFromCommitWhenLeafCommitIsNull() {
         // Given
-        Branch branchWithoutLeafCommit = CommitTestUtils.createBranch(doc, baseCommit);
+        Branch branchWithoutLeafCommit = CommitMockTestUtils.createBranch(doc, baseCommit);
         branchWithoutLeafCommit.updateLeafCommit(null); // leafCommit을 null로 설정
 
         when(docService.getById(docId)).thenReturn(doc);
@@ -216,7 +216,7 @@ class CommitServiceMockTest {
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(
                 branchWithoutLeafCommit.getFromCommit().getCommitMongoId())).thenReturn(
-                Optional.of(CommitTestUtils.createCommitBlockSequence()));
+                Optional.of(CommitMockTestUtils.createCommitBlockSequence()));
 
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
                 CommitBlockSequenceMapper.class);
@@ -320,7 +320,7 @@ class CommitServiceMockTest {
                 "Test commit message",
                 "",
                 1L,
-                List.of(CommitTestUtils.createBlockRequest("block1")),
+                List.of(CommitMockTestUtils.createBlockRequest("block1")),
                 List.of("block1", "invalidBlock") // 존재하지 않는 블록
         );
         try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
