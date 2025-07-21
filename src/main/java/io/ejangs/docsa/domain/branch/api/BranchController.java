@@ -6,6 +6,7 @@ import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,12 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/document/{documentId}/branch")
+@Tag(name = "Branch API")
 public class BranchController {
 
     private final BranchService branchService;
 
     // 브랜치에 이어서 새로운 저장 생성 or 새로운 브랜치 + 저장 생성
     @PostMapping
+    @CreateBranchOrSaveDoc
     public ResponseEntity<BranchCreateResponse> createBranchOrSave(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long documentId, @Valid @RequestBody BranchCreateRequest request) {
