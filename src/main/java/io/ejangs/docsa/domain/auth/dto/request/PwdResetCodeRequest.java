@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "비밀번호 변경용 인증코드 요청 DTO")
+@Schema(description = "비밀번호 변경용 인증코드 요청")
 public record PwdResetCodeRequest(
 
         @Schema(description = "이메일 주소", example = "user@example.com")

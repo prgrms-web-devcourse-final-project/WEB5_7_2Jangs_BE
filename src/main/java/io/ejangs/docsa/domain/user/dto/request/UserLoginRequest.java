@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "로그인 요청 DTO")
+@Schema(description = "로그인 요청")
 public record UserLoginRequest(
 
         @Schema(description = "이메일 주소", example = "user@example.com")

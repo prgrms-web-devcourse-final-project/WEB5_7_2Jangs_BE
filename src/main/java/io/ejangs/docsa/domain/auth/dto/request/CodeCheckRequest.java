@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-@Schema(description = "인증코드 검증 요청 DTO")
+@Schema(description = "인증코드 검증 요청")
 public record CodeCheckRequest(
 
         @Schema(description = "이메일 주소", example = "user@example.com")

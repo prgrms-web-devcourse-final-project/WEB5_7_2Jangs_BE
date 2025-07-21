@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "회원가입 요청 DTO")
+@Schema(description = "회원가입 요청")
 public record UserSignupRequest(
 
         @Schema(description = "회원 이름", example = "이장님")
