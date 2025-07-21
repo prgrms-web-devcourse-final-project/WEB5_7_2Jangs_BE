@@ -249,4 +249,28 @@ public class DocServiceIntegrationTests {
         assertEquals(RecentType.SAVE, first.recent().recentType());
         assertTrue(first.preview().startsWith("문단 3: 테스트 코드가 너무 싫어서 미치겠다는 문단")); // preview 포함
     }
+
+    @Test
+    @DisplayName("문서 리스트 조회 - 페이지네이션 테스트 100개의 문서를 만들고 페이지 0에서는 10개만 조회한다.")
+    void getDocListInPage() throws Exception {
+        //given
+        User user = userRepository.save(DocTestUtils.createUser());
+        List<Doc> docs = DocTestUtils.createDocList(100, user);
+        docRepository.saveAll(docs);
+
+        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
+
+        //when
+        Page<DocListResponse> result = docService.getList(user.getId(), pageable);
+
+        //then
+        assertEquals(10, result.getContent().size());
+        DocListResponse first = result.getContent().getFirst();
+        assertEquals("테스트 문서 100", first.title());
+        assertEquals(100L, first.id());
+
+        DocListResponse last = result.getContent().getLast();
+        assertEquals("테스트 문서 91", last.title());
+        assertEquals(91L, last.id());
+    }
 }

@@ -50,7 +50,7 @@ public class DocServiceUnitTests {
         ReflectionTestUtils.setField(user, "id", userId);
 
         Long docId = 10L;
-        List<Doc> docs = DocTestUtils.createDocumentList(2, user);
+        List<Doc> docs = DocTestUtils.createDocumentListForUnitTest(2, user);
 
         when(docRepository.findAllByUserId(userId)).thenReturn(docs);
 

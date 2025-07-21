@@ -22,7 +22,27 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 public class DocTestUtils {
 
-    public static List<Doc> createDocumentList(int count, User user) {
+    public static List<Doc> createDocList(int count, User user) {
+        List<Doc> docs = new ArrayList<>();
+
+        for (int i = 1; i <= count; i++) {
+            Doc doc = Doc.builder()
+                    .title("테스트 문서 " + i)
+                    .user(user)
+                    .build();
+
+            Branch branch = Branch.builder()
+                    .name("테스트 브랜치" + i)
+                    .doc(doc)
+                    .build();
+
+            doc.addBranch(branch);
+            docs.add(doc);
+        }
+        return docs;
+    }
+
+    public static List<Doc> createDocumentListForUnitTest(int count, User user) {
         List<Doc> docs = new ArrayList<>();
         LocalDateTime baseTime = LocalDateTime.of(2025, 7, 16, 1, 0);
 
