@@ -204,7 +204,9 @@ public class CommitService {
         edgeService.saveEdge(edge2);
 
         baseBranch.updateLeafCommit(savedCommit);
+        saveService.deleteSaveIfExists(baseBranch.getId());
         RenewUpdatedAtHelper.touch(baseBranch);
+
         branchService.saveBranch(baseBranch);
 
         return savedCommit;
