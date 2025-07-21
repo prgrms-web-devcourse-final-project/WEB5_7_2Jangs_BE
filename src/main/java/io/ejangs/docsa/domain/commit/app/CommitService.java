@@ -179,7 +179,8 @@ public class CommitService {
     }
 
     private void checkBranch(Long baseBranchId, Long targetBranchId) {
-        if (baseBranchId == null || targetBranchId == null || baseBranchId.equals(targetBranchId)) {
+        if (baseBranchId == null || targetBranchId == null || baseBranchId < 0 || targetBranchId < 0
+                || baseBranchId.equals(targetBranchId)) {
             throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
         }
     }
