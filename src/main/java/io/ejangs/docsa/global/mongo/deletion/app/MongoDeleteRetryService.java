@@ -1,9 +1,9 @@
-package io.ejangs.docsa.global.mongoDeleteSystem.app;
+package io.ejangs.docsa.global.mongo.deletion.app;
 
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;

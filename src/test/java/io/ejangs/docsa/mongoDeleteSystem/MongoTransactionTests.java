@@ -4,7 +4,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
-import io.ejangs.docsa.global.mongoDeleteSystem.app.MongoTransactionTestService;
+import io.ejangs.docsa.global.mongo.deletion.app.MongoTransactionTestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
