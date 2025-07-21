@@ -97,7 +97,7 @@ public class BranchService {
             Save save = createSave(fromBranch, fromCommit.getCommitMongoId());
 
             // 저장과 브랜치, 문서의 updatedAt 동시 갱신
-            touch(save);
+            RenewUpdatedAtHelper.touch(save);
             return BranchMapper.toBranchCreateResponse(fromBranch, save);
 
         } else {
@@ -165,7 +165,7 @@ public class BranchService {
         // 2. 브랜치 이름 수정 후 브랜치와 문서의 수정시각 갱신
         Branch branch = getById(branchId);
         branch.updateName(newName);
-        touch(branch);
+        RenewUpdatedAtHelper.touch(branch);
 
         return BranchMapper.toBranchRenameResponse(branch);
 
@@ -209,7 +209,7 @@ public class BranchService {
         eventPublisher.publishEvent(deletableMongoIds);
 
         // 6. 브랜치가 속한 문서의 수정시간 갱신
-        touch(branch);
+        RenewUpdatedAtHelper.touch(branch);
 
         // 7. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
         branchRepository.delete(branch);
