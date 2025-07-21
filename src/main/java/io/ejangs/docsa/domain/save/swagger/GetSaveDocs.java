@@ -27,14 +27,14 @@ import java.lang.annotation.Target;
                 @Parameter(
                         name = "documentId",
                         description = "저장이 속한 문서 id",
-                        example = "1L",
+                        example = "1",
                         required = true,
                         in = ParameterIn.PATH
                 ),
                 @Parameter(
                         name = "saveId",
                         description = "조회하려는 저장 id",
-                        example = "1L",
+                        example = "1",
                         required = true,
                         in = ParameterIn.PATH
                 )
@@ -48,6 +48,7 @@ import java.lang.annotation.Target;
                                 examples = @ExampleObject(
                                         value = """
                                                 {
+                                                      "updatedAt": "2025-07-07T14:21:00",
                                                       "content": [
                                                         {
                                                           "id": "mhTl6ghSkV",
@@ -116,26 +117,21 @@ import java.lang.annotation.Target;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "저장 조회 실패 - 존재하지 않는 저장",
+                        description = "저장 조회 실패 - 존재하지 않는 저장이거나 존재하지 않는 문서",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
-                                examples = @ExampleObject(
-                                        value = """
-                                                {
-                                                    "status": 404,
-                                                    "message": "해당 저장 데이터를 찾을 수 없습니다.",
-                                                    "error": "SAVE_NOT_FOUND"
-                                                }
-                                                """
-                                )
-                        )
-                ),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "문서 조회 실패 - 존재하지 않는 문서",
-                        content = @Content(
-                                schema = @Schema(implementation = ErrorResponse.class),
-                                examples = @ExampleObject(
+                                examples = {
+                                        @ExampleObject(
+                                                name = "존재하지 않는 저장",
+                                                value = """
+                                                        {
+                                                            "status": 404,
+                                                            "message": "해당 저장 데이터를 찾을 수 없습니다.",
+                                                            "error": "SAVE_NOT_FOUND"
+                                                        }
+                                                        """
+                                        ), @ExampleObject(
+                                        name = "존재하지 않는 문서",
                                         value = """
                                                 {
                                                     "status": 404,
@@ -144,8 +140,9 @@ import java.lang.annotation.Target;
                                                 }
                                                 """
                                 )
+                                }
                         )
-                ),
+                )
         }
 )
 public @interface GetSaveDocs {
