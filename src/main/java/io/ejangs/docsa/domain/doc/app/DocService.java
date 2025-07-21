@@ -22,7 +22,6 @@ import io.ejangs.docsa.domain.doc.util.PreviewExtractor;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -169,10 +168,7 @@ public class DocService {
         SaveContent saveContent = saveContentRepository.findById(save.getSaveMongoId())
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
 
-        List<Map<String, Object>> content = saveContent.getContent().stream()
-                .map(SaveBlock::data)
-                .toList();
-
+        List<Map<String, Object>> content = saveContent.getContent();
         return PreviewExtractor.doExtractPreview(content);
     }
 

@@ -1,21 +1,21 @@
 package io.ejangs.docsa.domain.save.util;
 
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
-import io.ejangs.docsa.domain.save.entity.Save;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 public class SaveMapper {
 
-    public static SaveUpdateResponse toSaveUpdateResponse(Save save) {
-        return new SaveUpdateResponse(toOffsetDateTime(save.getUpdatedAt()));
+    public static SaveUpdateResponse toSaveUpdateResponse(LocalDateTime localDateTime) {
+        return new SaveUpdateResponse(toOffsetDateTime(localDateTime));
     }
 
-    public static SaveGetResponse toSaveGetResponse(LocalDateTime localDateTime, List<SaveBlock> content) {
+    public static SaveGetResponse toSaveGetResponse(LocalDateTime localDateTime,
+            List<Map<String, Object>> content) {
         return new SaveGetResponse(toOffsetDateTime(localDateTime), content);
     }
 

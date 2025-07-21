@@ -1,11 +1,5 @@
 package io.ejangs.docsa.domain.save.app;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
-import com.mongodb.MongoTimeoutException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -13,15 +7,12 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveServiceUtil;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
-import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -55,9 +46,9 @@ class SaveServiceIntegrationTest {
     @MockitoBean
     private SaveContentRepository saveContentRepository;
 
-    private List<SaveBlock> data = List.of(
-            new SaveBlock(Map.of("text1", "Key features")),
-            new SaveBlock(Map.of("text2", "Key features"))
+    private List<Map<String, Object>> data = List.of(
+            Map.of("text1", "Key features"),
+            Map.of("text2", "Key features")
     );
 
 //    @AfterEach

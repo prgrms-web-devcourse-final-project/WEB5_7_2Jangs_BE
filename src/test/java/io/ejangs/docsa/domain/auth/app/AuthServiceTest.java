@@ -13,10 +13,10 @@ import static org.mockito.Mockito.when;
 import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
 import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
+import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
 import io.ejangs.docsa.domain.auth.model.CodeType;
 import io.ejangs.docsa.domain.auth.util.AuthCodeGenerator;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
-import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
@@ -229,7 +229,7 @@ class AuthServiceTest {
         // when & then
         assertThatThrownBy(() -> authService.checkCode(checkRequest))
                 .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.ALREADY_REGISTERED_USER);
+                .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
     }
 
     @Test

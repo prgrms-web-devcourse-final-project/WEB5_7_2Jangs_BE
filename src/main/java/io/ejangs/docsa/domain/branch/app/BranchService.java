@@ -17,7 +17,6 @@ import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import io.ejangs.docsa.domain.save.dto.SaveBlock;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
@@ -25,6 +24,7 @@ import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoDeleteMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
-import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoDeleteMapper;
 
 
 
@@ -143,9 +142,7 @@ public class BranchService {
             List<Map<String, Object>> blockContents =
                     commitContentAssembler.assemble(commitMongoId);
 
-            List<SaveBlock> saveBlocks = blockContents.stream().map(SaveBlock::from).toList();
-
-            SaveContent saveContent = SaveContent.builder().content(saveBlocks).build();
+            SaveContent saveContent = SaveContent.builder().content(blockContents).build();
             SaveContent saved = saveContentRepository.save(saveContent);
 
             // mongoId를 RDB Save 엔티티에 설정
@@ -203,7 +200,8 @@ public class BranchService {
 
         // 4. Edge 삭제
         List<Long> commitIds = branchCommits.stream().map(Commit::getId).toList();
-        List<Edge> edgesToDelete = edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitIds, commitIds);
+        List<Edge> edgesToDelete =
+                edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitIds, commitIds);
         edgeRepository.deleteAll(edgesToDelete);
 
         // 5. 브랜치에서 삭제 가능한 블록과 시퀀스, SaveContent 삭제 이벤트 발행
@@ -222,7 +220,8 @@ public class BranchService {
     /**
      * 브랜치에서 삭제 가능한 SaveContent와 블록, 시퀀스를 찾아 반환합니다.
      */
-    private MongoIdsDto collectDeletableMongoDataForBranch(Branch branch, List<Commit> branchCommits) {
+    private MongoIdsDto collectDeletableMongoDataForBranch(Branch branch,
+            List<Commit> branchCommits) {
 
         List<String> sequenceIdsToDelete = new ArrayList<>();
         Set<String> allBlockIds = new HashSet<>();
@@ -254,7 +253,8 @@ public class BranchService {
         // 차집합 남기기 {브랜치에 속한 커밋에 존재하는 모든 blockId} - {브랜치의 from_commit 에 존재하는 모든 blockid}
         allBlockIds.removeAll(baseBlockIds);
 
-        return MongoDeleteMapper.toMongoIdsDto(branch, sequenceIdsToDelete, new ArrayList<>(allBlockIds));
+        return MongoDeleteMapper.toMongoIdsDto(branch, sequenceIdsToDelete,
+                new ArrayList<>(allBlockIds));
 
     }
 
