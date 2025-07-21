@@ -18,7 +18,7 @@ public enum PageDirectionType {
     }
 
     public static PageDirectionType from(String value) {
-        return switch (value) {
+        return switch (value.toUpperCase()) {
             case "ASC" -> PageDirectionType.ASC;
             case "DESC" -> PageDirectionType.DESC;
             default -> throw new CustomException(PageErrorCode.UNSUPPORTED_DIRECTION_TYPE);
