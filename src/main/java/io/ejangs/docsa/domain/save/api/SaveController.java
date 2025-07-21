@@ -7,6 +7,7 @@ import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.swagger.GetSaveDocs;
 import io.ejangs.docsa.domain.save.swagger.UpdateSaveDocs;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/document/{documentId}/save/{saveId}")
+@Tag(name = "Save API")
 public class SaveController {
 
     private final SaveService saveService;
