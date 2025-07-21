@@ -30,14 +30,14 @@ import java.lang.annotation.Target;
                 @Parameter(
                         name = "documentId",
                         description = "저장이 속한 문서 id",
-                        example = "1L",
+                        example = "1",
                         required = true,
                         in = ParameterIn.PATH
                 ),
                 @Parameter(
                         name = "saveId",
                         description = "조회하려는 저장 id",
-                        example = "1L",
+                        example = "1",
                         required = true,
                         in = ParameterIn.PATH
                 )
