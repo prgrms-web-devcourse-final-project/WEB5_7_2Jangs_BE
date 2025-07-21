@@ -42,6 +42,15 @@ public class SecurityConfig {
                                 .maxSessionsPreventsLogin(false))
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+
+                        .requestMatchers(
                                 "/api/auth/code/signup-email",
                                 "/api/user/signup",
                                 "/api/user/login",
