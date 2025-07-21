@@ -101,8 +101,4 @@ public class Branch extends BaseEntity {
     public void updateName(String name){
         this.name = name;
     }
-
-    public Optional<Save> getSaveOptional() {
-        return Optional.ofNullable(this.save);
-    }
 }

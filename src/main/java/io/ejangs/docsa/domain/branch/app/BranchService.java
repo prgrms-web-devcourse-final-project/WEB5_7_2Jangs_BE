@@ -8,8 +8,8 @@ import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.app.CommitService;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
@@ -24,15 +24,18 @@ import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
+import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoDeleteMapper;
 
 
 
@@ -41,7 +44,7 @@ import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
 @RequiredArgsConstructor
 public class BranchService {
 
-    private final CommitService commitService;
+    private final CommitRepository commitRepository;
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
@@ -49,6 +52,7 @@ public class BranchService {
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final BlockRepository blockRepository;
     private final EdgeRepository edgeRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final CommitContentAssembler commitContentAssembler;
 
@@ -76,7 +80,7 @@ public class BranchService {
         }
 
         // 2. '이어서 작업하기' 를 시도하는 커밋 검증
-        Commit fromCommit = commitService.getById(fromCommitId);
+        Commit fromCommit = checkById(fromCommitId);
 
         Branch fromBranch = fromCommit.getBranch();
 
@@ -154,9 +158,6 @@ public class BranchService {
         }
     }
 
-    /**
-     * 브랜치 이름 수정 기능입니다.
-     */
     @Transactional
     public BranchRenameResponse renameBranch(Long documentId, Long branchId, String newName,
             Long userId) {
@@ -200,24 +201,46 @@ public class BranchService {
             throw new CustomException(BranchErrorCode.SUB_BRANCH_DELETE_UNAVAILABLE);
         }
 
-        // 4. 삭제 가능한 blockID 찾기
-        // 차집합 {브랜치에 속한 커밋에 존재하는 모든 blockId} - {브랜치의 from_commit 에 존재하는 모든 blockid}
+        // 4. Edge 삭제
+        List<Long> commitIds = branchCommits.stream().map(Commit::getId).toList();
+        List<Edge> edgesToDelete = edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitIds, commitIds);
+        edgeRepository.deleteAll(edgesToDelete);
+
+        // 5. 브랜치에서 삭제 가능한 블록과 시퀀스, SaveContent 삭제 이벤트 발행
+        MongoIdsDto deletableMongoIds = collectDeletableMongoDataForBranch(branch, branchCommits);
+        eventPublisher.publishEvent(deletableMongoIds);
+
+        // 6. 브랜치가 속한 문서의 수정시간 갱신
+        touch(branch);
+
+        // 7. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
+        branchRepository.delete(branch);
+
+    }
+
+
+    /**
+     * 브랜치에서 삭제 가능한 SaveContent와 블록, 시퀀스를 찾아 반환합니다.
+     */
+    private MongoIdsDto collectDeletableMongoDataForBranch(Branch branch, List<Commit> branchCommits) {
+
         List<String> sequenceIdsToDelete = new ArrayList<>();
         Set<String> allBlockIds = new HashSet<>();
 
-        // 커밋 시퀀스 ID 수집
         for (Commit commit : branchCommits) {
+            // 커밋 시퀀스 id 수집
             String seqId = commit.getCommitMongoId();
             if (seqId != null) {
                 sequenceIdsToDelete.add(seqId);
                 commitBlockSequenceRepository.findById(seqId).ifPresent(seq -> {
+                    // 브랜치가 가진 모든 블록 id 수집
                     allBlockIds.addAll(seq.getBlockOrders());
                 });
 
             }
         }
 
-        // 삭제 대상에서 제외하기 위한 브랜치 생성 이전 존재하던 블록 필터링
+        // 삭제 대상에서 제외하기 위한 from 커밋의 블록(브랜치 생성 이전 존재하던 블록) 필터링
         Set<String> baseBlockIds = new HashSet<>();
         if (branch.getFromCommit() != null) {
             String baseSeqId = branch.getFromCommit().getCommitMongoId();
@@ -228,28 +251,10 @@ public class BranchService {
             }
         }
 
-        // 5. 블록 삭제
+        // 차집합 남기기 {브랜치에 속한 커밋에 존재하는 모든 blockId} - {브랜치의 from_commit 에 존재하는 모든 blockid}
         allBlockIds.removeAll(baseBlockIds);
-        blockRepository.deleteAllById(allBlockIds);
 
-        // 6. 시퀀스 삭제
-        commitBlockSequenceRepository.deleteAllById(sequenceIdsToDelete);
-
-        // 7. SaveContent 삭제
-        branch.getSaveOptional().map(Save::getSaveMongoId)
-                .ifPresent(saveContentRepository::deleteById);
-
-        // 8. Edge 삭제
-        List<Long> commitIds = branchCommits.stream().map(Commit::getId).toList();
-        List<Edge> edgesToDelete = edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitIds, commitIds);
-        edgeRepository.deleteAll(edgesToDelete);
-
-
-        // 9. 브랜치가 속한 문서의 수정시간 갱신
-        touch(branch);
-
-        // 10. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
-        branchRepository.delete(branch);
+        return MongoDeleteMapper.toMongoIdsDto(branch, sequenceIdsToDelete, new ArrayList<>(allBlockIds));
 
     }
 
@@ -271,6 +276,11 @@ public class BranchService {
     public void checkDocByIdAndUserId(Long docId, Long userId) {
         if (!docRepository.existsByIdAndUserId(docId, userId))
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+    }
+
+    private Commit checkById(Long commitId) {
+        return commitRepository.findById(commitId)
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 
 }
