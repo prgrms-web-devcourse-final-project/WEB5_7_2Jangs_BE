@@ -21,7 +21,7 @@ public enum PageDirectionType {
         return switch (value) {
             case "ASC" -> PageDirectionType.ASC;
             case "DESC" -> PageDirectionType.DESC;
-            default -> throw new CustomException(PageErrorCode.UNSUPPORTED_DIRECTION_TYPE)
+            default -> throw new CustomException(PageErrorCode.UNSUPPORTED_DIRECTION_TYPE);
         };
     }
 
