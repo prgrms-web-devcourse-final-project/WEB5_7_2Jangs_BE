@@ -77,4 +77,20 @@ class BranchControllerTest {
                 .andExpect(jsonPath("$.id").value(branchId))
                 .andExpect(jsonPath("$.name").value(newName));
     }
+    @Test
+    @DisplayName("브랜치 삭제 API 성공")
+    void deleteBranch_success() throws Exception {
+        Long documentId = 1L;
+        Long branchId = 2L;
+        Long userId = 1L;
+
+        Mockito.doNothing().when(branchService).deleteBranch(documentId, branchId, userId);
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .delete("/api/document/{documentId}/branch/{branchId}", documentId, branchId))
+                .andExpect(status().isNoContent());
+
+        Mockito.verify(branchService).deleteBranch(documentId, branchId, userId);
+    }
 }
