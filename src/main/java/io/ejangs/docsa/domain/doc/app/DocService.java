@@ -40,6 +40,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,17 +128,16 @@ public class DocService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocListResponse> getList(Long userId) {
-        List<Doc> docs = docRepository.findAllByUserId(userId);
+    public Page<DocListResponse> getList(Long userId, Pageable pageable) {
+        Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
 
-        return docs.stream()
+        return docs
                 .map(doc -> {
                     Branch recentBranch = getMostRecentBranch(doc);
                     RecentActivityDto recent = getRecentActivity(recentBranch);
                     String preview = extractPreviewSafe(recentBranch, recent);
                     return DocMapper.toListResponse(doc, preview, recent);
-                })
-                .toList();
+                });
     }
 
     private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
