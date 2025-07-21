@@ -77,11 +77,12 @@ public class DocService {
         Save defaultSave = Save.builder().branch(defaultBranch).build();
 
         //Mongo 저장을 RDB 저장 이 후에 진행하여 실패시 예외 발생으로 인한 종료
+        //Mongo 저장실패 이종간 트랜잭션 고도화 필요
         SaveContent defaultSaveContent = createDefaultSaveContent();
 
         defaultSave.updateSaveMongoId(defaultSaveContent.getId());
-        saveRepository.save(defaultSave);
-        return DocMapper.toCreateResponse(doc);
+        Save save = saveRepository.save(defaultSave);
+        return DocMapper.toCreateResponse(doc, save);
     }
 
     private Doc createDoc(User user, String title) {
