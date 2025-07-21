@@ -43,6 +43,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class DocServiceIntegrationTests {
 
     @Autowired
@@ -81,6 +83,7 @@ public class DocServiceIntegrationTests {
 
     @AfterEach
     void cleanup() {
+        docRepository.deleteAll();
         saveContentRepository.deleteAll();
     }
 
@@ -202,8 +205,11 @@ public class DocServiceIntegrationTests {
                 saveContentRepository, commitBlockSequenceRepository, blockRepository);
         docRepository.saveAll(docs);
 
+        Pageable pageable = PageableFactory.create("updatedAt", "asc", 0, 10);
+
         // when
-        List<DocListSimpleResponse> results = docService.getSimpleList(user.getId());
+        Page<DocListSimpleResponse> page = docService.getSimpleList(user.getId(), pageable);
+        List<DocListSimpleResponse> results = page.getContent();
 
         // then
         assertEquals(2, results.size());

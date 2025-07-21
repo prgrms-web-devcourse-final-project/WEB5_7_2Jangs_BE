@@ -21,6 +21,7 @@ import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.security.WithCustomMockUser;
@@ -31,6 +32,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -90,7 +95,7 @@ class DocControllerUnitTests {
     @DisplayName("문서 리스트 조회 컨트롤러 테스트 - 사이드바")
     void getSimpleDocList() throws Exception {
         // given
-        List<DocListSimpleResponse> responseList = List.of(
+        List<DocListSimpleResponse> content = List.of(
                 new DocListSimpleResponse(
                         1L,
                         "마이크로소프트",
@@ -107,18 +112,26 @@ class DocControllerUnitTests {
                 )
         );
 
-        when(docService.getSimpleList(anyLong())).thenReturn(responseList);
+        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
+
+        Page<DocListSimpleResponse> responseList = new PageImpl<>(
+                content,
+                PageRequest.of(0, 10),
+                content.size()
+        );
+
+        when(docService.getSimpleList(anyLong(), any(Pageable.class))).thenReturn(responseList);
 
         // when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(2))
-                .andExpect(jsonPath("$[0].title").value("마이크로소프트"))
-                .andExpect(jsonPath("$[0].recent.recentType").value("SAVE"))
-                .andExpect(jsonPath("$[0].recent.recentTypeId").value(10))
-                .andExpect(jsonPath("$[1].title").value("구글"))
-                .andExpect(jsonPath("$[1].recent.recentType").value("COMMIT"))
-                .andExpect(jsonPath("$[1].recent.recentTypeId").value(11))
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].title").value("마이크로소프트"))
+                .andExpect(jsonPath("$.content[0].recent.recentType").value("SAVE"))
+                .andExpect(jsonPath("$.content[0].recent.recentTypeId").value(10))
+                .andExpect(jsonPath("$.content[1].title").value("구글"))
+                .andExpect(jsonPath("$.content[1].recent.recentType").value("COMMIT"))
+                .andExpect(jsonPath("$.content[1].recent.recentTypeId").value(11))
                 .andDo(print());
     }
 

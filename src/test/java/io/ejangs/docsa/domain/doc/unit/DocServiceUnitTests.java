@@ -17,6 +17,7 @@ import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
+import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
@@ -29,6 +30,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,13 +55,20 @@ public class DocServiceUnitTests {
         ReflectionTestUtils.setField(user, "id", userId);
 
         Long docId = 10L;
-        List<Doc> docs = DocTestUtils.createDocumentListForUnitTest(2, user);
+        List<Doc> content = DocTestUtils.createDocumentListForUnitTest(2, user);
+        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
 
-        when(docRepository.findAllByUserId(userId)).thenReturn(docs);
+        Page<Doc> docs = new PageImpl<>(
+                content,
+                PageRequest.of(0, 10),
+                content.size()
+        );
+
+        when(docRepository.findAllByUserId(userId, pageable)).thenReturn(docs);
 
         // when
-        List<DocListSimpleResponse> result = docService.getSimpleList(userId);
-
+        Page<DocListSimpleResponse> page = docService.getSimpleList(userId, pageable);
+        List<DocListSimpleResponse> result = page.getContent();
         // then
         assertEquals(2, result.size());
         assertEquals("테스트 문서 1", result.getFirst().title());
@@ -67,7 +79,7 @@ public class DocServiceUnitTests {
         assertEquals(RecentType.COMMIT, result.getLast().recent().recentType());
         assertEquals(200L, result.getLast().recent().recentTypeId());
 
-        verify(docRepository).findAllByUserId(userId);
+        verify(docRepository).findAllByUserId(userId, pageable);
     }
 
     @Test
