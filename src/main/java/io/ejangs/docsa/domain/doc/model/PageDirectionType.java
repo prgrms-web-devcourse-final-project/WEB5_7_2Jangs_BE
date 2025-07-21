@@ -1,5 +1,7 @@
 package io.ejangs.docsa.domain.doc.model;
 
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.PageErrorCode;
 import lombok.Getter;
 import org.springframework.data.domain.Sort;
 
@@ -16,11 +18,12 @@ public enum PageDirectionType {
     }
 
     public static PageDirectionType from(String value) {
-        try {
-            return PageDirectionType.valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("지원하지 않는 정렬 방향입니다: " + value);
-        }
+        return switch (value) {
+            case "ASC" -> PageDirectionType.ASC;
+            case "DESC" -> PageDirectionType.DESC;
+            default -> throw new CustomException(PageErrorCode.UNSUPPORTED_DIRECTION_TYPE)
+        };
     }
+
 }
 
