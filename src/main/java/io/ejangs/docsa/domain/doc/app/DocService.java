@@ -115,16 +115,15 @@ public class DocService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocListSimpleResponse> getSimpleList(Long userId) {
-        List<Doc> docs = docRepository.findAllByUserId(userId);
+    public Page<DocListSimpleResponse> getSimpleList(Long userId, Pageable pageable) {
+        Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
 
-        return docs.stream()
+        return docs
                 .map(doc -> {
                     Branch recentBranch = getMostRecentBranch(doc);
                     RecentActivityDto recent = getRecentActivity(recentBranch);
                     return DocMapper.toListSimpleResponse(doc, recent);
-                })
-                .toList();
+                });
     }
 
     @Transactional(readOnly = true)

@@ -10,7 +10,6 @@ import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,11 +43,18 @@ public class DocController {
     }
 
     @GetMapping("/sidebar")
-    public ResponseEntity<List<DocListSimpleResponse>> readListSidebar(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<Page<DocListSimpleResponse>> readListSidebar(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "updatedAt") String sort,
+            @RequestParam(defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageableFactory.create(sort, order, page, size);
+
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getSimpleList(userDetails.getId()));
+                .body(docService.getSimpleList(userDetails.getId(), pageable));
     }
 
     @GetMapping

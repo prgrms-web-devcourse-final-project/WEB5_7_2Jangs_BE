@@ -29,6 +29,5 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     Page<Doc> findAllByUserId(Long userId, Pageable pageable);
 
-    //페이지네이션 적용안된 사이드바 문서조회 임시조치용
     List<Doc> findAllByUserId(Long userId);
 }
