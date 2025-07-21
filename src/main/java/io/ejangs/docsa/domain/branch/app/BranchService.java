@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-import static io.ejangs.docsa.global.util.RenewUpdatedAtHelper.touch;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 
 
 
@@ -111,7 +111,7 @@ public class BranchService {
             Save save = createSave(newBranch, fromCommit.getCommitMongoId());
 
             // 저장과 브랜치, 문서의 updatedAt 동시 갱신
-            touch(save);
+            RenewUpdatedAtHelper.touch(save);
             return BranchMapper.toBranchCreateResponse(newBranch, save);
         }
     }
