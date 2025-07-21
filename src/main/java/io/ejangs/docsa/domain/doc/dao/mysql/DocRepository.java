@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.doc.dao.mysql;
 
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,4 +28,7 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
     boolean existsByIdAndUserId(Long Id, Long userId);
 
     Page<Doc> findAllByUserId(Long userId, Pageable pageable);
+
+    //페이지네이션 적용안된 사이드바 문서조회 임시조치용
+    List<Doc> findAllByUserId(Long userId);
 }
