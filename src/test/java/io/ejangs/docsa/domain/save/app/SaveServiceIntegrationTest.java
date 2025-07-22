@@ -1,5 +1,10 @@
 package io.ejangs.docsa.domain.save.app;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
@@ -13,9 +18,13 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveServiceUtil;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +34,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
-@Transactional
 class SaveServiceIntegrationTest {
 
     @Autowired
@@ -51,14 +59,13 @@ class SaveServiceIntegrationTest {
             Map.of("text2", "Key features")
     );
 
-//    @AfterEach
-//    void tearDown() {
-//        saveRepository.deleteAll();
-//        userRepository.deleteAll();
-//        docRepository.deleteAll();
-//        branchRepository.deleteAll();
-//        saveContentRepository.deleteAll();
-//    }
+    @AfterEach
+    void tearDown() {
+        saveRepository.deleteAll();
+        userRepository.deleteAll();
+        docRepository.deleteAll();
+        branchRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("Mongo 저장 실패 시 updateSave 롤백")
@@ -83,31 +90,33 @@ class SaveServiceIntegrationTest {
                 .content(data)
                 .build();
 
-        userRepository.save(user);
-        docRepository.save(doc);
-        branchRepository.save(branch);
-        saveRepository.save(save);
-        saveContentRepository.save(saveContent);
+        save.updateSaveMongoId("mongoId");
+        userRepository.saveAndFlush(user);
+        docRepository.saveAndFlush(doc);
+        branchRepository.saveAndFlush(branch);
+        saveRepository.saveAndFlush(save);
 
         // given
         LocalDateTime beforeUpdatedAt = save.getUpdatedAt();
 
-        save.updateSaveMongoId("mongoId");
         SaveIdentifierDto dto = new SaveIdentifierDto(doc.getId(), save.getId(), user.getId());
         SaveUpdateRequest request = new SaveUpdateRequest(data);
 
-//        // when
-//        when(saveContentRepository.save(any()))
-//                .thenThrow(new MongoTimeoutException("Mongo 연결 실패"));
-//
-//        assertThatThrownBy(() -> saveService.updateSave(dto, request))
-//                .isInstanceOf(CustomException.class)
-//                .hasMessageContaining(SaveErrorCode.SAVE_CREATE_FAIL.getMessage());
-//
-//        // then
-//        Save after = saveRepository.findById(save.getId()).orElse(null);
-//        assertThat(after).isNotNull();
-//        assertThat(after.getUpdatedAt()).isEqualTo(beforeUpdatedAt);
+        // when
+        when(saveContentRepository.findById(save.getSaveMongoId())).thenReturn(
+                Optional.of(saveContent));
+
+        when(saveContentRepository.save(any()))
+                .thenThrow(new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO));
+
+        assertThatThrownBy(() -> saveService.updateSave(dto, request))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO.getMessage());
+
+        // then
+        Save after = saveRepository.findById(save.getId()).orElse(null);
+        assertThat(after).isNotNull();
+        assertThat(after.getUpdatedAt()).isEqualTo(beforeUpdatedAt);
     }
 }
 
