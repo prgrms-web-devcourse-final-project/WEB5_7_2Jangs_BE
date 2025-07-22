@@ -161,9 +161,10 @@ public class BranchService {
 
         // 1. 브랜치 검증
         checkBranchInDocOwnedByUser(documentId, branchId, userId);
+        Branch branch = getById(branchId);
+        checkDefaultBranch(branch);
 
         // 2. 브랜치 이름 수정 후 브랜치와 문서의 수정시각 갱신
-        Branch branch = getById(branchId);
         branch.updateName(newName);
         RenewUpdatedAtHelper.touch(branch);
 
@@ -185,11 +186,9 @@ public class BranchService {
         Branch branch = getById(branchId);
 
         // 2. main브랜치는 삭제가 불가능하도록 함
-        if (branch.getName().equals(defaultBranchName)) {
-            throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
-        }
+        checkDefaultBranch(branch);
 
-        // 3. 삭제하려는 브랜치의 커밋 중 다른 브랜치의 fromdCommit이 없는지 확인
+        // 3. 삭제하려는 브랜치의 커밋 중 다른 브랜치의 fromCommit이 없는지 확인
         List<Commit> branchCommits = branch.getCommits();
         List<Long> commitsIds = branchCommits.stream().map(Commit::getId).toList();
 
@@ -280,7 +279,12 @@ public class BranchService {
         return commitRepository.findById(commitId)
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
-
+    private void checkDefaultBranch(Branch branch) {
+       if (branch.getName().equals(defaultBranchName)) {
+           throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
+       }
+    }
 }
+
 
 

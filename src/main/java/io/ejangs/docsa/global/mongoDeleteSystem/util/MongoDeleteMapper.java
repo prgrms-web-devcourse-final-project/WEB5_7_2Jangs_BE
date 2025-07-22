@@ -6,6 +6,7 @@ import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class MongoDeleteMapper {
@@ -15,6 +16,7 @@ public final class MongoDeleteMapper {
             List<String> blockIds) {
         List<String> saveContentsIds = Optional.ofNullable(branch.getSave())
                 .map(Save::getSaveMongoId)
+                .filter(Objects::nonNull)
                 .map(List::of)
                 .orElse(List.of());
 
