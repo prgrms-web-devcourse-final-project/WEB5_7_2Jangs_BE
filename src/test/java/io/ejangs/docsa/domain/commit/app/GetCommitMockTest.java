@@ -13,7 +13,7 @@ import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.commit.util.CommitTestUtils;
+import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -55,20 +55,20 @@ class GetCommitMockTest {
     @BeforeEach
     void setUp() {
         // User 생성
-        user = CommitTestUtils.createUser();
+        user = CommitMockTestUtils.createUser();
 
         // Doc 생성
-        doc = CommitTestUtils.createDoc(user);
+        doc = CommitMockTestUtils.createDoc(user);
 
         // Branch 생성
-        branch = CommitTestUtils.createBranch(doc, baseCommit);
+        branch = CommitMockTestUtils.createBranch(doc, baseCommit);
 
         // BaseCommit 생성
-        baseCommit = CommitTestUtils.createBaseCommit(branch);
+        baseCommit = CommitMockTestUtils.createBaseCommit(branch);
         baseCommit.setBranch(branch);
 
-        targetCommit = CommitTestUtils.createMockCommit(branch, 2L);
-        mockContent = CommitTestUtils.createMockContent();
+        targetCommit = CommitMockTestUtils.createMockCommit(branch, 2L);
+        mockContent = CommitMockTestUtils.createMockContent();
     }
 
     @Test
@@ -141,8 +141,8 @@ class GetCommitMockTest {
         String baseCommitMongoId = "base-mongo-commit-id";
         String targetCommitMongoId = "mongo-commit-id";
 
-        List<Map<String, Object>> baseContent = CommitTestUtils.createMockContent();
-        List<Map<String, Object>> targetContent = CommitTestUtils.createMockContent();
+        List<Map<String, Object>> baseContent = CommitMockTestUtils.createMockContent();
+        List<Map<String, Object>> targetContent = CommitMockTestUtils.createMockContent();
 
         given(commitRepository.findById(baseId)).willReturn(Optional.of(baseCommit));
         given(commitRepository.findById(targetId)).willReturn(Optional.of(targetCommit));
@@ -194,7 +194,7 @@ class GetCommitMockTest {
         Long targetId = 999L;
         String baseCommitMongoId = "base-mongo-commit-id";
 
-        List<Map<String, Object>> baseContent = CommitTestUtils.createMockContent();
+        List<Map<String, Object>> baseContent = CommitMockTestUtils.createMockContent();
 
         given(commitRepository.findById(baseId)).willReturn(Optional.of(baseCommit));
         given(commitRepository.findById(targetId)).willReturn(Optional.empty());

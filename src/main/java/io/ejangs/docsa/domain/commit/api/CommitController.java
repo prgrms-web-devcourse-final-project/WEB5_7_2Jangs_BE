@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.commit.api;
 
 import io.ejangs.docsa.domain.commit.app.CommitService;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
@@ -56,5 +57,14 @@ public class CommitController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(commitService.compareCommitForMerge(docId, baseId, targetId));
+    }
+
+    @PostMapping("/api/document/{docId}/merge")
+    public ResponseEntity<CreateCommitResponse> mergeCommit(
+            @PathVariable("docId") Long docId,
+            @RequestBody @Valid MergeCommitRequest mergeRequest) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(commitService.mergeCommit(docId, mergeRequest));
     }
 }
