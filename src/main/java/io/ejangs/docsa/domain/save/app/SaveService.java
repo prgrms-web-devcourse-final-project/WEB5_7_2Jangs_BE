@@ -62,6 +62,18 @@ public class SaveService {
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
     }
 
+    @Transactional
+    public void deleteSave(SaveIdentifierDto dto) {
+        Save findSave = getValidSave(dto);
+        saveRepository.delete(findSave);
+        try {
+            saveContentRepository.deleteById(findSave.getSaveMongoId());
+        } catch (Exception e) {
+            log.error("Mongo 삭제 중 실패 실패: {}", e.getMessage(), e);
+            throw new CustomException(SaveErrorCode.FAILED_TO_DELETE_IN_MONGO);
+        }
+    }
+
     public Save getSaveById(Long id) {
         return saveRepository.findById(id)
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
