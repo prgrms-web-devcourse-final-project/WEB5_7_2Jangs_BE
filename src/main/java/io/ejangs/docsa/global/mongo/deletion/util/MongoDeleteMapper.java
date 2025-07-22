@@ -1,9 +1,8 @@
-package io.ejangs.docsa.global.mongoDeleteSystem.util;
+package io.ejangs.docsa.global.mongo.deletion.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
-import org.springframework.stereotype.Component;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 
 import java.util.List;
 import java.util.Objects;

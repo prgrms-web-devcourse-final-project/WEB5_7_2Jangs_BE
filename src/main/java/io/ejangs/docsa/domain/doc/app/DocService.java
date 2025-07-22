@@ -10,11 +10,7 @@ import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.*;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.doc.util.GraphMapper;
@@ -26,15 +22,13 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,12 +37,17 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocService {
 
+    private static final String DEFAULT_PREVIEW = "미리보기 없음";
     private final DocRepository docRepository;
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
@@ -57,11 +56,8 @@ public class DocService {
     private final CommitContentAssembler commitContentAssembler;
     private final MongoIdsCollector mongoIdsCollector;
     private final ApplicationEventPublisher eventPublisher;
-
     @Value("${default.branch}")
     private String defaultBranchName;
-
-    private static final String DEFAULT_PREVIEW = "미리보기 없음";
 
     @Transactional(rollbackFor = Exception.class)
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
@@ -116,27 +112,23 @@ public class DocService {
     public List<DocListSimpleResponse> getSimpleList(Long userId) {
         List<Doc> docs = docRepository.findAllByUserId(userId);
 
-        return docs.stream()
-                .map(doc -> {
-                    Branch recentBranch = getMostRecentBranch(doc);
-                    RecentActivityDto recent = getRecentActivity(recentBranch);
-                    return DocMapper.toListSimpleResponse(doc, recent);
-                })
-                .toList();
+        return docs.stream().map(doc -> {
+            Branch recentBranch = getMostRecentBranch(doc);
+            RecentActivityDto recent = getRecentActivity(recentBranch);
+            return DocMapper.toListSimpleResponse(doc, recent);
+        }).toList();
     }
 
     @Transactional(readOnly = true)
     public List<DocListResponse> getList(Long userId) {
         List<Doc> docs = docRepository.findAllByUserId(userId);
 
-        return docs.stream()
-                .map(doc -> {
-                    Branch recentBranch = getMostRecentBranch(doc);
-                    RecentActivityDto recent = getRecentActivity(recentBranch);
-                    String preview = extractPreviewSafe(recentBranch, recent);
-                    return DocMapper.toListResponse(doc, preview, recent);
-                })
-                .toList();
+        return docs.stream().map(doc -> {
+            Branch recentBranch = getMostRecentBranch(doc);
+            RecentActivityDto recent = getRecentActivity(recentBranch);
+            String preview = extractPreviewSafe(recentBranch, recent);
+            return DocMapper.toListResponse(doc, preview, recent);
+        }).toList();
     }
 
     private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
@@ -156,8 +148,8 @@ public class DocService {
             return DEFAULT_PREVIEW;
         }
 
-        List<Map<String, Object>> content = commitContentAssembler.assemble(
-                commit.getCommitMongoId());
+        List<Map<String, Object>> content =
+                commitContentAssembler.assemble(commit.getCommitMongoId());
         return PreviewExtractor.doExtractPreview(content);
     }
 
@@ -175,8 +167,7 @@ public class DocService {
 
 
     private Branch getMostRecentBranch(Doc doc) {
-        return doc.getBranches().stream()
-                .max(Comparator.comparing(Branch::getUpdatedAt))
+        return doc.getBranches().stream().max(Comparator.comparing(Branch::getUpdatedAt))
                 .orElse(null);
     }
 
@@ -241,24 +232,23 @@ public class DocService {
 
         checkDocByIdAndUserId(documentId, userId);
 
-        // 기존 findByIdWithBranchesAndEdges 에서  MultipleBagFetchException 예외로 다음과 같이 FETCH JOIN 쿼리 분리
-        // 1. Doc과 Branch, Commit을 함께 가져오는 쿼리 호출
-        Doc doc = docRepository.findByIdWithBranchesAndCommits(documentId)
-                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+        // 문서 제목 조회
+        String docTitle = getTitleOnlyById(documentId);
 
-        // 2. Doc과 Edge만 가져오는 쿼리 호출 (같은 Doc 객체에 Edge 컬렉션을 로드)
-        docRepository.findByIdWithEdges(documentId)
-                .ifPresent(d -> doc.updateEdges(d.getEdges()));
+        //  Branch, Commit, Edge 각각 별도 조회 (Projection 쿼리)
+        List<BranchDto> branches = docRepository.findBranchesByDocId(documentId);
+        if (branches.isEmpty()) {
+            throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
+        }
+        List<CommitDto> commits = docRepository.findCommitsByDocId(documentId);
+        List<EdgeDto> edges = docRepository.findEdgesByDocId(documentId);
 
-        List<CommitDto> commits = doc.getBranches().stream().flatMap(b -> b.getCommits().stream())
-                .map(GraphMapper::toCommitDto).toList();
+        return GraphMapper.toCommitGraphResponse(docTitle, commits, edges, branches);
+    }
 
-        List<EdgeDto> edges = doc.getEdges().stream().map(GraphMapper::toEdgeDto).toList();
-
-        List<BranchDto> branches =
-                doc.getBranches().stream().map(GraphMapper::toBranchDto).toList();
-
-        return GraphMapper.toCommitGraphResponse(doc.getTitle(), commits, edges, branches);
+    private String getTitleOnlyById(Long documentId) {
+        return docRepository.findTitleOnlyById(documentId).map(DocTitleOnlyResponse::title)
+                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_TITLE_NOT_FOUND));
     }
 
     @Transactional

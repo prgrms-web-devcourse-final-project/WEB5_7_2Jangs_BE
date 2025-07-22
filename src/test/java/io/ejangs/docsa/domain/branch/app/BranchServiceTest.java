@@ -21,7 +21,7 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -240,7 +239,8 @@ class BranchServiceTest {
                 userId)).thenReturn(true);
         when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
         when(branchRepository.existsByFromCommitIdIn(any())).thenReturn(false);
-        when(edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(any(), any())).thenReturn(List.of()); // 빈 리스트로 가정
+        when(edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(any(), any())).thenReturn(
+                List.of()); // 빈 리스트로 가정
 
         when(commitBlockSequenceRepository.findById("seq1")).thenReturn(Optional.of(seq1));
         when(commitBlockSequenceRepository.findById("seq2")).thenReturn(Optional.of(seq2));
