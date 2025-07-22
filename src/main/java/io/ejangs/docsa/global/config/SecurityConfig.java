@@ -96,11 +96,13 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(
                 List.of(
                         "http://localhost:3000",
-                        "https://web5-7-2jangs-fe.pages.dev/",
+                        "http://localhost:5173",
+                        "https://web5-7-2jangs-fe.pages.dev",
                         "http://ec2-3-34-159-207.ap-northeast-2.compute.amazonaws.com:8080"
                 ));
         configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        );
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
