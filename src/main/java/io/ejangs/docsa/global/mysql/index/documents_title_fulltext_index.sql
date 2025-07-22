@@ -1,3 +1,3 @@
 CREATE FULLTEXT INDEX idx_title_ngram
-    ON documents (title)
+    ON docs (title)
     WITH PARSER ngram;

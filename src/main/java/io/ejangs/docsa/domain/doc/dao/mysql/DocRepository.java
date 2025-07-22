@@ -37,8 +37,8 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
             Pageable pageable);
 
     @Query(
-            value = "SELECT * FROM documents WHERE user_id = :userId AND MATCH(title) AGAINST (:title IN NATURAL LANGUAGE MODE)",
-            countQuery = "SELECT COUNT(*) FROM documents WHERE user_id = :userId AND MATCH(title) AGAINST (:title IN NATURAL LANGUAGE MODE)",
+            value = "SELECT * FROM docs WHERE user_id = :userId AND MATCH(title) AGAINST (:title IN NATURAL LANGUAGE MODE)",
+            countQuery = "SELECT COUNT(*) FROM docs WHERE user_id = :userId AND MATCH(title) AGAINST (:title IN NATURAL LANGUAGE MODE)",
             nativeQuery = true
     )
     Page<Doc> searchDocByTitle_FULLTEXT(@Param("title") String title, @Param("userId") Long userId,
