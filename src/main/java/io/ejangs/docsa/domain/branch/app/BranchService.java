@@ -23,8 +23,8 @@ import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoDeleteMapper;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -252,11 +252,9 @@ public class BranchService {
 
         return MongoDeleteMapper.toMongoIdsDto(branch, sequenceIdsToDelete,
                 new ArrayList<>(allBlockIds));
-
     }
 
     //  브랜치 관련 검증로직 메서드들
-
     public Branch getById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
@@ -280,9 +278,10 @@ public class BranchService {
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
     private void checkDefaultBranch(Branch branch) {
-       if (branch.getName().equals(defaultBranchName)) {
-           throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
-       }
+        if (branch.getName().equals(defaultBranchName)) {
+            throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
+        }
+    }
 
     public Branch saveBranch(Branch branch) {
         return branchRepository.save(branch);
