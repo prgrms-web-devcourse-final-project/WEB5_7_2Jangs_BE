@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
@@ -19,7 +20,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,7 +39,7 @@ class GetCommitMockTest {
     private CommitRepository commitRepository;
 
     @Mock
-    private DocService docService;
+    private BranchService branchService;
 
     @Mock
     private CommitContentAssembler assembler;
@@ -92,7 +93,7 @@ class GetCommitMockTest {
         assertThat(response).isNotNull();
         assertThat(response.content()).isEqualTo(mockContent);
 
-        verify(docService).notFoundDocCheck(docId);
+        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(commitId);
         verify(assembler).assemble(commitMongoId);
     }
@@ -110,7 +111,7 @@ class GetCommitMockTest {
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docService).notFoundDocCheck(docId);
+        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(commitId);
         verify(assembler, never()).assemble(any());
     }
@@ -122,14 +123,14 @@ class GetCommitMockTest {
         Long docId = 999L;
         Long commitId = 1L;
 
-        doThrow(new CustomException(CommitErrorCode.COMMIT_NOT_FOUND))
-                .when(docService).notFoundDocCheck(docId);
+        doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
+                .when(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
 
         // when & then
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docService).notFoundDocCheck(docId);
+        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository, never()).findById(any());
         verify(assembler, never()).assemble(any());
     }
@@ -154,14 +155,14 @@ class GetCommitMockTest {
 
         // when
         CompareMergeCommitResponse response = commitService.compareCommitForMerge(docId, baseId,
-                targetId);
+                targetId, userDetails.getId());
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.base()).isEqualTo(baseContent);
         assertThat(response.target()).isEqualTo(targetContent);
 
-        verify(docService).notFoundDocCheck(docId);
+        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(baseId);
         verify(commitRepository).findById(targetId);
         verify(assembler).assemble(baseCommitMongoId);
@@ -179,10 +180,11 @@ class GetCommitMockTest {
         given(commitRepository.findById(baseId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId))
+        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docService).notFoundDocCheck(docId);
+        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(baseId);
         verify(commitRepository, never()).findById(targetId);
         verify(assembler, never()).assemble(any());
@@ -204,10 +206,11 @@ class GetCommitMockTest {
         given(assembler.assemble(baseCommitMongoId)).willReturn(baseContent);
 
         // when & then
-        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId))
+        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docService).notFoundDocCheck(docId);
+        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(baseId);
         verify(commitRepository).findById(targetId);
         verify(assembler).assemble(baseCommitMongoId);
@@ -221,14 +224,15 @@ class GetCommitMockTest {
         Long baseId = 1L;
         Long targetId = 2L;
 
-        doThrow(new CustomException(CommitErrorCode.COMMIT_NOT_FOUND))
-                .when(docService).notFoundDocCheck(docId);
+        doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
+                .when(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
 
         // when & then
-        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId))
+        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docService).notFoundDocCheck(docId);
+        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository, never()).findById(any());
         verify(assembler, never()).assemble(any());
     }

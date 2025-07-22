@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 /*
 @AuthenticationPrincipal CustomUserDetails userDetails 을 추가해놓음.
 추후 다른 PR에서 서비스 로직에서 관련 유효성 검사를 진행할 예정
@@ -56,7 +57,8 @@ public class CommitController {
             @RequestParam("target") Long targetId) {
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(commitService.compareCommitForMerge(docId, baseId, targetId));
+                .body(commitService.compareCommitForMerge(docId, baseId, targetId,
+                        userDetails.getId()));
     }
 
     @PostMapping("/api/document/{docId}/merge")

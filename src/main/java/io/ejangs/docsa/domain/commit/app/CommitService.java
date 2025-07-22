@@ -131,10 +131,10 @@ public class CommitService {
     }
 
     @Transactional(readOnly = true)
-    public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId,
-            Long targetId) {
+    public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId, Long targetId,
+            Long userId) {
 
-        docService.notFoundDocCheck(docId);
+        branchService.checkDocByIdAndUserId(docId, userId);
         List<Map<String, Object>> baseContent = getWholeContent(baseId);
         List<Map<String, Object>> targetContent = getWholeContent(targetId);
 
