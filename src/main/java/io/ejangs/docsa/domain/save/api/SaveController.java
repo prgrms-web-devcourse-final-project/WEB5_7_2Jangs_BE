@@ -5,7 +5,10 @@ import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
+import io.ejangs.docsa.domain.save.swagger.GetSaveDocs;
+import io.ejangs.docsa.domain.save.swagger.UpdateSaveDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,17 +18,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/document/{documentId}/save/{saveId}")
+@Tag(name = "Save API")
 public class SaveController {
 
     private final SaveService saveService;
 
     @GetMapping
+    @GetSaveDocs
     public ResponseEntity<SaveGetResponse> getSave(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long saveId,
@@ -36,6 +40,7 @@ public class SaveController {
     }
 
     @PutMapping
+    @UpdateSaveDocs
     public ResponseEntity<SaveUpdateResponse> updateSave(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long documentId,

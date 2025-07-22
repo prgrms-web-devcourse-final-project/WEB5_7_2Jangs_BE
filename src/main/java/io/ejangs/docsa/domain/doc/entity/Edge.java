@@ -29,11 +29,11 @@ public class Edge {
     @JoinColumn(name = "document_id", nullable = false)
     private Doc doc;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prev_commit_id", nullable = false)
     private Commit prevCommit;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "next_commit_id", nullable = false)
     private Commit nextCommit;
 

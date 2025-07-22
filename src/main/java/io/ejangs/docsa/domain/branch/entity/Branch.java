@@ -43,7 +43,7 @@ public class Branch extends BaseEntity {
     @JoinColumn(name = "leaf_commit_id")
     private Commit leafCommit;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "branch", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Commit> commits;
 
     @OneToOne(mappedBy = "branch", cascade = CascadeType.ALL, orphanRemoval = true)

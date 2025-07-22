@@ -283,6 +283,10 @@ public class BranchService {
        if (branch.getName().equals(defaultBranchName)) {
            throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
        }
+
+    public Branch saveBranch(Branch branch) {
+        return branchRepository.save(branch);
+
     }
 }
 

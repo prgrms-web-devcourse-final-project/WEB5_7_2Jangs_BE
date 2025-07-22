@@ -1,4 +1,4 @@
-package io.ejangs.docsa.global.mongoDeleteSystem.entity;
+package io.ejangs.docsa.global.mongo.deletion.entity;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;

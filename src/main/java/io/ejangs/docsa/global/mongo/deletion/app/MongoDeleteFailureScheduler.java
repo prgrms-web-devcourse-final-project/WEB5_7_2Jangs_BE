@@ -1,8 +1,8 @@
-package io.ejangs.docsa.global.mongoDeleteSystem.app;
+package io.ejangs.docsa.global.mongo.deletion.app;
 
-import io.ejangs.docsa.global.mongoDeleteSystem.dao.mysql.MongoDeleteFailureRepository;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongoDeleteSystem.entity.MongoDeleteFailure;
+import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
