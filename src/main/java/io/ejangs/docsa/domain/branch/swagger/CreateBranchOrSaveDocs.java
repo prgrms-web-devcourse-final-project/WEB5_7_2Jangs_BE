@@ -172,6 +172,6 @@ import org.springframework.http.MediaType;
 
         }
 )
-public @interface CreateBranchOrSaveDoc {
+public @interface CreateBranchOrSaveDocs {
 
 }

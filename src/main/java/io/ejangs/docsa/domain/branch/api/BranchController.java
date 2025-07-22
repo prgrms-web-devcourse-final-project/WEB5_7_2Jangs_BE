@@ -5,7 +5,7 @@ import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
-import io.ejangs.docsa.domain.branch.swagger.CreateBranchOrSaveDoc;
+import io.ejangs.docsa.domain.branch.swagger.CreateBranchOrSaveDocs;
 import io.ejangs.docsa.domain.branch.swagger.RenameBranchDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +31,7 @@ public class BranchController {
 
     // 브랜치에 이어서 새로운 저장 생성 or 새로운 브랜치 + 저장 생성
     @PostMapping
-    @CreateBranchOrSaveDoc
+    @CreateBranchOrSaveDocs
     public ResponseEntity<BranchCreateResponse> createBranchOrSave(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long documentId, @Valid @RequestBody BranchCreateRequest request) {
