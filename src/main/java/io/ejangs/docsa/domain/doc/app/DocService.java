@@ -3,12 +3,9 @@ package io.ejangs.docsa.domain.doc.app;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
-import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.EdgeDto;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
@@ -16,9 +13,9 @@ import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.util.DocListAssembler;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.doc.util.GraphMapper;
-import io.ejangs.docsa.domain.doc.util.PreviewExtractor;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -27,14 +24,11 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,14 +50,12 @@ public class DocService {
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
-    private final CommitContentAssembler commitContentAssembler;
+    private final DocListAssembler docListAssembler;
     private final MongoIdsCollector mongoIdsCollector;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${default.branch}")
     private String defaultBranchName;
-
-    private static final String DEFAULT_PREVIEW = "미리보기 없음";
 
     @Transactional(rollbackFor = Exception.class)
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
@@ -118,76 +110,21 @@ public class DocService {
     public Page<DocListSimpleResponse> getSimpleList(Long userId, Pageable pageable) {
         Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
 
-        return docs
-                .map(doc -> {
-                    Branch recentBranch = getMostRecentBranch(doc);
-                    RecentActivityDto recent = getRecentActivity(recentBranch);
-                    return DocMapper.toListSimpleResponse(doc, recent);
-                });
+        return docListAssembler.assembleDocListSimple(docs);
     }
 
     @Transactional(readOnly = true)
     public Page<DocListResponse> getList(Long userId, Pageable pageable) {
         Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
 
-        return docs
-                .map(doc -> {
-                    Branch recentBranch = getMostRecentBranch(doc);
-                    RecentActivityDto recent = getRecentActivity(recentBranch);
-                    String preview = extractPreviewSafe(recentBranch, recent);
-                    return DocMapper.toListResponse(doc, preview, recent);
-                });
+        return docListAssembler.assembleDocList(docs);
     }
 
-    private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
-        if (branch == null || recent == null) {
-            return DEFAULT_PREVIEW;
-        }
+    @Transactional(readOnly = true)
+    public Page<DocListResponse> searchList(Long userId, String keyword, Pageable pageable) {
+        Page<Doc> docs = docRepository.searchDocByTitle_FULLTEXT(keyword, userId, pageable);
 
-        return switch (recent.recentType()) {
-            case COMMIT -> extractPreviewFromCommit(branch.getLeafCommit());
-            case SAVE -> extractPreviewFromSave(branch.getSave());
-            default -> DEFAULT_PREVIEW;
-        };
-    }
-
-    private String extractPreviewFromCommit(Commit commit) {
-        if (commit == null) {
-            return DEFAULT_PREVIEW;
-        }
-
-        List<Map<String, Object>> content = commitContentAssembler.assemble(
-                commit.getCommitMongoId());
-        return PreviewExtractor.doExtractPreview(content);
-    }
-
-    private String extractPreviewFromSave(Save save) {
-        if (save == null) {
-            return DEFAULT_PREVIEW;
-        }
-
-        SaveContent saveContent = saveContentRepository.findById(save.getSaveMongoId())
-                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
-
-        List<Map<String, Object>> content = saveContent.getContent();
-        return PreviewExtractor.doExtractPreview(content);
-    }
-
-
-    private Branch getMostRecentBranch(Doc doc) {
-        return doc.getBranches().stream()
-                .max(Comparator.comparing(Branch::getUpdatedAt))
-                .orElse(null);
-    }
-
-    private RecentActivityDto getRecentActivity(Branch branch) {
-        if (branch.getSave() != null) {
-            return RecentActivityDto.from(branch.getSave());
-        }
-        if (branch.getLeafCommit() != null) {
-            return RecentActivityDto.from(branch.getLeafCommit());
-        }
-        return null;
+        return docListAssembler.assembleDocList(docs);
     }
 
     @Transactional
