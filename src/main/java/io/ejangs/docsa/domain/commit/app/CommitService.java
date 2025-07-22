@@ -144,15 +144,7 @@ public class CommitService {
     @Transactional
     public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest,
             Long userId) {
-        /**
-         * Block을 저장하고
-         * CommitSequence를 저장하고
-         *
-         * Commit을 생성하고
-         * Commit에 CommitSequence의 _id를 저장하고
-         * 간선을 2개 저장하고
-         * baseBranch의 leaf를 업데이트
-         */
+
         CommitMongoIdsDto commitMongoIds = null;
         try {
             // 문서가 존재하는지 검사
