@@ -15,6 +15,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.springframework.http.MediaType;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -33,6 +34,7 @@ import java.lang.annotation.Target;
         requestBody = @RequestBody(
                 content = @Content(
                         schema = @Schema(implementation = BranchCreateRequest.class),
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
                         examples = @ExampleObject(
                                 value = """
                                         {
@@ -49,6 +51,7 @@ import java.lang.annotation.Target;
                         description = "이어서 작업하기 성공 (새로운 저장 or 저장/브랜치 생성",
                         content = @Content(
                                 schema = @Schema(implementation = BranchCreateResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
@@ -64,6 +67,7 @@ import java.lang.annotation.Target;
                         description = "이어서 작업하기 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
                                                 name = "요청으로 온 fromCommitId 이 null",
@@ -93,6 +97,7 @@ import java.lang.annotation.Target;
                         description = "인증 실패 - 로그인 세션이 없음",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
@@ -109,6 +114,7 @@ import java.lang.annotation.Target;
                         description = "이어서 작업하기 실패 - 존재하지 않는 id",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
                                                 name = "존재하지 않는 문서",
@@ -138,6 +144,7 @@ import java.lang.annotation.Target;
                         description = "이어서 작업하기 실패 - MySQL 또는 MongoDB 저장 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
                                                 name = "MySQL 저장 실패",

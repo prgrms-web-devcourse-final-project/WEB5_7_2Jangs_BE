@@ -15,6 +15,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.springframework.http.MediaType;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -40,6 +41,7 @@ import java.lang.annotation.Target;
         requestBody = @RequestBody(
                 content = @Content(
                         schema = @Schema(implementation = BranchRenameRequest.class),
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
                         examples = @ExampleObject(
                                 value = """
                                         {
@@ -55,6 +57,7 @@ import java.lang.annotation.Target;
                         description = "브랜치 이름 수정 성공",
                         content = @Content(
                                 schema = @Schema(implementation = BranchRenameResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
@@ -70,6 +73,7 @@ import java.lang.annotation.Target;
                         description = "브랜치 이름 수정 실패 - 해당 문서에 속한 브랜치가 아니다.",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples =
                                 @ExampleObject(
                                         value = """
@@ -88,6 +92,7 @@ import java.lang.annotation.Target;
                         description = "브랜치 이름 수정 실패 - 해당 id를 가진 브랜치는 없음.",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples =
                                 @ExampleObject(
                                         name = "해당 브랜치는 없다",
@@ -107,6 +112,7 @@ import java.lang.annotation.Target;
                         description = "브랜치 이름 수정 실패 - MySQL 또는 MongoDB 저장 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
                                                 name = "MySQL 저장 실패",
