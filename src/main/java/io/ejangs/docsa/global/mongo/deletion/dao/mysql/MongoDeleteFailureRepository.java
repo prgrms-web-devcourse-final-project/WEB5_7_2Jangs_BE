@@ -1,6 +1,6 @@
-package io.ejangs.docsa.global.mongoDeleteSystem.dao.mysql;
+package io.ejangs.docsa.global.mongo.deletion.dao.mysql;
 
-import io.ejangs.docsa.global.mongoDeleteSystem.entity.MongoDeleteFailure;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
