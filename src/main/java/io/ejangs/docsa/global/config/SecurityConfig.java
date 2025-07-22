@@ -41,6 +41,16 @@ public class SecurityConfig {
                                 .maximumSessions(1)
                                 .maxSessionsPreventsLogin(false))
                 .authorizeHttpRequests((authorize) -> authorize
+                        // Swagger UI 및 OpenAPI 문서 접근 허용
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        // 기존 인증 불필요한 경로
                         .requestMatchers(
                                 "/api/auth/code/signup-email",
                                 "/api/user/signup",
@@ -84,9 +94,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(
-                List.of("http://localhost:3000", "https://web5-7-2jangs-fe.pages.dev/"));
+                List.of(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "https://web5-7-2jangs-fe.pages.dev",
+                        "http://ec2-3-34-159-207.ap-northeast-2.compute.amazonaws.com:8080"
+                ));
         configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        );
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

@@ -182,6 +182,9 @@ public class BranchService {
         }
     }
 
+    public Branch saveBranch(Branch branch) {
+        return branchRepository.save(branch);
+    }
 }
 
 

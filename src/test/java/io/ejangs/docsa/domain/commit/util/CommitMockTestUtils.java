@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.test.util.ReflectionTestUtils;
 
-public class CommitTestUtils {
+public class CommitMockTestUtils {
 
     public static User createUser() {
         User user = User.builder()
