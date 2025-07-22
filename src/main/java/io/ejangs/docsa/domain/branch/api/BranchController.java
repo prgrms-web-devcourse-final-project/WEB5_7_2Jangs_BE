@@ -39,6 +39,7 @@ public class BranchController {
 
     // 브랜치 이름 수정
     @PatchMapping("/{branchId}")
+    @RenameBranchDocs
     public ResponseEntity<BranchRenameResponse> renameBranch(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long documentId, @PathVariable Long branchId,
