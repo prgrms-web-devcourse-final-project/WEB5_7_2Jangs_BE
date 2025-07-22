@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.branch.api;
+package io.ejangs.docsa.domain.branch.swagger;
 
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
