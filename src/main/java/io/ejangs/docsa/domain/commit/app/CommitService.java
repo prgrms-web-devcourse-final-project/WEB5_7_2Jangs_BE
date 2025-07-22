@@ -255,7 +255,7 @@ public class CommitService {
         return assembler.assemble(commit.getCommitMongoId());
     }
 
-    private Commit getById(Long commitId) {
+    public Commit getById(Long commitId) {
         return commitRepository.findById(commitId)
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
