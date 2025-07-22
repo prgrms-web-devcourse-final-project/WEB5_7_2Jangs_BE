@@ -6,6 +6,11 @@ import io.ejangs.docsa.domain.user.dto.request.UserLoginRequest;
 import io.ejangs.docsa.domain.user.dto.request.UserSignupRequest;
 import io.ejangs.docsa.domain.user.dto.response.UserLoginResponse;
 import io.ejangs.docsa.domain.user.dto.response.UserSignupResponse;
+import io.ejangs.docsa.domain.user.swagger.LoginDocs;
+import io.ejangs.docsa.domain.user.swagger.LogoutDocs;
+import io.ejangs.docsa.domain.user.swagger.ResetPasswordDocs;
+import io.ejangs.docsa.domain.user.swagger.SignupDocs;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -20,11 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
+@Tag(name = "User API")
 public class UserController {
 
     private final UserService userService;
 
     @PostMapping("/signup")
+    @SignupDocs
     public ResponseEntity<UserSignupResponse> signup(
             @Valid @RequestBody UserSignupRequest request) {
         UserSignupResponse response = userService.signup(request);
@@ -34,6 +41,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
+    @LoginDocs
     public ResponseEntity<UserLoginResponse> login(
             @Valid @RequestBody UserLoginRequest request,
             HttpServletRequest httpRequest) {
@@ -44,6 +52,7 @@ public class UserController {
     }
 
     @PostMapping("/logout")
+    @LogoutDocs
     public ResponseEntity<Void> logout(HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
         userService.logout(httpRequest, httpResponse);
@@ -52,7 +61,9 @@ public class UserController {
                 .build();
     }
 
+
     @PostMapping("/password")
+    @ResetPasswordDocs
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
         userService.resetPassword(request);
         return ResponseEntity
