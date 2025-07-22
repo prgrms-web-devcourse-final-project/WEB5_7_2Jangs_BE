@@ -23,7 +23,7 @@ import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongoDeleteSystem.util.MongoDeleteMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -280,9 +280,10 @@ public class BranchService {
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
     private void checkDefaultBranch(Branch branch) {
-       if (branch.getName().equals(defaultBranchName)) {
-           throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
-       }
+        if (branch.getName().equals(defaultBranchName)) {
+            throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
+        }
+    }
 
     public Branch saveBranch(Branch branch) {
         return branchRepository.save(branch);
