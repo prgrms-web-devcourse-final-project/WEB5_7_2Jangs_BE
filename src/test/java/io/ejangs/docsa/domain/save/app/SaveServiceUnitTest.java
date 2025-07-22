@@ -3,10 +3,17 @@ package io.ejangs.docsa.domain.save.app;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -31,6 +38,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class SaveServiceUnitTest {
@@ -197,6 +205,107 @@ class SaveServiceUnitTest {
             CustomException ce = (CustomException) e;
             assertThat(ce.getErrorCode()).isEqualTo(SaveErrorCode.SAVE_NOT_OWNER);
         });
+    }
+
+    @Test
+    @DisplayName("저장 삭제 성공")
+    void deleteSave_success() throws Exception {
+        Long branchId = 1L;
+        Branch mockBranch = mock(Branch.class);
+        SaveIdentifierDto dto = SaveIdentifierDto.of(docId, saveId, userId);
+
+        when(saveRepository.findById(idDto.saveId())).thenReturn(Optional.of(mockSave));
+        when(saveRepository.validateSaveOwnership(idDto.saveId(), idDto.documentId(),
+                idDto.userId())).thenReturn(true);
+        when(mockSave.getId()).thenReturn(dto.saveId());
+
+        saveService.deleteSave(dto);
+
+        verify(saveRepository, times(1)).findById(mockSave.getId());
+        verify(saveContentRepository, times(1)).deleteById(mockSave.getSaveMongoId());
+    }
+
+    @Test
+    @DisplayName("저장 삭제 실패 - 저장 없음")
+    void deleteSave_shouldFail_whenSaveNotFound() {
+        SaveIdentifierDto dto = SaveIdentifierDto.of(docId, saveId, userId);
+
+        when(saveRepository.findById(dto.saveId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saveService.deleteSave(dto))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining(SaveErrorCode.SAVE_NOT_FOUND.getMessage());
+
+        verify(saveRepository).findById(dto.saveId());
+        verifyNoMoreInteractions(saveRepository);
+        verifyNoInteractions(saveContentRepository);
+    }
+
+    @Test
+    @DisplayName("저장 삭제 실패 - 저장 소유자 아님")
+    void deleteSave_shouldFail_whenNotOwner() {
+        SaveIdentifierDto dto = SaveIdentifierDto.of(docId, saveId, userId);
+
+        when(saveRepository.findById(dto.saveId())).thenReturn(Optional.of(mockSave));
+        when(saveRepository.validateSaveOwnership(dto.saveId(), dto.documentId(), dto.userId()))
+                .thenReturn(false);
+        when(mockSave.getId()).thenReturn(idDto.saveId());
+        assertThatThrownBy(() -> saveService.deleteSave(dto))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining(SaveErrorCode.SAVE_NOT_OWNER.getMessage());
+
+        verify(saveRepository).findById(dto.saveId());
+        verify(saveRepository).validateSaveOwnership(dto.saveId(), dto.documentId(), dto.userId());
+        verifyNoMoreInteractions(saveRepository);
+        verifyNoInteractions(saveContentRepository);
+    }
+
+    @Test
+    @DisplayName("deleteSave 실패 - MySQL 삭제 실패")
+    void deleteSave_shouldFail_whenMySQLDeleteFails() {
+        // given
+
+        when(saveRepository.findById(idDto.saveId())).thenReturn(Optional.of(mockSave));
+        when(saveRepository.validateSaveOwnership(idDto.saveId(), idDto.documentId(), idDto.userId()))
+                .thenReturn(true);
+        when(mockSave.getId()).thenReturn(idDto.saveId());
+        doThrow(new DataIntegrityViolationException("FK 제약 오류"))
+                .when(saveRepository).delete(mockSave);
+
+        // when & then
+        assertThatThrownBy(() -> saveService.deleteSave(idDto))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("FK 제약 오류");
+
+        verify(saveRepository).delete(mockSave);
+        verifyNoInteractions(saveContentRepository); // Mongo는 실행 안 되어야 함
+    }
+
+    @Test
+    @DisplayName("deleteSave 실패 - MongoDB 삭제 실패")
+    void deleteSave_shouldFail_whenMongoDeleteFails() {
+        // given
+        Save mockSave = mock(Save.class);
+
+        when(saveRepository.findById(idDto.saveId())).thenReturn(Optional.of(mockSave));
+        when(saveRepository.validateSaveOwnership(idDto.saveId(), idDto.documentId(), idDto.userId()))
+                .thenReturn(true);
+        when(mockSave.getId()).thenReturn(idDto.saveId());
+        when(mockSave.getSaveMongoId()).thenReturn("mongoId");
+
+        // MySQL 삭제는 성공
+        doNothing().when(saveRepository).delete(mockSave);
+        // MongoDB 삭제는 실패
+        doThrow(new RuntimeException("Mongo delete error"))
+                .when(saveContentRepository).deleteById("mongoId");
+
+        // when & then
+        assertThatThrownBy(() -> saveService.deleteSave(idDto))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining(SaveErrorCode.FAILED_TO_DELETE_IN_MONGO.getMessage());
+
+        verify(saveRepository).delete(mockSave);
+        verify(saveContentRepository).deleteById("mongoId");
     }
 
 }
