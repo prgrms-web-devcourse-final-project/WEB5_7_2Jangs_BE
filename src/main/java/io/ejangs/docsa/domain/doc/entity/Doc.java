@@ -74,6 +74,17 @@ public class Doc extends BaseEntity {
         }
     }
 
+
+    // List<Edge> 전체를 새롭게 추가하는 메서드
+    public void updateEdges(List<Edge> newEdges) {
+        this.edges.clear();
+        if (newEdges != null) {
+            for (Edge edge : newEdges) {
+                this.addEdge(edge);
+            }
+        }
+    }
+
     public void setUser(User user) {
         this.user = user;
         if (!user.getDocs().contains(this)) {

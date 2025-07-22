@@ -193,15 +193,13 @@ public class BranchService {
         List<Commit> branchCommits = branch.getCommits();
         List<Long> commitsIds = branchCommits.stream().map(Commit::getId).toList();
 
-        boolean hasSubBranch = branchRepository.existsByFromCommitIdIn(commitsIds);
-        if (hasSubBranch) {
+        if (branchRepository.existsByFromCommitIdIn(commitsIds)) {
             throw new CustomException(BranchErrorCode.SUB_BRANCH_DELETE_UNAVAILABLE);
         }
 
         // 4. Edge 삭제
-        List<Long> commitIds = branchCommits.stream().map(Commit::getId).toList();
         List<Edge> edgesToDelete =
-                edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitIds, commitIds);
+                edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitsIds, commitsIds);
         edgeRepository.deleteAll(edgesToDelete);
 
         // 5. 브랜치에서 삭제 가능한 블록과 시퀀스, SaveContent 삭제 이벤트 발행
