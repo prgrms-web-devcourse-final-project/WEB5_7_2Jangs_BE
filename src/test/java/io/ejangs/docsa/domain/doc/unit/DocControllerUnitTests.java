@@ -13,7 +13,8 @@ import io.ejangs.docsa.domain.branch.dto.BranchDto;
 import io.ejangs.docsa.domain.commit.dto.CommitDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.*;
+import io.ejangs.docsa.domain.doc.dto.EdgeDto;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
@@ -56,10 +57,11 @@ class DocControllerUnitTests {
         //given
         DocTitleRequest request = new DocTitleRequest("적당한 길이의 제목");
         Long documentId = 1L;
+        Long saveId = 2L;
 
         //when, then
         when(docService.create(any(DocTitleRequest.class), anyLong()))
-                .thenReturn(new DocCreateResponse(documentId));
+                .thenReturn(new DocCreateResponse(documentId, saveId));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
                         .content(objectMapper.writeValueAsString(request))
@@ -67,6 +69,7 @@ class DocControllerUnitTests {
                         .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(documentId))
+                .andExpect(jsonPath("$.saveId").value(saveId))
                 .andDo(print());
     }
 

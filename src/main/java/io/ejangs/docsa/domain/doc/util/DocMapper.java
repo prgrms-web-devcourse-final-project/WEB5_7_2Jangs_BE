@@ -6,11 +6,12 @@ import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.save.entity.Save;
 
 public class DocMapper {
 
-    public static DocCreateResponse toCreateResponse(Doc doc) {
-        return new DocCreateResponse(doc.getId());
+    public static DocCreateResponse toCreateResponse(Doc doc, Save save) {
+        return new DocCreateResponse(doc.getId(), save.getId());
     }
 
     public static DocTitleUpdateResponse toUpdateResponse(Doc doc) {

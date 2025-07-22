@@ -1,6 +1,6 @@
-package io.ejangs.docsa.global.mongoDeleteSystem.app;
+package io.ejangs.docsa.global.mongo.deletion.app;
 
-import io.ejangs.docsa.global.mongoDeleteSystem.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
