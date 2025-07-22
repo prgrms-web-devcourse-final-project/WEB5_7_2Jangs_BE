@@ -5,24 +5,18 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.*;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
-@Table(
-        name = "branches",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"name", "document_id"})
-        }
-)
+@Table(name = "branches",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"name", "document_id"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Branch extends BaseEntity {
 
@@ -93,7 +87,8 @@ public class Branch extends BaseEntity {
             commit.setBranch(this);
         }
     }
-    public void updateName(String name){
+
+    public void updateName(String name) {
         this.name = name;
     }
 }
