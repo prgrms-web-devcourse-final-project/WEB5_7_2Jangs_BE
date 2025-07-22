@@ -88,6 +88,23 @@ import org.springframework.http.MediaType;
                         )
                 ),
                 @ApiResponse(
+                        responseCode = "401",
+                        description = "인증 실패 - 로그인 세션이 없음",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = @ExampleObject(
+                                        value = """
+                                                {
+                                                    "status": 401,
+                                                    "message": "로그인이 필요합니다.",
+                                                    "error": "LOGIN_REQUIRED"
+                                                }
+                                                """
+                                )
+                        )
+                ),
+                @ApiResponse(
                         responseCode = "404",
                         description = "브랜치 이름 수정 실패 - 해당 id를 가진 브랜치는 없음.",
                         content = @Content(
