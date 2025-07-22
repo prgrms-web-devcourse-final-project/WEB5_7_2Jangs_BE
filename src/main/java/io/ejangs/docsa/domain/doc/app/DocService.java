@@ -241,8 +241,14 @@ public class DocService {
 
         checkDocByIdAndUserId(documentId, userId);
 
-        Doc doc = docRepository.findByIdWithBranchesAndEdges(documentId)
+        // 기존 findByIdWithBranchesAndEdges 에서  MultipleBagFetchException 예외로 다음과 같이 FETCH JOIN 쿼리 분리
+        // 1. Doc과 Branch, Commit을 함께 가져오는 쿼리 호출
+        Doc doc = docRepository.findByIdWithBranchesAndCommits(documentId)
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+
+        // 2. Doc과 Edge만 가져오는 쿼리 호출 (같은 Doc 객체에 Edge 컬렉션을 로드)
+        docRepository.findByIdWithEdges(documentId)
+                .ifPresent(d -> doc.updateEdges(d.getEdges()));
 
         List<CommitDto> commits = doc.getBranches().stream().flatMap(b -> b.getCommits().stream())
                 .map(GraphMapper::toCommitDto).toList();

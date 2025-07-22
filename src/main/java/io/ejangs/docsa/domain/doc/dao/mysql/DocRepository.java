@@ -10,15 +10,24 @@ import org.springframework.data.repository.query.Param;
 
 public interface DocRepository extends JpaRepository<Doc, Long> {
 
+    // Doc과 Branch, Commit만 JOIN FETCH
     @Query("""
         SELECT DISTINCT d
         FROM Doc d
         LEFT JOIN FETCH d.branches b
         LEFT JOIN FETCH b.commits
+        WHERE d.id = :id
+    """)
+    Optional<Doc> findByIdWithBranchesAndCommits(@Param("id") Long id);
+
+    // Doc과 Edge만 JOIN FETCH
+    @Query("""
+        SELECT DISTINCT d
+        FROM Doc d
         LEFT JOIN FETCH d.edges
         WHERE d.id = :id
     """)
-    Optional<Doc> findByIdWithBranchesAndEdges(@Param("id") Long id);
+    Optional<Doc> findByIdWithEdges(@Param("id") Long id);
 
     Optional<Doc> getDocByIdAndUserId(Long id, Long userId);
 
