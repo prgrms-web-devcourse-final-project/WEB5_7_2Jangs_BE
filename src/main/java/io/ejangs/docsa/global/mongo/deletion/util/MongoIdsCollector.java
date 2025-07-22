@@ -42,6 +42,21 @@ public class MongoIdsCollector {
         return new MongoIdsDto(saveContentMongoIds, commitBlockSequenceIds,
                 new ArrayList<>(blockIds));
     }
+
+    public static final class MongoDeleteMapper {
+
+        public static MongoIdsDto toMongoIdsDto(Branch branch,
+                List<String> commitBlockSequenceIds,
+                List<String> blockIds) {
+            List<String> saveContentsIds = Optional.ofNullable(branch.getSave())
+                    .map(Save::getSaveMongoId)
+                    .filter(Objects::nonNull)
+                    .map(List::of)
+                    .orElse(List.of());
+
+            return new MongoIdsDto(saveContentsIds, commitBlockSequenceIds, blockIds);
+        }
+    }
 }
 
 
