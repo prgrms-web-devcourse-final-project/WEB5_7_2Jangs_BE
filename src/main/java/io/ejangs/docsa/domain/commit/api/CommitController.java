@@ -45,7 +45,7 @@ public class CommitController {
             @PathVariable("commitId") Long commitId) {
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(commitService.getCommit(docId, commitId));
+                .body(commitService.getCommit(docId, commitId, userDetails.getId()));
     }
 
     @GetMapping("/api/document/{docId}/merge")

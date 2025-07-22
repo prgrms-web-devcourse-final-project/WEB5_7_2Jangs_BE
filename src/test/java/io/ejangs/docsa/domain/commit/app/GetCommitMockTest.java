@@ -17,6 +17,7 @@ import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import java.util.List;
@@ -51,11 +52,13 @@ class GetCommitMockTest {
     private Commit baseCommit;
     private Commit targetCommit;
     private List<Map<String, Object>> mockContent;
+    private CustomUserDetails userDetails;
 
     @BeforeEach
     void setUp() {
         // User 생성
         user = CommitMockTestUtils.createUser();
+        userDetails = CustomUserDetails.from(user);
 
         // Doc 생성
         doc = CommitMockTestUtils.createDoc(user);
@@ -83,7 +86,7 @@ class GetCommitMockTest {
         given(assembler.assemble(commitMongoId)).willReturn(mockContent);
 
         // when
-        CommitResponse response = commitService.getCommit(docId, commitId);
+        CommitResponse response = commitService.getCommit(docId, commitId, userDetails.getId());
 
         // then
         assertThat(response).isNotNull();
@@ -104,7 +107,7 @@ class GetCommitMockTest {
         given(commitRepository.findById(commitId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> commitService.getCommit(docId, commitId))
+        assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
         verify(docService).notFoundDocCheck(docId);
@@ -123,7 +126,7 @@ class GetCommitMockTest {
                 .when(docService).notFoundDocCheck(docId);
 
         // when & then
-        assertThatThrownBy(() -> commitService.getCommit(docId, commitId))
+        assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
         verify(docService).notFoundDocCheck(docId);

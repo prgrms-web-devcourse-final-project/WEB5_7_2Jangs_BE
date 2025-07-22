@@ -122,9 +122,9 @@ public class CommitService {
     }
 
     @Transactional(readOnly = true)
-    public CommitResponse getCommit(Long docId, Long commitId) {
+    public CommitResponse getCommit(Long docId, Long commitId, Long userId) {
 
-        docService.notFoundDocCheck(docId);
+        branchService.checkDocByIdAndUserId(docId, userId);
         List<Map<String, Object>> assemble = getWholeContent(commitId);
 
         return new CommitResponse(assemble);
