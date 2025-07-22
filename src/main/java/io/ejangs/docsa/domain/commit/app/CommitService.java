@@ -142,7 +142,8 @@ public class CommitService {
     }
 
     @Transactional
-    public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest) {
+    public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest,
+            Long userId) {
         /**
          * Block을 저장하고
          * CommitSequence를 저장하고
@@ -157,9 +158,14 @@ public class CommitService {
             // 문서가 존재하는지 검사
             Doc doc = docService.getById(docId);
             // 브랜치가 존재하는지 검사
-            checkBranch(mergeRequest.baseBranchId(), mergeRequest.targetBranchId());
-            Branch baseBranch = branchService.getById(mergeRequest.baseBranchId());
-            Branch targetBranch = branchService.getById(mergeRequest.targetBranchId());
+            Long baseBranchId = mergeRequest.baseBranchId();
+            Long targetBranchId = mergeRequest.targetBranchId();
+
+            checkBranch(baseBranchId, targetBranchId);
+            Branch baseBranch = branchService.getById(baseBranchId);
+            Branch targetBranch = branchService.getById(targetBranchId);
+            branchService.checkBranchInDocOwnedByUser(docId, baseBranchId, userId);
+            branchService.checkBranchInDocOwnedByUser(docId, targetBranchId, userId);
 
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());

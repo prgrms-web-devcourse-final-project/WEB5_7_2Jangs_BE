@@ -63,10 +63,11 @@ public class CommitController {
 
     @PostMapping("/api/document/{docId}/merge")
     public ResponseEntity<CreateCommitResponse> mergeCommit(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
             @RequestBody @Valid MergeCommitRequest mergeRequest) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(commitService.mergeCommit(docId, mergeRequest));
+                .body(commitService.mergeCommit(docId, mergeRequest, userDetails.getId()));
     }
 }

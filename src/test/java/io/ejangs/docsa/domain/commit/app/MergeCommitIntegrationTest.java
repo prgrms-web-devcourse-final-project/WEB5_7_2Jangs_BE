@@ -17,6 +17,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
@@ -58,12 +59,14 @@ class MergeCommitIntegrationTest {
     private Commit baseCommit;
     private Commit targetCommit;
     private List<BlockDto> blockContent;
+    private CustomUserDetails userDetails;
 
     @BeforeEach
     void setUp() {
         // 테스트 사용자 생성
         testUser = CommitIntegrationTestUtils.createTestUser();
         userRepository.save(testUser);
+        userDetails = CustomUserDetails.from(testUser);
 
         // 테스트 문서 생성
         testDoc = CommitIntegrationTestUtils.createTestDoc(testUser);
@@ -101,7 +104,8 @@ class MergeCommitIntegrationTest {
                 CommitIntegrationTestUtils.createMergeCommitRequest(baseBranch, targetBranch);
 
         // when
-        CreateCommitResponse response = commitService.mergeCommit(testDoc.getId(), request);
+        CreateCommitResponse response = commitService.mergeCommit(testDoc.getId(), request,
+                userDetails.getId());
 
         // then
         assertThat(response).isNotNull();
@@ -147,7 +151,8 @@ class MergeCommitIntegrationTest {
         );
 
         // when
-        CreateCommitResponse response = commitService.mergeCommit(testDoc.getId(), request);
+        CreateCommitResponse response = commitService.mergeCommit(testDoc.getId(), request,
+                userDetails.getId());
 
         // then
         assertThat(response).isNotNull();
@@ -168,7 +173,8 @@ class MergeCommitIntegrationTest {
                 CommitIntegrationTestUtils.createMergeCommitRequest(baseBranch, targetBranch);
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(nonExistentDocId, request))
+        assertThatThrownBy(() -> commitService.mergeCommit(nonExistentDocId, request,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(DocErrorCode.DOCUMENT_NOT_FOUND.getMessage());
     }
@@ -186,7 +192,8 @@ class MergeCommitIntegrationTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request))
+        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND.getMessage());
     }
@@ -204,7 +211,8 @@ class MergeCommitIntegrationTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request))
+        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND.getMessage());
     }
@@ -225,7 +233,8 @@ class MergeCommitIntegrationTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request))
+        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
     }
@@ -243,7 +252,8 @@ class MergeCommitIntegrationTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request))
+        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(CommitErrorCode.COMMIT_BAD_REQUEST.getMessage());
     }
