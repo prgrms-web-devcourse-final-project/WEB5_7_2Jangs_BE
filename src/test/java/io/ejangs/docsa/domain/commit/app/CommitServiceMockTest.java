@@ -30,6 +30,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
@@ -84,6 +85,7 @@ class CommitServiceMockTest {
     private Commit savedCommit;
     private CreateCommitResponse expectedResponse;
     private Edge edge;
+    private CustomUserDetails userDetails;
 
     @BeforeEach
     void setUp() {
@@ -102,6 +104,7 @@ class CommitServiceMockTest {
 
         // User 생성
         user = CommitMockTestUtils.createUser();
+        userDetails = CustomUserDetails.from(user);
 
         // Doc 생성
         doc = CommitMockTestUtils.createDoc(user);
@@ -160,7 +163,7 @@ class CommitServiceMockTest {
 
             // When
             CreateCommitResponse result = commitService.createCommit(docId,
-                    createCommitRequest);
+                    createCommitRequest, userDetails.getId());
 
             // Then
             assertThat(result).isEqualTo(expectedResponse);
@@ -196,7 +199,7 @@ class CommitServiceMockTest {
 
             // When
             CreateCommitResponse result = commitService.createCommit(docId,
-                    createCommitRequest);
+                    createCommitRequest, userDetails.getId());
 
             // Then
             assertThat(result).isEqualTo(expectedResponse);
@@ -231,7 +234,7 @@ class CommitServiceMockTest {
 
             // When
             CreateCommitResponse result = commitService.createCommit(docId,
-                    createCommitRequest);
+                    createCommitRequest, userDetails.getId());
 
             // Then
             assertThat(result).isEqualTo(expectedResponse);
@@ -248,7 +251,8 @@ class CommitServiceMockTest {
                 .when(docService).getById(docId);
 
         // When & Then
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
+        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
+                userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
         verify(docService).getById(docId);
@@ -273,7 +277,8 @@ class CommitServiceMockTest {
             when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
 
             // When & Then
-            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
+            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
+                    userDetails.getId()))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
@@ -303,7 +308,8 @@ class CommitServiceMockTest {
                     new RuntimeException("Block save failed"));
 
             // When & Then
-            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest))
+            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
+                    userDetails.getId()))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
@@ -335,7 +341,8 @@ class CommitServiceMockTest {
             when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
 
             // When & Then
-            assertThatThrownBy(() -> commitService.createCommit(docId, invalidRequest))
+            assertThatThrownBy(() -> commitService.createCommit(docId, invalidRequest,
+                    userDetails.getId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(
                             BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());

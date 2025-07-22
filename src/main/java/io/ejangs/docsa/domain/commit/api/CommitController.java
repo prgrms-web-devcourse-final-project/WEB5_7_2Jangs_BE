@@ -35,7 +35,7 @@ public class CommitController {
             @RequestBody @Valid CreateCommitRequest commitRequest) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(commitService.createCommit(docId, commitRequest));
+                .body(commitService.createCommit(docId, commitRequest, userDetails.getId()));
     }
 
     @GetMapping("/api/document/{docId}/commit/{commitId}")
