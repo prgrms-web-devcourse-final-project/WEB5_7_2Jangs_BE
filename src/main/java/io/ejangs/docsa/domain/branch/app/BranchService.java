@@ -281,7 +281,7 @@ public class BranchService {
     }
     private void checkDefaultBranch(Branch branch) {
         if (branch.getFromCommit() == null) {
-            throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
+            throw new CustomException(BranchErrorCode.MAIN_BRANCH_FIX_UNAVAILABLE);
         }
     }
 

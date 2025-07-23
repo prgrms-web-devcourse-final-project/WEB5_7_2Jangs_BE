@@ -189,8 +189,10 @@ class BranchServiceTest {
         Long branchId = 2L;
         Long userId = 3L;
         String newName = "수정된 이름";
+        Commit commit = mock(Commit.class);
 
-        Branch branch = Branch.builder().name("기존이름").doc(mock(Doc.class)).fromCommit(null).build();
+        Branch branch = Branch.builder().name("기존이름").doc(mock(Doc.class)).fromCommit(commit).build();
+
         when(branchRepository.existsByIdAndDocIdAndDocUserId(branchId, docId, userId)).thenReturn(
                 true);
         when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
@@ -219,9 +221,10 @@ class BranchServiceTest {
         Long documentId = 1L;
         Long branchId = 2L;
         Long userId = 3L;
+        Commit commit = mock(Commit.class);
 
         Doc doc = mock(Doc.class);
-        Branch branch = Branch.builder().name("dev").doc(doc).build();
+        Branch branch = Branch.builder().name("dev").doc(doc).fromCommit(commit).build();
 
         Commit commit1 = Commit.builder().commitMongoId("seq1").branch(branch).build();
         Commit commit2 = Commit.builder().commitMongoId("seq2").branch(branch).build();
@@ -276,7 +279,7 @@ class BranchServiceTest {
 
         CustomException ex = assertThrows(CustomException.class,
                 () -> branchService.deleteBranch(docId, branchId, userId));
-        assertEquals(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE, ex.getErrorCode());
+        assertEquals(BranchErrorCode.MAIN_BRANCH_FIX_UNAVAILABLE, ex.getErrorCode());
     }
 
 }
