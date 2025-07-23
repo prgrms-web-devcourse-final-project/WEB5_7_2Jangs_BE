@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.save.app;
 
 import com.mongodb.DuplicateKeyException;
+import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -15,6 +16,7 @@ import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +67,15 @@ public class SaveService {
     @Transactional
     public void deleteSave(SaveIdentifierDto dto) {
         Save findSave = getValidSave(dto);
+        Branch branch = findSave.getBranch();
+
+        // 최초 브랜치 (main) 이면서 해당 브랜치에 커밋이 하나도 없고 저장만 존재하는 최초 상태에서는 저장을 삭제할 수 없다.
+        if (branch.getFromCommit() == null && branch.getCommits().isEmpty()) {
+            throw new CustomException(SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMITS_ON_MAIN);
+        }
+
         saveRepository.delete(findSave);
+        RenewUpdatedAtHelper.touch(findSave);
         try {
             saveContentRepository.deleteById(findSave.getSaveMongoId());
         } catch (Exception e) {
