@@ -16,6 +16,8 @@ public enum CommitErrorCode implements ErrorCode {
             "FAIL_CREATE_COMMIT"),
     FAIL_SAVE_MONGODB(HttpStatus.INTERNAL_SERVER_ERROR, "MongoDB 저장에 문제가 생겼습니다.",
             "FAIL_SAVE_MONGODB"),
+    FAIL_DELETE_COMMIT(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류로 인해 기록 삭제에 실패했습니다.",
+            "FAIL_DELETE_COMMIT"),
     ;
 
     private final HttpStatus status;
