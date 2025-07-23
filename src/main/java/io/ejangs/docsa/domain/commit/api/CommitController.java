@@ -29,6 +29,7 @@ public class CommitController {
     private final CommitService commitService;
 
     @PostMapping("/api/document/{docId}/commit")
+    @CreateCommitDocs
     public ResponseEntity<CreateCommitResponse> createCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
@@ -39,6 +40,7 @@ public class CommitController {
     }
 
     @GetMapping("/api/document/{docId}/commit/{commitId}")
+    @GetCommitDocs
     public ResponseEntity<CommitResponse> getCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
@@ -49,6 +51,7 @@ public class CommitController {
     }
 
     @GetMapping("/api/document/{docId}/merge")
+    @CompareMergeCommitDocs
     public ResponseEntity<CompareMergeCommitResponse> compareMergeCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
@@ -60,6 +63,7 @@ public class CommitController {
     }
 
     @PostMapping("/api/document/{docId}/merge")
+    @MergeCommitDocs
     public ResponseEntity<CreateCommitResponse> mergeCommit(
             @PathVariable("docId") Long docId,
             @RequestBody @Valid MergeCommitRequest mergeRequest) {
