@@ -220,7 +220,7 @@ public class CommitService {
     }
 
     private void checkLeafCommit(Commit commit) {
-        if (!commit.equals(commit.getBranch().getLeafCommit())) {
+        if (!commit.getId().equals(commit.getBranch().getLeafCommit().getId())) {
             throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
         }
     }
