@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.save.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -30,10 +31,11 @@ public class SaveServiceUtil {
                 .build();
     }
 
-    public static Branch createBranch(Doc doc) {
+    public static Branch createDefaultBranch(Doc doc) {
         return Branch.builder()
                 .doc(doc)
-                .name("branch")
+                .name("main")
+                .fromCommit(null)
                 .build();
     }
 
@@ -46,6 +48,13 @@ public class SaveServiceUtil {
     public static SaveContent createSaveContent() {
         return SaveContent.builder()
                 .content(data)
+                .build();
+    }
+
+    public static Commit createCommit(Branch branch) {
+        return Commit.builder()
+                .title("title")
+                .branch(branch)
                 .build();
     }
 }
