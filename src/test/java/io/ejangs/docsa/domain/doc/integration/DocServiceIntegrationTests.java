@@ -42,7 +42,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
@@ -272,11 +274,34 @@ public class DocServiceIntegrationTests {
         //then
         assertEquals(10, result.getContent().size());
         DocListResponse first = result.getContent().getFirst();
-        assertEquals("테스트 문서 100", first.title());
+        assertEquals("문서 keyword포함100", first.title());
         assertEquals(100L, first.id());
 
         DocListResponse last = result.getContent().getLast();
         assertEquals("테스트 문서 91", last.title());
         assertEquals(91L, last.id());
+    }
+
+    @Test
+    @DisplayName("문서 리스트 검색 - 300개의 전체 문서중 150개의 키워드포함 문서를 검색하여 페이지로 응답한다.")
+    void searchListSuccess() {
+        // given
+        User user = userRepository.save(DocTestUtils.createUser());
+
+        List<Doc> docs = DocTestUtils.createDocList(300, user);
+        docRepository.saveAll(docs);
+
+        String keyword = "keyword";
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("updatedAt").descending());
+
+        // when
+        Page<DocListResponse> result = docService.searchList(user.getId(), keyword, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(10);
+        assertThat(result.getContent())
+                .extracting(DocListResponse::title)
+                .allMatch(title -> title.contains("keyword"));
+        assertThat(result.getContent().getFirst().id()).isEqualTo(300);
     }
 }

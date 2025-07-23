@@ -9,6 +9,9 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
+import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -16,8 +19,14 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public class DocTestUtils {
@@ -29,7 +38,7 @@ public class DocTestUtils {
             Doc doc = null;
             if (i % 2 == 0) {
                 doc = Doc.builder()
-                        .title("문서 keyword 포함" + i)
+                        .title("문서 keyword포함" + i)
                         .user(user)
                         .build();
             } else {
@@ -209,5 +218,43 @@ public class DocTestUtils {
                 .build();
 
     }
+
+    public static Page<DocListResponse> convertToDocListResponsePage(List<Doc> docs,
+            Pageable pageable) {
+        List<DocListResponse> responses = docs.stream()
+                .map(doc -> {
+                    Long docId = doc.getId();
+                    String title = doc.getTitle();
+                    LocalDateTime createdAt = doc.getCreatedAt();
+                    LocalDateTime updatedAt = doc.getUpdatedAt();
+                    String preview = "미리보기 없음";
+
+                    // 최근 활동 (SAVE > COMMIT 우선)
+                    RecentActivityDto recent = doc.getBranches().stream()
+                            .flatMap(branch -> {
+                                Stream<RecentActivityDto> activityStream = Stream.of(
+                                        branch.getSave() != null
+                                                ? new RecentActivityDto(RecentType.SAVE,
+                                                branch.getSave().getId())
+                                                : null,
+                                        branch.getLeafCommit() != null
+                                                ? new RecentActivityDto(RecentType.COMMIT,
+                                                branch.getLeafCommit().getId())
+                                                : null
+                                );
+                                return activityStream.filter(Objects::nonNull);
+                            })
+                            .sorted(Comparator.comparing(
+                                    dto -> dto.recentType() == RecentType.SAVE ? 0 : 1))
+                            .findFirst()
+                            .orElse(null);
+
+                    return new DocListResponse(docId, title, createdAt, updatedAt, preview, recent);
+                })
+                .toList();
+
+        return new PageImpl<>(responses, pageable, responses.size());
+    }
+
 
 }
