@@ -1,5 +1,7 @@
 package io.ejangs.docsa.global.exception;
 
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,11 +10,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
+        log.error("CustomException 발생 : {}", e.getMessage());
         return ResponseEntity.status(e.getErrorCode().getStatus())
                 .body(ErrorResponse.from(e.getErrorCode()));
     }
@@ -28,6 +32,7 @@ public class GlobalExceptionHandler {
         }
 
         String errorMessage = e.getMessage();
+        log.error("MethodArgumentNotValidException 발생 : {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.from(errorMessage));
     }
@@ -35,7 +40,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
             DataIntegrityViolationException e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ErrorResponse.from(e.getMessage()));
+        log.error("DataIntegrityViolationException 발생 : {}", e.getMessage());
+        return ResponseEntity.status(DatabaseErrorCode.FAIL_TO_SAVE.getStatus())
+                .body(ErrorResponse.from(DatabaseErrorCode.FAIL_TO_SAVE));
     }
 }
