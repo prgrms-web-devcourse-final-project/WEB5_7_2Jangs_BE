@@ -19,7 +19,7 @@ public class EdgeService {
 
     public List<Commit> cutEdge(Long commitId) {
 
-        List<Edge> edges = edgeRepository.findByNextCommitId(commitId);
+        List<Edge> edges = edgeRepository.findAllByCommitIdInPrevOrNext(commitId);
         edgeRepository.deleteAll(edges);
 
         return edges.stream()

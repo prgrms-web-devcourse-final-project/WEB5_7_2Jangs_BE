@@ -3,8 +3,8 @@ package io.ejangs.docsa.domain.doc.dao.mysql;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.List;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface EdgeRepository extends JpaRepository<Edge, Integer> {
 
@@ -12,4 +12,10 @@ public interface EdgeRepository extends JpaRepository<Edge, Integer> {
 
     List<Edge> findByNextCommitId(Long id);
 
+    @Query("""
+        SELECT e
+        FROM Edge e
+        WHERE e.prevCommit.id = :commitId OR e.nextCommit.id = :commitId
+    """)
+    List<Edge> findAllByCommitIdInPrevOrNext(@Param("commitId") Long commitId);
 }
