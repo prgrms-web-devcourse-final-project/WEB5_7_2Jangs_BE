@@ -53,7 +53,7 @@ public class SaveService {
         } catch (DuplicateKeyException e) {
             log.warn("중복 키로 Mongo 저장 실패 - saveId={}, mongoId={}, message={}", findSave.getId(),
                     findSave.getSaveMongoId(), e.getMessage());
-            throw new CustomException(SaveErrorCode.SAVE_CREATE_FAIL);
+            throw new CustomException(SaveErrorCode.FAIL_TO_SAVE_IN_MYSQL);
         } catch (DataAccessException e) {
             log.error("Mongo 저장 실패: {}", e.getMessage(), e);
             throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);

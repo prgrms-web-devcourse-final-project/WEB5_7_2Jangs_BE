@@ -26,4 +26,8 @@ public class BlockService {
     public List<Block> getAllById(List<String> blockIds) {
         return blockRepository.findAllById(blockIds);
     }
+
+    public void deleteBlock(String blockId) {
+        blockRepository.deleteById(blockId);
+    }
 }
