@@ -280,7 +280,7 @@ public class BranchService {
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
     private void checkDefaultBranch(Branch branch) {
-        if (branch.getName().equals(defaultBranchName)) {
+        if (branch.getFromCommit() == null) {
             throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
         }
     }
