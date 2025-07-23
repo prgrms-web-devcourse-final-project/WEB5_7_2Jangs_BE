@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.commit.api;
+package io.ejangs.docsa.domain.commit.swagger;
 
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
