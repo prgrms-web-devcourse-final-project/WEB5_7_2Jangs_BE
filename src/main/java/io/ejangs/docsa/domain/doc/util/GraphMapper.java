@@ -1,10 +1,10 @@
 package io.ejangs.docsa.domain.doc.util;
 
-import io.ejangs.docsa.domain.branch.dto.BranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.dto.CommitDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dto.EdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 
@@ -12,8 +12,8 @@ import java.util.List;
 
 public class GraphMapper {
 
-    public static CommitDto toCommitDto(Commit commit) {
-        return new CommitDto(
+    public static GraphCommitDto toCommitDto(Commit commit) {
+        return new GraphCommitDto(
                 commit.getId(),
                 commit.getBranch().getId(),
                 commit.getTitle(),
@@ -22,15 +22,15 @@ public class GraphMapper {
         );
     }
 
-    public static EdgeDto toEdgeDto(Edge edge) {
-        return new EdgeDto(
+    public static GraphEdgeDto toEdgeDto(Edge edge) {
+        return new GraphEdgeDto(
                 edge.getPrevCommit().getId(),
                 edge.getNextCommit().getId()
         );
     }
 
-    public static BranchDto toBranchDto(Branch branch) {
-        return new BranchDto(
+    public static GraphBranchDto toBranchDto(Branch branch) {
+        return new GraphBranchDto(
                 branch.getId(),
                 branch.getName(),
                 branch.getCreatedAt(),
@@ -42,9 +42,9 @@ public class GraphMapper {
     }
 
     public static CommitGraphResponse toCommitGraphResponse(String title,
-            List<CommitDto> commits,
-            List<EdgeDto> edges,
-            List<BranchDto> branches
+            List<GraphCommitDto> commits,
+            List<GraphEdgeDto> edges,
+            List<GraphBranchDto> branches
     ) {
         return new CommitGraphResponse(title, commits, edges, branches);
     }

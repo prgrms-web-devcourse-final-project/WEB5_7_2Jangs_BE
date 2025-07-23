@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.doc.dao.mysql;
 
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -11,14 +12,12 @@ import org.springframework.data.repository.query.Param;
 public interface DocRepository extends JpaRepository<Doc, Long> {
 
     @Query("""
-                SELECT DISTINCT d
+                SELECT new io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse(d.title)
                 FROM Doc d
-                LEFT JOIN FETCH d.branches b
-                LEFT JOIN FETCH b.commits
-                LEFT JOIN FETCH d.edges
-                WHERE d.id = :id
+                WHERE d.id = :docId
             """)
-    Optional<Doc> findByIdWithBranchesAndEdges(@Param("id") Long id);
+    Optional<DocTitleOnlyResponse> findTitleOnlyById(@Param("docId") Long docId);
+
 
     Optional<Doc> getDocByIdAndUserId(Long id, Long userId);
 
