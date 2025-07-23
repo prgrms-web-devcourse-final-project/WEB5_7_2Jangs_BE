@@ -35,7 +35,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -123,14 +122,9 @@ public class DocService {
 
     @Transactional(readOnly = true)
     public Page<DocListResponse> searchList(Long userId, String keyword, Pageable pageable) {
-        int offset = (int) pageable.getOffset();
-        int limit = pageable.getPageSize();
+        Page<Doc> docs = docRepository.searchDocByTitle(keyword, userId, pageable);
 
-        List<Doc> docList = docRepository.searchDocByTitle_FULLTEXT(keyword, userId, limit, offset);
-        long totalCount = docRepository.countDocByTitle_FULLTEXT(keyword, userId);
-
-        Page<Doc> docPages = new PageImpl<>(docList, pageable, totalCount);
-        return docListAssembler.assembleDocList(docPages);
+        return docListAssembler.assembleDocList(docs);
     }
 
     @Transactional

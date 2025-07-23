@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.doc.dao.mysql;
 
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,30 +33,7 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
             FROM Doc d
             WHERE d.user.id = :userId AND d.title LIKE CONCAT('%', :title, '%')
             """)
-    Page<Doc> searchDocByTitle_LIKE(@Param("title") String title, @Param("userId") Long userId,
+    Page<Doc> searchDocByTitle(@Param("title") String title, @Param("userId") Long userId,
             Pageable pageable);
 
-    @Query(
-            value = """
-                    SELECT d.*, MATCH(d.title) AGAINST (:title IN NATURAL LANGUAGE MODE) AS score
-                    FROM docs d
-                    WHERE d.user_id = :userId AND MATCH(d.title) AGAINST (:title IN NATURAL LANGUAGE MODE)
-                    ORDER BY score DESC
-                    LIMIT :limit OFFSET :offset
-                    """,
-            countQuery = """
-                    SELECT COUNT(*) FROM docs
-                    WHERE user_id = :userId AND MATCH(title) AGAINST (:title IN NATURAL LANGUAGE MODE)
-                    """,
-            nativeQuery = true
-    )
-    List<Doc> searchDocByTitle_FULLTEXT(@Param("title") String title, @Param("userId") Long userId,
-            @Param("limit") int limit, @Param("offset") int offset
-    );
-
-    @Query(
-            value = "SELECT COUNT(*) FROM docs WHERE user_id = :userId AND MATCH(title) AGAINST (:title IN NATURAL LANGUAGE MODE)",
-            nativeQuery = true
-    )
-    long countDocByTitle_FULLTEXT(@Param("title") String title, @Param("userId") Long userId);
 }

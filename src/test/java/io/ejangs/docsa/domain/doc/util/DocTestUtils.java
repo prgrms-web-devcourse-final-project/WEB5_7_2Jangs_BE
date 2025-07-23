@@ -26,11 +26,18 @@ public class DocTestUtils {
         List<Doc> docs = new ArrayList<>();
 
         for (int i = 1; i <= count; i++) {
-            Doc doc = Doc.builder()
-                    .title("테스트 문서 " + i)
-                    .user(user)
-                    .build();
-
+            Doc doc = null;
+            if (i % 2 == 0) {
+                doc = Doc.builder()
+                        .title("문서 keyword 포함" + i)
+                        .user(user)
+                        .build();
+            } else {
+                doc = Doc.builder()
+                        .title("테스트 문서 " + i)
+                        .user(user)
+                        .build();
+            }
             Branch branch = Branch.builder()
                     .name("테스트 브랜치" + i)
                     .doc(doc)
