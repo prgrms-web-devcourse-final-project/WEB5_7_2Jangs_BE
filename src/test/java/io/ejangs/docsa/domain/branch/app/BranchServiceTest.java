@@ -1,56 +1,51 @@
 package io.ejangs.docsa.domain.branch.app;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.user.app.UserService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BranchServiceTest {
 
     @InjectMocks
     private BranchService branchService;
-
-    @Mock
-    private UserService userService;
-
-    @Mock
-    private DocService docService;
 
     @Mock
     private CommitRepository commitRepository;
@@ -69,6 +64,20 @@ class BranchServiceTest {
 
     @Mock
     private CommitContentAssembler commitContentAssembler;
+
+    @Mock
+    private EdgeRepository edgeRepository;
+
+    @Mock
+    private CommitBlockSequenceRepository commitBlockSequenceRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @BeforeEach
+    void setup() {
+        ReflectionTestUtils.setField(branchService, "defaultBranchName", "main");
+    }
 
     @Test
     @DisplayName("fromCommitId가 null이면 예외 발생")
@@ -117,14 +126,13 @@ class BranchServiceTest {
         when(commitContentAssembler.assemble("mongo-1")).thenReturn(
                 List.of(Map.of("block", "data")));
 
-        SaveContent saveContent = SaveContent.builder()
-                .content(List.of(Map.of("key", "value")))
-                .build();
+        SaveContent saveContent =
+                SaveContent.builder().content(List.of(Map.of("key", "value"))).build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request,
-                mockUser.getId());
+        BranchCreateResponse response =
+                branchService.createBranchOrSave(documentId, request, mockUser.getId());
 
         // then
         assertNotNull(response);
@@ -161,13 +169,13 @@ class BranchServiceTest {
         when(commitContentAssembler.assemble("mongo-1")).thenReturn(
                 List.of(Map.of("block", "data")));
 
-        SaveContent saveContent = SaveContent.builder().content(List.of(
-                Map.of("block", "data"))).build();
+        SaveContent saveContent =
+                SaveContent.builder().content(List.of(Map.of("block", "data"))).build();
         when(saveContentRepository.save(any())).thenReturn(saveContent);
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request,
-                mockUser.getId());
+        BranchCreateResponse response =
+                branchService.createBranchOrSave(documentId, request, mockUser.getId());
 
         // then
         assertNotNull(response);
@@ -204,4 +212,71 @@ class BranchServiceTest {
                 () -> branchService.renameBranch(1L, 2L, "new", 3L));
         assertEquals(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN, e.getErrorCode());
     }
+
+    @Test
+    @DisplayName("브랜치 삭제 성공")
+    void deleteBranch_success() {
+        // given
+        Long documentId = 1L;
+        Long branchId = 2L;
+        Long userId = 3L;
+
+        Doc doc = mock(Doc.class);
+        Branch branch = Branch.builder().name("dev").doc(doc).build();
+
+        Commit commit1 = Commit.builder().commitMongoId("seq1").branch(branch).build();
+        Commit commit2 = Commit.builder().commitMongoId("seq2").branch(branch).build();
+        ReflectionTestUtils.setField(commit1, "id", 10L);
+        ReflectionTestUtils.setField(commit2, "id", 11L);
+        ReflectionTestUtils.setField(branch, "commits", List.of(commit1, commit2));
+
+        CommitBlockSequence seq1 =
+                CommitBlockSequence.builder().blockOrders(List.of("block1", "block2")).build();
+
+        CommitBlockSequence seq2 =
+                CommitBlockSequence.builder().blockOrders(List.of("block3")).build();
+
+        when(branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId,
+                userId)).thenReturn(true);
+        when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
+        when(branchRepository.existsByFromCommitIdIn(any())).thenReturn(false);
+        when(edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(any(), any())).thenReturn(List.of()); // 빈 리스트로 가정
+
+        when(commitBlockSequenceRepository.findById("seq1")).thenReturn(Optional.of(seq1));
+        when(commitBlockSequenceRepository.findById("seq2")).thenReturn(Optional.of(seq2));
+
+        // when
+        branchService.deleteBranch(documentId, branchId, userId);
+
+        // then - 브랜치 실제 삭제
+        verify(branchRepository).delete(branch);
+
+        // 이벤트 발행 검증
+        ArgumentCaptor<MongoIdsDto> captor = ArgumentCaptor.forClass(MongoIdsDto.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        MongoIdsDto emitted = captor.getValue();
+        assertEquals(List.of("seq1", "seq2"), emitted.commitBlockSequenceIds());
+        assertTrue(emitted.blockIds().containsAll(List.of("block1", "block2", "block3")));
+        assertEquals(3, emitted.blockIds().size()); // block 중복 없이 수집되었는지도 검증
+    }
+
+
+    @Test
+    @DisplayName("메인 브랜치 삭제 시도 시 예외 발생")
+    void deleteBranch_mainBranch_fail() {
+        Long docId = 1L;
+        Long branchId = 2L;
+        Long userId = 3L;
+
+        Branch mainBranch = Branch.builder().name("main").doc(mock(Doc.class)).build();
+        when(branchRepository.existsByIdAndDocIdAndDocUserId(branchId, docId, userId)).thenReturn(
+                true);
+        when(branchRepository.findById(branchId)).thenReturn(Optional.of(mainBranch));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> branchService.deleteBranch(docId, branchId, userId));
+        assertEquals(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE, ex.getErrorCode());
+    }
+
 }
