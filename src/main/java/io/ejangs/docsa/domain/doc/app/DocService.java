@@ -252,14 +252,14 @@ public class DocService {
     }
 
     private String getTitleOnlyById(Long documentId) {
-        Optional<DocTitleOnlyResponse> optional = docRepository.findTitleOnlyById(documentId);
+        Optional<DocTitleOnlyResponse> optionalTitle = docRepository.findTitleOnlyById(documentId);
 
-        if (optional.isEmpty()) {
+        if (optionalTitle.isEmpty()) {
             log.error("문서 ID {}의 제목 찾지 못함 (DocErrorCode.DOCUMENT_GRAPH_NOT_FOUND)", documentId);
             throw new CustomException(DocErrorCode.DOCUMENT_GRAPH_NOT_FOUND);
         }
 
-        return optional.get().title();
+        return optionalTitle.get().title();
     }
 
     @Transactional
