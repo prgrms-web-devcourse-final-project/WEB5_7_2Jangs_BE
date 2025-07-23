@@ -252,9 +252,11 @@ public class BranchService {
 
         return MongoDeleteMapper.toMongoIdsDto(branch, sequenceIdsToDelete,
                 new ArrayList<>(allBlockIds));
+
     }
 
     //  브랜치 관련 검증로직 메서드들
+
     public Branch getById(Long id) {
         return branchRepository.findById(id)
                 .orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
@@ -278,8 +280,8 @@ public class BranchService {
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
     private void checkDefaultBranch(Branch branch) {
-        if (branch.getName().equals(defaultBranchName)) {
-            throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
+        if (branch.getFromCommit() == null) {
+            throw new CustomException(BranchErrorCode.MAIN_BRANCH_FIX_UNAVAILABLE);
         }
     }
 

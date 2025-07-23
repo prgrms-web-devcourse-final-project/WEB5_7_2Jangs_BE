@@ -10,6 +10,7 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -202,5 +203,104 @@ public class DocTestUtils {
                 .build();
 
     }
+
+    public static Doc createForkedBranchScenario(User user,
+            SaveContentRepository saveContentRepository,
+            CommitBlockSequenceRepository commitBlockSequenceRepository,
+            BlockRepository blockRepository) throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, Object>> parsedJson1 = mapper.readValue(editorJson1, new TypeReference<>() {});
+        List<Map<String, Object>> parsedJson2 = mapper.readValue(editorJson2, new TypeReference<>() {});
+
+        Block block1 = blockRepository.save(Block.builder().content(parsedJson1.get(0)).build());
+        Block block2 = blockRepository.save(Block.builder().content(parsedJson2.get(1)).build());
+        Block block3 = blockRepository.save(Block.builder().content(parsedJson2.get(2)).build());
+
+        // 문서 생성
+        Doc doc = Doc.builder().title("브랜치 2개 있는 문서임당").user(user).build();
+
+        // 메인 브랜치
+        Branch main = Branch.builder().name("main").doc(doc).build();
+
+        CommitBlockSequence mainSeq1 = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block1.getId())).build());
+        CommitBlockSequence mainSeq2 = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block2.getId())).build());
+        CommitBlockSequence mainSeq3 = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block3.getId())).build());
+
+        Commit commit1 = Commit.builder()
+                .title("main-commit-1")
+                .description("desc")
+                .commitMongoId(mainSeq1.getId())
+                .branch(main)
+                .build();
+        Commit commit2 = Commit.builder()
+                .title("main-commit-2")
+                .description("desc")
+                .commitMongoId(mainSeq2.getId())
+                .branch(main)
+                .build();
+        Commit commit3 = Commit.builder()
+                .title("main-commit-3")
+                .description("desc")
+                .commitMongoId(mainSeq3.getId())
+                .branch(main)
+                .build();
+
+        main.addCommit(commit1);
+        main.addCommit(commit2);
+        main.addCommit(commit3);
+        main.updateLeafCommit(commit3);
+
+        // 포크 브랜치
+        Branch fork = Branch.builder().name("fork-from-main-commit2").doc(doc).fromCommit(commit2).build();
+
+        CommitBlockSequence forkSeq = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block1.getId(), block3.getId())).build());
+
+        Commit forkCommit = Commit.builder()
+                .title("fork-commit-1")
+                .description("desc")
+                .commitMongoId(forkSeq.getId())
+                .branch(fork)
+                .build();
+
+        fork.addCommit(forkCommit);
+        fork.updateLeafCommit(forkCommit);
+
+        Map<String, Object> saveJson = parsedJson2.get(3);
+        SaveContent saveContent = saveContentRepository.save(SaveContent.builder()
+                .content(List.of(saveJson)).build());
+
+        Save save = Save.builder().branch(fork).build();
+        save.updateSaveMongoId(saveContent.getId());
+        fork.setSave(save);
+
+        doc.addBranch(main);
+        doc.addBranch(fork);
+
+        Edge edge1 = Edge.builder()
+                .doc(doc)
+                .prevCommit(commit1)
+                .nextCommit(commit2)
+                .build();
+
+        Edge edge2 = Edge.builder()
+                .doc(doc)
+                .prevCommit(commit2)
+                .nextCommit(commit3)
+                .build();
+
+        Edge edge3 = Edge.builder()
+                .doc(doc)
+                .prevCommit(commit2)
+                .nextCommit(forkCommit)
+                .build();
+
+        return doc;
+    }
+
 
 }
