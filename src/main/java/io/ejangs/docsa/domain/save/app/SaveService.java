@@ -73,8 +73,8 @@ public class SaveService {
             throw new CustomException(SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT);
         }
 
-        saveRepository.delete(findSave);
         RenewUpdatedAtHelper.touch(findSave);
+        saveRepository.delete(findSave);
         try {
             saveContentRepository.deleteById(findSave.getSaveMongoId());
         } catch (Exception e) {
