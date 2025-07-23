@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.commit.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 
@@ -20,6 +21,14 @@ public class CommitMapper {
         return Commit.builder()
                 .title(commitRequest.title())
                 .description(commitRequest.description())
+                .branch(branch)
+                .build();
+    }
+
+    public static Commit toEntity(Branch branch, MergeCommitRequest request) {
+        return Commit.builder()
+                .title(request.title())
+                .description(request.description())
                 .branch(branch)
                 .build();
     }

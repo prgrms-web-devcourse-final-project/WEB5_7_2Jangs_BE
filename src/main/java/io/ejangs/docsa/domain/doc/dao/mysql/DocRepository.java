@@ -27,4 +27,5 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
     boolean existsByIdAndUserId(Long Id, Long userId);
 
     List<Doc> findAllByUserId(Long userId);
+
 }

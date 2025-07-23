@@ -15,6 +15,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.springframework.http.MediaType;
 
 
 @Target(ElementType.METHOD)
@@ -45,6 +46,7 @@ import java.lang.annotation.Target;
         requestBody = @RequestBody(
                 content = @Content(
                         schema = @Schema(implementation = SaveUpdateRequest.class),
+                        mediaType = MediaType.APPLICATION_JSON_VALUE,
                         examples = @ExampleObject(
                                 value = """
                                         {
@@ -88,6 +90,7 @@ import java.lang.annotation.Target;
                         description = "저장 수정 성공",
                         content = @Content(
                                 schema = @Schema(implementation = SaveUpdateResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
@@ -102,6 +105,7 @@ import java.lang.annotation.Target;
                         description = "저장 수정 실패 - 요청을 보낸 유저의 저장이 아님",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
@@ -118,6 +122,7 @@ import java.lang.annotation.Target;
                         description = "인증 실패 - 로그인 세션이 없음",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
@@ -134,6 +139,7 @@ import java.lang.annotation.Target;
                         description = "저장 수정 실패 - 존재하지 않는 저장",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
@@ -150,6 +156,7 @@ import java.lang.annotation.Target;
                         description = "저장 수정 실패 - MySQL 또는 MongoDB 저장 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
                                                 name = "MySQL 저장 실패",

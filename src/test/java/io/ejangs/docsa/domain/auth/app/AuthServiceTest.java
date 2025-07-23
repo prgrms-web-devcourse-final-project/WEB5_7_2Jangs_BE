@@ -229,7 +229,7 @@ class AuthServiceTest {
         // when & then
         assertThatThrownBy(() -> authService.checkCode(checkRequest))
                 .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.ALREADY_REGISTERED_USER);
     }
 
     @Test
