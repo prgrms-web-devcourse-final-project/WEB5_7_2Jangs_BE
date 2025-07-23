@@ -190,6 +190,7 @@ public class CommitService {
 
             Commit commit = getById(commitId);
             checkLeafCommit(commit);
+            checkFromOrRootCommit(commit);
 
             List<Commit> prevCommits = edgeService.cutEdge(commitId);
 
@@ -209,6 +210,12 @@ public class CommitService {
         } catch (Exception e) {
             // DataIntegrityViolationException 예외처리 도입시 변경될 수 있음
             throw new CustomException(CommitErrorCode.FAIL_DELETE_COMMIT);
+        }
+    }
+
+    private void checkFromOrRootCommit(Commit commit) {
+        if (branchService.checkFromOrRootCommitInBranch(commit)) {
+            throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
         }
     }
 

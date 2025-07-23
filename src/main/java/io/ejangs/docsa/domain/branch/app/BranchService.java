@@ -23,19 +23,20 @@ import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-
-import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-
 
 
 @Slf4j
@@ -269,14 +270,16 @@ public class BranchService {
     }
 
     public void checkDocByIdAndUserId(Long docId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(docId, userId))
+        if (!docRepository.existsByIdAndUserId(docId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+        }
     }
 
     private Commit checkById(Long commitId) {
         return commitRepository.findById(commitId)
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
+
     private void checkDefaultBranch(Branch branch) {
         if (branch.getName().equals(defaultBranchName)) {
             throw new CustomException(BranchErrorCode.MAIN_BRANCH_DELETE_UNAVAILABLE);
@@ -285,9 +288,9 @@ public class BranchService {
 
     public Branch saveBranch(Branch branch) {
         return branchRepository.save(branch);
+    }
 
+    public boolean checkFromOrRootCommitInBranch(Commit commit) {
+        return branchRepository.existsByRootCommitIdOrFromCommitId(commit.getId());
     }
 }
-
-
-
