@@ -34,10 +34,10 @@ public class FullTextIndexInitializer {
             Integer count = jdbcTemplate.queryForObject(CHECK_INDEX_EXIST_SQL, Integer.class);
             if (count == null || count == 0) {
                 jdbcTemplate.execute(CREATE_INDEX_SQL);
-                log.info("FULLTEXT INDEX CREATED");
+                log.info("DOCS : FULLTEXT INDEX CREATED");
             }
         } catch (Exception e) {
-            log.warn("FULLTEXT 인덱스 생성 실패: {}", e.getMessage());
+            log.warn("DOCS : Failed to create FULLTEXT INDEX : {}", e.getMessage());
         }
     }
 }
