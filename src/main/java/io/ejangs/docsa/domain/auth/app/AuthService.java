@@ -3,10 +3,13 @@ package io.ejangs.docsa.domain.auth.app;
 import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
 import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
+import io.ejangs.docsa.domain.auth.dto.response.SessionCheckResponse;
 import io.ejangs.docsa.domain.auth.model.CodeType;
 import io.ejangs.docsa.domain.auth.util.AuthCodeGenerator;
+import io.ejangs.docsa.domain.auth.util.AuthMapper;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
+import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
@@ -114,5 +117,13 @@ public class AuthService {
             throw new CustomException(AuthErrorCode.INTERNAL_ERROR);
         }
         return cache;
+    }
+
+    public SessionCheckResponse checkSession(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+        return AuthMapper.toSessionCheckResponse(user);
     }
 }
