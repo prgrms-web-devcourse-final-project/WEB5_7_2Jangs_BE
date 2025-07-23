@@ -4,13 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-import io.ejangs.docsa.domain.branch.dto.BranchDto;
-import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.dto.CommitDto;
-import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dto.EdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
@@ -18,11 +19,10 @@ import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -43,6 +43,15 @@ public class DocServiceUnitTests {
 
     @Mock
     private DocRepository docRepository;
+
+    @Mock
+    private BranchRepository branchRepository;
+
+    @Mock
+    private CommitRepository commitRepository;
+
+    @Mock
+    private EdgeRepository edgeRepository;
 
     @Test
     @DisplayName("사이드바 문서 목록 조회 성공 테스트")
@@ -141,23 +150,23 @@ public class DocServiceUnitTests {
 
         // Mock 문서 제목 조회
         when(docRepository.findTitleOnlyById(docId))
-                .thenReturn(Optional.of(new DocTitleOnlyResponse(docId, "Test Document")));
+                .thenReturn(Optional.of(new DocTitleOnlyResponse("Test Document")));
 
         // Mock Branch, Commit, Edge 리스트
         OffsetDateTime now = OffsetDateTime.now();
-        List<BranchDto> branches = List.of(
-                new BranchDto(1L, "main", now, null, null, null, null)
+        List<GraphBranchDto> branches = List.of(
+                new GraphBranchDto(1L, "main", now, null, null, null, null)
         );
-        List<CommitDto> commits = List.of(
-                new CommitDto(100L, 1L, "Initial Commit", "desc", now)
+        List<GraphCommitDto> commits = List.of(
+                new GraphCommitDto(100L, 1L, "Initial Commit", "desc", now)
         );
-        List<EdgeDto> edges = List.of(
-                new EdgeDto(100L, 101L)
+        List<GraphEdgeDto> edges = List.of(
+                new GraphEdgeDto(100L, 101L)
         );
 
-        when(docRepository.findBranchesByDocId(docId)).thenReturn(branches);
-        when(docRepository.findCommitsByDocId(docId)).thenReturn(commits);
-        when(docRepository.findEdgesByDocId(docId)).thenReturn(edges);
+        when(branchRepository.findBranchesByDocId(docId)).thenReturn(branches);
+        when(commitRepository.findCommitsByDocId(docId)).thenReturn(commits);
+        when(edgeRepository.findEdgesByDocId(docId)).thenReturn(edges);
 
         CommitGraphResponse response = docService.getGraph(userId, docId);
 

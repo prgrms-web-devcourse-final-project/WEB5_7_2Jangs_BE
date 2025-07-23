@@ -9,11 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.ejangs.docsa.domain.branch.dto.BranchDto;
-import io.ejangs.docsa.domain.commit.dto.CommitDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.EdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
@@ -192,9 +192,10 @@ class DocControllerUnitTests {
         Long docId = 1L;
         Long userId = 1L;
 
-        CommitDto commit = new CommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
-        EdgeDto edge = new EdgeDto(11L, 12L);
-        BranchDto branch = new BranchDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
+        GraphCommitDto commit = new GraphCommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
+        GraphEdgeDto edge = new GraphEdgeDto(11L, 12L);
+        GraphBranchDto
+                branch = new GraphBranchDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
 
         CommitGraphResponse response = new CommitGraphResponse(
                 "문서 제목",

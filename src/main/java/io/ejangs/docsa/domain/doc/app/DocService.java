@@ -1,13 +1,15 @@
 package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
-import io.ejangs.docsa.domain.branch.dto.BranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.dto.CommitDto;
+import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dto.EdgeDto;
+import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.*;
@@ -40,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 @Slf4j
@@ -52,6 +55,8 @@ public class DocService {
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
+    private final CommitRepository commitRepository;
+    private final EdgeRepository edgeRepository;
     private final SaveContentRepository saveContentRepository;
     private final CommitContentAssembler commitContentAssembler;
     private final MongoIdsCollector mongoIdsCollector;
@@ -236,19 +241,25 @@ public class DocService {
         String docTitle = getTitleOnlyById(documentId);
 
         //  Branch, Commit, Edge 각각 별도 조회 (Projection 쿼리)
-        List<BranchDto> branches = docRepository.findBranchesByDocId(documentId);
+        List<GraphBranchDto> branches = branchRepository.findBranchesByDocId(documentId);
         if (branches.isEmpty()) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
         }
-        List<CommitDto> commits = docRepository.findCommitsByDocId(documentId);
-        List<EdgeDto> edges = docRepository.findEdgesByDocId(documentId);
+        List<GraphCommitDto> commits = commitRepository.findCommitsByDocId(documentId);
+        List<GraphEdgeDto> edges = edgeRepository.findEdgesByDocId(documentId);
 
         return GraphMapper.toCommitGraphResponse(docTitle, commits, edges, branches);
     }
 
     private String getTitleOnlyById(Long documentId) {
-        return docRepository.findTitleOnlyById(documentId).map(DocTitleOnlyResponse::title)
-                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_TITLE_NOT_FOUND));
+        Optional<DocTitleOnlyResponse> optional = docRepository.findTitleOnlyById(documentId);
+
+        if (optional.isEmpty()) {
+            log.error("문서 ID {}의 제목 찾지 못함 (DocErrorCode.DOCUMENT_GRAPH_NOT_FOUND)", documentId);
+            throw new CustomException(DocErrorCode.DOCUMENT_GRAPH_NOT_FOUND);
+        }
+
+        return optional.get().title();
     }
 
     @Transactional
