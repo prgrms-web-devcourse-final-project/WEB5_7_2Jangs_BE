@@ -42,6 +42,9 @@ class GetCommitMockTest {
     private BranchService branchService;
 
     @Mock
+    private DocService docService;
+
+    @Mock
     private CommitContentAssembler assembler;
 
     @InjectMocks
@@ -93,7 +96,7 @@ class GetCommitMockTest {
         assertThat(response).isNotNull();
         assertThat(response.content()).isEqualTo(mockContent);
 
-        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+        verify(docService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(commitId);
         verify(assembler).assemble(commitMongoId);
     }
@@ -111,7 +114,7 @@ class GetCommitMockTest {
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+        verify(docService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(commitId);
         verify(assembler, never()).assemble(any());
     }
@@ -124,13 +127,13 @@ class GetCommitMockTest {
         Long commitId = 1L;
 
         doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
-                .when(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+                .when(docService).checkDocByIdAndUserId(docId, userDetails.getId());
 
         // when & then
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+        verify(docService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository, never()).findById(any());
         verify(assembler, never()).assemble(any());
     }
@@ -162,7 +165,7 @@ class GetCommitMockTest {
         assertThat(response.base()).isEqualTo(baseContent);
         assertThat(response.target()).isEqualTo(targetContent);
 
-        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+        verify(docService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(baseId);
         verify(commitRepository).findById(targetId);
         verify(assembler).assemble(baseCommitMongoId);
@@ -184,7 +187,7 @@ class GetCommitMockTest {
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+        verify(docService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(baseId);
         verify(commitRepository, never()).findById(targetId);
         verify(assembler, never()).assemble(any());
@@ -210,7 +213,7 @@ class GetCommitMockTest {
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+        verify(docService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository).findById(baseId);
         verify(commitRepository).findById(targetId);
         verify(assembler).assemble(baseCommitMongoId);
@@ -225,14 +228,14 @@ class GetCommitMockTest {
         Long targetId = 2L;
 
         doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
-                .when(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+                .when(docService).checkDocByIdAndUserId(docId, userDetails.getId());
 
         // when & then
         assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(branchService).checkDocByIdAndUserId(docId, userDetails.getId());
+        verify(docService).checkDocByIdAndUserId(docId, userDetails.getId());
         verify(commitRepository, never()).findById(any());
         verify(assembler, never()).assemble(any());
     }

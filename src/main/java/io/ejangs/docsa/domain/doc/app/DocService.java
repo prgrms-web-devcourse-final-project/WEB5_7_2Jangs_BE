@@ -223,8 +223,8 @@ public class DocService {
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
     }
 
-    public void checkDocByIdAndUserId(Long documentId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(documentId, userId)) {
+    public void checkDocByIdAndUserId(Long docId, Long userId) {
+        if (!docRepository.existsByIdAndUserId(docId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
         }
     }
