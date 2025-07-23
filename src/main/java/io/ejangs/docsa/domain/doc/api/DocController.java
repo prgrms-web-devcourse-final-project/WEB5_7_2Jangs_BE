@@ -8,6 +8,7 @@ import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.swagger.CreateDocumentDocs;
+import io.ejangs.docsa.domain.doc.swagger.RenameDocumentDocs;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -90,6 +91,7 @@ public class DocController {
                 .body(docService.searchList(userDetails.getId(), keyword, pageable));
     }
 
+    @RenameDocumentDocs
     @PatchMapping("/{docId}")
     public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
             @PathVariable Long docId,

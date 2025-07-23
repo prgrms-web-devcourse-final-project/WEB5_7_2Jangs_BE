@@ -4,6 +4,8 @@ import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,8 +20,17 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "문서 생성",
-        description = "문서를 생성하면 기본 브랜치와 저장을 생성하고, 생성된 문서와 저장의 ID를 반환",
+        summary = "문서 제목 수정",
+        description = "문서의 제목을 수정합니다.",
+        parameters = {
+                @Parameter(
+                        name = "docId",
+                        description = "제목을 수정할 문서의 ID",
+                        example = "1",
+                        required = true,
+                        in = ParameterIn.PATH
+                )
+        },
         requestBody = @RequestBody(
                 content = @Content(
                         schema = @Schema(implementation = DocTitleRequest.class),
@@ -36,7 +47,7 @@ import org.springframework.http.MediaType;
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "문서 생성 성공(기본 브랜치/저장 생성)",
+                        description = "문서 제목 수정 성공",
                         content = @Content(
                                 schema = @Schema(implementation = DocCreateResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -44,7 +55,8 @@ import org.springframework.http.MediaType;
                                         value = """
                                                 {
                                                     "id": 1,
-                                                    "saveId": 1
+                                                    "title": "Updated Title",
+                                                    "updatedAt": "2025-07-07T10:15:30Z"
                                                 }
                                                 """
                                 )
@@ -52,11 +64,21 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "유효하지 않은 문서 제목 요청",
+                        description = "유효하지 않은 문서 제목 요청 및 존재하지 않는 문서",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
+                                        @ExampleObject(
+                                                name = "존재하지 않는 문서 ID",
+                                                value = """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "해당 문서를 찾을 수 없습니다.",
+                                                            "error": "DOCUMENT_NOT_FOUND"
+                                                        }
+                                                        """
+                                        ),
                                         @ExampleObject(
                                                 name = "이미 존재하는 문서 제목",
                                                 value = """
@@ -86,7 +108,17 @@ import org.springframework.http.MediaType;
                                                             "error": "VALIDATION_FAILED"
                                                         }
                                                         """
+                                        ),
+                                        @ExampleObject(
+                                                name = "현재 문서의 제목과 같은 제목으로 수정요청",
+                                                value = """
+                                                        {
+                                                            "status": 400,
+                                                            "message": 현재 제목과 동일한 제목입니다.",
+                                                            "error": "SAME_AS_CURRENT_TITLE"
+                                                        """
                                         )
+
                                 }
                         )
                 ),
@@ -107,25 +139,8 @@ import org.springframework.http.MediaType;
                                 )
                         )
                 ),
-                @ApiResponse(
-                        responseCode = "500",
-                        description = "서버오류로 인한 문서 생성 실패",
-                        content = @Content(
-                                schema = @Schema(implementation = ErrorResponse.class),
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = @ExampleObject(
-                                        value = """
-                                                {
-                                                    "status": 500,
-                                                    "message": "서버 오류로 인해 문서 생성에 실패했습니다.",
-                                                    "error": "FAIL_CREATE_DOCUMENT"
-                                                }
-                                                """
-                                )
-                        )
-                ),
         }
 )
-public @interface CreateDocumentDocs {
+public @interface RenameDocumentDocs {
 
 }
