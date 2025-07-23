@@ -7,8 +7,10 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.swagger.CreateDocumentDocs;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,13 +29,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/document")
 @RequiredArgsConstructor
+@Tag(name = "Document API")
+@RequestMapping("/api/document")
 public class DocController {
 
     private final DocService docService;
 
     @PostMapping
+    @CreateDocumentDocs
     public ResponseEntity<DocCreateResponse> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DocTitleRequest request) {
