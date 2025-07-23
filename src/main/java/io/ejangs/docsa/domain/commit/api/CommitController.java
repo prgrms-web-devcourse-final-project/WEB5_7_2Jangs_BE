@@ -11,6 +11,7 @@ import io.ejangs.docsa.domain.commit.swagger.CreateCommitDocs;
 import io.ejangs.docsa.domain.commit.swagger.GetCommitDocs;
 import io.ejangs.docsa.domain.commit.swagger.MergeCommitDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Commit API")
 public class CommitController {
 
     private final CommitService commitService;
