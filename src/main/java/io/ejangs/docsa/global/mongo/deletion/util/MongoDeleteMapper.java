@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class MongoDeleteMapper {
+public class MongoDeleteMapper {
 
     public static MongoIdsDto toMongoIdsDto(Branch branch,
             List<String> commitBlockSequenceIds,

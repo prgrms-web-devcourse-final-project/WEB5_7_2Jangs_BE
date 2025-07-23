@@ -36,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -114,26 +116,28 @@ public class DocService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocListSimpleResponse> getSimpleList(Long userId) {
-        List<Doc> docs = docRepository.findAllByUserId(userId);
+    public Page<DocListSimpleResponse> getSimpleList(Long userId, Pageable pageable) {
+        Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
 
-        return docs.stream().map(doc -> {
-            Branch recentBranch = getMostRecentBranch(doc);
-            RecentActivityDto recent = getRecentActivity(recentBranch);
-            return DocMapper.toListSimpleResponse(doc, recent);
-        }).toList();
+        return docs
+                .map(doc -> {
+                    Branch recentBranch = getMostRecentBranch(doc);
+                    RecentActivityDto recent = getRecentActivity(recentBranch);
+                    return DocMapper.toListSimpleResponse(doc, recent);
+                });
     }
 
     @Transactional(readOnly = true)
-    public List<DocListResponse> getList(Long userId) {
-        List<Doc> docs = docRepository.findAllByUserId(userId);
+    public Page<DocListResponse> getList(Long userId, Pageable pageable) {
+        Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
 
-        return docs.stream().map(doc -> {
-            Branch recentBranch = getMostRecentBranch(doc);
-            RecentActivityDto recent = getRecentActivity(recentBranch);
-            String preview = extractPreviewSafe(recentBranch, recent);
-            return DocMapper.toListResponse(doc, preview, recent);
-        }).toList();
+        return docs
+                .map(doc -> {
+                    Branch recentBranch = getMostRecentBranch(doc);
+                    RecentActivityDto recent = getRecentActivity(recentBranch);
+                    String preview = extractPreviewSafe(recentBranch, recent);
+                    return DocMapper.toListResponse(doc, preview, recent);
+                });
     }
 
     private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
@@ -153,8 +157,8 @@ public class DocService {
             return DEFAULT_PREVIEW;
         }
 
-        List<Map<String, Object>> content =
-                commitContentAssembler.assemble(commit.getCommitMongoId());
+        List<Map<String, Object>> content = commitContentAssembler.assemble(
+                commit.getCommitMongoId());
         return PreviewExtractor.doExtractPreview(content);
     }
 
@@ -172,7 +176,8 @@ public class DocService {
 
 
     private Branch getMostRecentBranch(Doc doc) {
-        return doc.getBranches().stream().max(Comparator.comparing(Branch::getUpdatedAt))
+        return doc.getBranches().stream()
+                .max(Comparator.comparing(Branch::getUpdatedAt))
                 .orElse(null);
     }
 
@@ -219,8 +224,8 @@ public class DocService {
                 .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
     }
 
-    public void checkDocByIdAndUserId(Long documentId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(documentId, userId)) {
+    public void checkDocByIdAndUserId(Long docId, Long userId) {
+        if (!docRepository.existsByIdAndUserId(docId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
         }
     }
