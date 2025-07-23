@@ -25,5 +25,5 @@ springdoc:
     path: /swagger-ui.html
     enabled: true
     servers:
-      - url: http://ec2-3-34-159-207.ap-northeast-2.compute.amazonaws.com:8080
+      - url: ${SWAGGER_SERVER_URL}
         description: Production Server
