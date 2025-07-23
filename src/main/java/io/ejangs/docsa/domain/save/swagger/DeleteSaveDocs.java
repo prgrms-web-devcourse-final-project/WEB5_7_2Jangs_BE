@@ -46,19 +46,32 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "저장 수정 실패 - 요청을 보낸 유저의 저장이 아님",
+                        description = "저장 수정 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = @ExampleObject(
-                                        value = """
+                                examples = {
+                                        @ExampleObject(
+                                                name = "해당 유저의 수정이 아님",
+                                                value = """
                                                 {
                                                     "status": 400,
                                                     "message": "잘못된 접근입니다",
                                                     "error": "SAVE_NOT_OWNER"
                                                 }
                                                 """
-                                )
+                                        ),
+                                        @ExampleObject(
+                                                name = "해당 브랜치에 커밋이 하나도 없고 저장만 존재하는 최초 상태에서는 저장을 삭제할 수 없다.",
+                                                value = """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "버전에 기록이 하나도 없는 경우, 저장을 삭제할 수 없습니다.",
+                                                            "error": "CANNOT_DELETE_SAVE_WITH_NO_COMMIT"
+                                                        }
+                                                        """
+                                        )
+                                }
                         )
                 ),
                 @ApiResponse(
