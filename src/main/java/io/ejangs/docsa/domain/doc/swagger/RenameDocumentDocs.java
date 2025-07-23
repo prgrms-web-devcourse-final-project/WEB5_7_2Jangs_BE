@@ -114,8 +114,9 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": 현재 제목과 동일한 제목입니다.",
+                                                            "message": "현재 제목과 동일한 제목입니다.",
                                                             "error": "SAME_AS_CURRENT_TITLE"
+                                                        }
                                                         """
                                         )
 
