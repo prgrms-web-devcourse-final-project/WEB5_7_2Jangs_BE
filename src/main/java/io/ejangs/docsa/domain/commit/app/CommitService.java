@@ -59,11 +59,11 @@ public class CommitService {
             Long userId) {
 
         try {
+            branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
             // * 1. documentId로 문서가 존재하는지 검사(JPA)
             Doc doc = docService.getById(docId);
             // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
             Branch branch = branchService.getById(commitRequest.branchId());
-            branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
 
             // * 3. Commit Entity만들어서 DB에 저장
             Commit savedCommit = saveCommit(branch, commitRequest);
@@ -148,16 +148,17 @@ public class CommitService {
         CommitMongoIdsDto commitMongoIds = null;
         try {
             // 문서가 존재하는지 검사
-            Doc doc = docService.getById(docId);
             // 브랜치가 존재하는지 검사
             Long baseBranchId = mergeRequest.baseBranchId();
             Long targetBranchId = mergeRequest.targetBranchId();
 
             checkBranch(baseBranchId, targetBranchId);
-            Branch baseBranch = branchService.getById(baseBranchId);
-            Branch targetBranch = branchService.getById(targetBranchId);
             branchService.checkBranchInDocOwnedByUser(docId, baseBranchId, userId);
             branchService.checkBranchInDocOwnedByUser(docId, targetBranchId, userId);
+
+            Doc doc = docService.getById(docId);
+            Branch baseBranch = branchService.getById(baseBranchId);
+            Branch targetBranch = branchService.getById(targetBranchId);
 
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());
