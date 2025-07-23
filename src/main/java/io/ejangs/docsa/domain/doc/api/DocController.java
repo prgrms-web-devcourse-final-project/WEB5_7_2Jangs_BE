@@ -76,11 +76,9 @@ public class DocController {
     public ResponseEntity<Page<DocListResponse>> search(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "updatedAt") String sort,
-            @RequestParam(defaultValue = "desc") String order,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageableFactory.create(sort, order, page, size);
+        Pageable pageable = PageableFactory.create(page, size);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(docService.searchList(userDetails.getId(), keyword, pageable));

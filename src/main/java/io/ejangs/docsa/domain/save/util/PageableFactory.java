@@ -11,16 +11,26 @@ import org.springframework.data.domain.Sort;
 public class PageableFactory {
 
     public static Pageable create(String sortParam, String dirParam, int page, int size) {
-        if (page < 0) {
-            throw new CustomException(PageErrorCode.INVALID_PAGE);
-        }
-        if (size <= 0) {
-            throw new CustomException(PageErrorCode.INVALID_PAGE_SIZE);
-        }
+        validatePageAndSize(page, size);
 
         PageSortType sort = PageSortType.from(sortParam);
         PageDirectionType dir = PageDirectionType.from(dirParam);
 
         return PageRequest.of(page, size, Sort.by(dir.getDirection(), sort.getValue()));
     }
+
+    public static Pageable create(int page, int size) {
+        validatePageAndSize(page, size);
+        return PageRequest.of(page, size);
+    }
+
+    private static void validatePageAndSize(int page, int size) {
+        if (page < 0) {
+            throw new CustomException(PageErrorCode.INVALID_PAGE);
+        }
+        if (size <= 0) {
+            throw new CustomException(PageErrorCode.INVALID_PAGE_SIZE);
+        }
+    }
+
 }
