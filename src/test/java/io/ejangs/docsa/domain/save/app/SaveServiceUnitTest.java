@@ -217,19 +217,21 @@ class SaveServiceUnitTest {
     @DisplayName("저장 삭제 성공")
     void deleteSave_success() throws Exception {
         Branch mockBranch = mock(Branch.class);
+        Commit mockCommit = mock(Commit.class);
         SaveIdentifierDto dto = SaveIdentifierDto.of(docId, saveId, userId);
+        List<Commit> mockCommits = new ArrayList<>();
+        mockCommits.add(mockCommit);
 
         when(saveRepository.findById(dto.saveId())).thenReturn(Optional.of(mockSave));
-        when(saveRepository.validateSaveOwnership(dto.saveId(), dto.documentId(), dto.userId())).thenReturn(true);
+        when(saveRepository.validateSaveOwnership(dto.saveId(), dto.documentId(),
+                dto.userId())).thenReturn(true);
         when(mockSave.getId()).thenReturn(dto.saveId());
         when(mockSave.getBranch()).thenReturn(mockBranch);
-        when(mockBranch.getCommits()).thenReturn(new ArrayList<>());
-
-        Commit commitWithBranch = Commit.builder().branch(mockBranch).build();
-        when(mockBranch.getFromCommit()).thenReturn(commitWithBranch);
+        when(mockBranch.getCommits()).thenReturn(mockCommits);
 
         // Static 메서드 무력화
-        try (MockedStatic<RenewUpdatedAtHelper> mocked = Mockito.mockStatic(RenewUpdatedAtHelper.class)) {
+        try (MockedStatic<RenewUpdatedAtHelper> mocked = Mockito.mockStatic(
+                RenewUpdatedAtHelper.class)) {
             mocked.when(() -> RenewUpdatedAtHelper.touch(mockBranch)).thenAnswer(inv -> null);
 
             saveService.deleteSave(dto);
@@ -275,7 +277,7 @@ class SaveServiceUnitTest {
     }
 
     @Test
-    @DisplayName("저장 삭제 실패 - 메인 브랜치에서 커밋도 없는 상태임")
+    @DisplayName("저장 삭제 실패 - 브랜치에서 커밋이 없는 상태임")
     void deleteSave_shouldFail_whenFirstSave_NoCommit() {
         Save mockSave = mock(Save.class);
         Branch mockBranch = mock(Branch.class);
@@ -288,35 +290,35 @@ class SaveServiceUnitTest {
         when(mockSave.getBranch()).thenReturn(mockBranch);
         when(mockBranch.getCommits()).thenReturn(new ArrayList<>());
 
-        when(mockBranch.getFromCommit()).thenReturn(null);
-
         assertThatThrownBy(() -> saveService.deleteSave(idDto))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining("main 브랜치에서 기록이 하나도 없는 경우, 저장을 삭제할 수 없습니다.");
+                .hasMessageContaining(SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT.getMessage());
     }
 
-        @Test
+    @Test
     @DisplayName("deleteSave 실패 - MySQL 삭제 실패")
     void deleteSave_shouldFail_whenMySQLDeleteFails() {
         // given
         Branch mockBranch = mock(Branch.class);
+        Commit mockCommit = mock(Commit.class);
+
         SaveIdentifierDto dto = SaveIdentifierDto.of(docId, saveId, userId);
+        List<Commit> mockCommits = new ArrayList<>();
+        mockCommits.add(mockCommit);
 
         when(saveRepository.findById(dto.saveId())).thenReturn(Optional.of(mockSave));
-        when(saveRepository.validateSaveOwnership(dto.saveId(), dto.documentId(), dto.userId())).thenReturn(true);
+        when(saveRepository.validateSaveOwnership(dto.saveId(), dto.documentId(),
+                dto.userId())).thenReturn(true);
         when(mockSave.getId()).thenReturn(dto.saveId());
         when(mockSave.getBranch()).thenReturn(mockBranch);
-        when(mockBranch.getCommits()).thenReturn(new ArrayList<>());
+        when(mockBranch.getCommits()).thenReturn(mockCommits);
 
-        Commit commitWithBranch = Commit.builder().branch(mockBranch).build();
-        when(mockBranch.getFromCommit()).thenReturn(commitWithBranch);
-
-        doThrow(new DataIntegrityViolationException("FK 제약 오류"))
+        doThrow(new CustomException(SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT))
                 .when(saveRepository).delete(mockSave);
 
         assertThatThrownBy(() -> saveService.deleteSave(idDto))
-                .isInstanceOf(DataIntegrityViolationException.class)
-                .hasMessageContaining("FK 제약 오류");
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining(SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT.getMessage());
 
         verify(saveRepository).delete(mockSave);
         verifyNoInteractions(saveContentRepository); // Mongo는 실행 안 되어야 함
@@ -331,7 +333,8 @@ class SaveServiceUnitTest {
         SaveIdentifierDto dto = SaveIdentifierDto.of(docId, saveId, userId);
 
         when(saveRepository.findById(dto.saveId())).thenReturn(Optional.of(mockSave));
-        when(saveRepository.validateSaveOwnership(dto.saveId(), dto.documentId(), dto.userId())).thenReturn(true);
+        when(saveRepository.validateSaveOwnership(dto.saveId(), dto.documentId(),
+                dto.userId())).thenReturn(true);
         when(mockSave.getId()).thenReturn(dto.saveId());
         when(mockSave.getSaveMongoId()).thenReturn("mongoId1");
         when(mockSave.getBranch()).thenReturn(mockBranch);

@@ -25,7 +25,6 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -157,7 +156,7 @@ class SaveServiceIntegrationTest {
         assertThatThrownBy(() -> saveService.deleteSave(dto))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(
-                        SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMITS_ON_MAIN.getMessage());
+                        SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT.getMessage());
     }
 
     @Test
