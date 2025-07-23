@@ -1,9 +1,6 @@
 spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/docsa
-    username: ${MYSQL_USERNAME}
-    password: ${MYSQL_PASSWORD}
+  profiles:
+    active: local
 
   data:
     mongodb:
@@ -14,8 +11,6 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
-    hibernate:
-      ddl-auto: create-drop
 
   mail:
     host: smtp.gmail.com
@@ -39,7 +34,7 @@ spring:
       - passCodeCache
       - pwdResetCodeCache
     caffeine:
-      spec: maximumSize=10000, expireAfterWrite=3m
+      spec: maximumSize=10000, expireAfterWrite=4m
 
 auth:
   signup-code-cache-name: signupCodeCache
