@@ -127,7 +127,7 @@ public class CommitService {
         branchService.checkDocByIdAndUserId(docId, userId);
         List<Map<String, Object>> assemble = getWholeContent(commitId);
 
-        return new CommitResponse(assemble);
+        return CommitMapper.toCommitResponse(assemble);
     }
 
     @Transactional(readOnly = true)
@@ -138,7 +138,7 @@ public class CommitService {
         List<Map<String, Object>> baseContent = getWholeContent(baseId);
         List<Map<String, Object>> targetContent = getWholeContent(targetId);
 
-        return new CompareMergeCommitResponse(baseContent, targetContent);
+        return CommitMapper.toCompareMergeCommitResponse(baseContent, targetContent);
     }
 
     @Transactional
