@@ -7,6 +7,7 @@ import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
 import io.ejangs.docsa.domain.auth.dto.response.SessionCheckResponse;
 import io.ejangs.docsa.domain.auth.swagger.CheckCodeDocs;
+import io.ejangs.docsa.domain.auth.swagger.CheckSessionDocs;
 import io.ejangs.docsa.domain.auth.swagger.SendResetPwdCodeDocs;
 import io.ejangs.docsa.domain.auth.swagger.SendSignupCodeDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
@@ -58,6 +59,7 @@ public class AuthController {
     }
 
     @GetMapping("/session/check")
+    @CheckSessionDocs
     public ResponseEntity<SessionCheckResponse> checkSession(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
