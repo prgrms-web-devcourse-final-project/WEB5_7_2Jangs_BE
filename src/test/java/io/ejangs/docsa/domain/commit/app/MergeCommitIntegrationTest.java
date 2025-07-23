@@ -176,7 +176,7 @@ class MergeCommitIntegrationTest {
         assertThatThrownBy(() -> commitService.mergeCommit(nonExistentDocId, request,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(DocErrorCode.DOCUMENT_NOT_FOUND.getMessage());
+                .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN.getMessage());
     }
 
     @Test
@@ -195,7 +195,7 @@ class MergeCommitIntegrationTest {
         assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND.getMessage());
+                .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN.getMessage());
     }
 
     @Test
@@ -214,7 +214,7 @@ class MergeCommitIntegrationTest {
         assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND.getMessage());
+                .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN.getMessage());
     }
 
     @Test
