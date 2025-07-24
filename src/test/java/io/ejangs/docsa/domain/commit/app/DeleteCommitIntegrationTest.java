@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
+import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
@@ -20,6 +21,9 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,6 +58,9 @@ public class DeleteCommitIntegrationTest {
 
     @Autowired
     private BlockRepository blockRepository;
+
+    @Autowired
+    private MongoIdsCollector mongoIdsCollector;
 
     private User testUser;
     private Doc testDoc;
@@ -208,5 +215,47 @@ public class DeleteCommitIntegrationTest {
                 () -> commitService.deleteCommit(testDoc.getId(), commit21.getId(), testUser.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(CommitErrorCode.CAN_NOT_DELETE_COMMIT.getMessage());
+    }
+
+    @Test
+    @DisplayName("블록 컬렉터 테스트1")
+    void collect_MongoIdsDto_Test1() throws Exception {
+        // given
+        List<Commit> prevCommits = List.of(commit20, commit22);
+
+        // when
+        MongoIdsDto mongoIdsDto = mongoIdsCollector.collectFrom(prevCommits, commit30);
+
+        // then
+        for (String commitBlockSequenceId : mongoIdsDto.commitBlockSequenceIds()) {
+            System.out.println("commitBlockSequenceId = " + commitBlockSequenceId);
+        }
+
+        for (String blockId : mongoIdsDto.blockIds()) {
+            System.out.println("blockId = " + blockId);
+            Block block = blockRepository.findById(blockId).orElse(null);
+            System.out.println("findById(blockId) = " + block.getContent().values());
+        }
+    }
+
+    @Test
+    @DisplayName("블록 컬렉터 테스트2")
+    void collect_MongoIdsDto_Test2() throws Exception {
+        // given
+        List<Commit> prevCommits = List.of(commit21);
+
+        // when
+        MongoIdsDto mongoIdsDto = mongoIdsCollector.collectFrom(prevCommits, commit22);
+
+        // then
+        for (String commitBlockSequenceId : mongoIdsDto.commitBlockSequenceIds()) {
+            System.out.println("commitBlockSequenceId = " + commitBlockSequenceId);
+        }
+
+        for (String blockId : mongoIdsDto.blockIds()) {
+            System.out.println("blockId = " + blockId);
+            Block block = blockRepository.findById(blockId).orElse(null);
+            System.out.println("findById(blockId) = " + block.getContent().values());
+        }
     }
 }
