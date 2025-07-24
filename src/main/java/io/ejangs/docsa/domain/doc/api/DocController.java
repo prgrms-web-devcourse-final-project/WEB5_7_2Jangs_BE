@@ -7,8 +7,13 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.swagger.DeleteDocDocs;
+import io.ejangs.docsa.domain.doc.swagger.GetDocGraphDocs;
+import io.ejangs.docsa.domain.doc.swagger.GetDocListDocs;
+import io.ejangs.docsa.domain.doc.swagger.GetDocSidebarListDocs;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Document API")
 @RequestMapping("/api/document")
 @RequiredArgsConstructor
 public class DocController {
@@ -43,6 +49,7 @@ public class DocController {
     }
 
     @GetMapping("/sidebar")
+    @GetDocSidebarListDocs
     public ResponseEntity<Page<DocListSimpleResponse>> readListSidebar(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "updatedAt") String sort,
@@ -58,6 +65,7 @@ public class DocController {
     }
 
     @GetMapping
+    @GetDocListDocs
     public ResponseEntity<Page<DocListResponse>> readList(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "updatedAt") String sort,
@@ -83,6 +91,7 @@ public class DocController {
     }
 
     @GetMapping("/{docId}/graph")
+    @GetDocGraphDocs
     public ResponseEntity<CommitGraphResponse> getGraph(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
@@ -91,8 +100,11 @@ public class DocController {
     }
 
     @DeleteMapping("/{docId}")
-    public ResponseEntity<Void> delete(@PathVariable Long docId, @RequestParam Long userId) {
-        docService.delete(userId, docId);
+    @DeleteDocDocs
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long docId) {
+        docService.delete(docId, userDetails.getId());
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT).build();
     }
