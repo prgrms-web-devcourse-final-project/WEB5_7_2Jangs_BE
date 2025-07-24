@@ -38,35 +38,17 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "401",
-                        description = "인증되지 않은 사용자",
+                        description = "유효하지 않은 세션 - 로그인 필요",
                         content = @Content(
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 examples = @ExampleObject(
-                                        name = "AUTHENTICATION_FAILED",
+                                        name = "LOGIN_REQUIRED",
                                         value = """
                                                 {
                                                     "status": 401,
-                                                    "message": "인증에 실패했습니다.",
-                                                    "error": "AUTHENTICATION_FAILED"
-                                                }
-                                                """
-                                )
-                        )
-                ),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "존재하지 않는 사용자",
-                        content = @Content(
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = ErrorResponse.class),
-                                examples = @ExampleObject(
-                                        name = "USER_NOT_FOUND",
-                                        value = """
-                                                {
-                                                    "status": 404,
-                                                    "message": "해당 사용자를 찾을 수 없습니다.",
-                                                    "error": "USER_NOT_FOUND"
+                                                    "message": "로그인이 필요합니다.",
+                                                    "error": "LOGIN_REQUIRED"
                                                 }
                                                 """
                                 )
