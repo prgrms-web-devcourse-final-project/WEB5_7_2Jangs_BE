@@ -1,9 +1,12 @@
 package io.ejangs.docsa.domain.save.api;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
+import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.global.security.WithCustomMockUser;
 import java.time.OffsetDateTime;
@@ -60,7 +64,6 @@ class SaveControllerTest {
     @Test
     @DisplayName("저장 데이터 덮어쓰기 성공")
     void updateSave_success() throws Exception {
-        Long userId = 1L;
         Long documentId = 1L;
         Long saveId = 1L;
 
@@ -69,7 +72,6 @@ class SaveControllerTest {
 
         mockMvc.perform(
                         put("/api/document/{documentId}/save/{saveId}", documentId, saveId)
-                                .param("userId", String.valueOf(userId))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -85,11 +87,45 @@ class SaveControllerTest {
             "abc,xyz",    // both invalid
     })
     void updateSave_fail_invalidPathVariables(String documentId, String saveId) throws Exception {
-        Long userId = 1L;
-
         mockMvc.perform(
                         put("/api/document/{documentId}/save/{saveId}", documentId, saveId)
-                                .param("userId", String.valueOf(userId))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(MethodArgumentTypeMismatchException.class,
+                        result.getResolvedException()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("getSave 성공")
+    void getSave_success() throws Exception {
+        Long documentId = 1L;
+        Long saveId = 1L;
+
+        when(saveService.getSave(dto)).thenReturn(new SaveGetResponse(
+                OffsetDateTime.now(), data));
+
+        mockMvc.perform(
+                        get("/api/document/{documentId}/save/{saveId}", documentId, saveId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updatedAt").exists())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].text1").value("Key features"))
+                .andExpect(jsonPath("$.content[1].text2").value("Key features"))
+                .andDo(print());
+    }
+
+    @ParameterizedTest
+    @DisplayName("path variable 이 비정상일 경우 예외 발생")
+    @CsvSource({
+            "abc,1",      // invalid documentId
+            "1,xyz",      // invalid saveId
+            "abc,xyz",    // both invalid
+    })
+    void getSave_fail_invalidPathVariables(String documentId, String saveId) throws Exception {
+        mockMvc.perform(
+                        put("/api/document/{documentId}/save/{saveId}", documentId, saveId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
