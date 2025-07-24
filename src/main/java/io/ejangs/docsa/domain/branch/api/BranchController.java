@@ -6,6 +6,7 @@ import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.swagger.CreateBranchOrSaveDocs;
+import io.ejangs.docsa.domain.branch.swagger.DeleteBranchDocs;
 import io.ejangs.docsa.domain.branch.swagger.RenameBranchDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,6 +49,7 @@ public class BranchController {
 
     // 브랜치 삭제
     @DeleteMapping("/{branchId}")
+    @DeleteBranchDocs
     public ResponseEntity<Void> deleteBranch(@AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long documentId, @PathVariable Long branchId){
         branchService.deleteBranch(documentId, branchId, userDetails.getId());

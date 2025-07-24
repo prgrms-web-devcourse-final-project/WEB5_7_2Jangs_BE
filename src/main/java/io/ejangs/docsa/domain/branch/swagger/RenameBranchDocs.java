@@ -20,8 +20,8 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "브랜치 이름 변경 API",
-        description = "브랜치 이름을 수정합니다.",
+        summary = "브랜치 이름 변경",
+        description = "브랜치의 이름을 수정합니다. 메인브랜치의 이름은 수정할 수 없습니다.",
         parameters = {
                 @Parameter(
                         name = "documentId",
@@ -70,7 +70,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "브랜치 이름 수정 실패 - 해당 문서에 속한 브랜치가 아니다.",
+                        description = "브랜치 이름 수정 실패 - 해당 문서에 속한 브랜치가 아님",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -106,13 +106,12 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "브랜치 이름 수정 실패 - 해당 id를 가진 브랜치는 없음.",
+                        description = "브랜치 이름 수정 실패 - 해당 id를 가진 브랜치 없음",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples =
                                 @ExampleObject(
-                                        name = "해당 브랜치는 없다",
                                         value = """
                                                 {
                                                    "status": 404,
@@ -121,7 +120,6 @@ import org.springframework.http.MediaType;
                                                 }
                                                 """
                                 )
-
                         )
                 ),
                 @ApiResponse(
