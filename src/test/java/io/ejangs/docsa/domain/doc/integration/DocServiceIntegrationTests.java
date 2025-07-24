@@ -30,6 +30,7 @@ import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import java.util.List;
@@ -160,7 +161,7 @@ public class DocServiceIntegrationTests {
 
             assertThatThrownBy(() -> docService.create(request, user.getId()))
                     .isInstanceOf(CustomException.class)
-                    .hasMessageContaining(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
+                    .hasMessageContaining(DatabaseErrorCode.MONGO_ERROR.getMessage());
 
             assertThat(docRepository.findAll()).isEmpty();
             assertThat(branchRepository.findAll()).isEmpty();
