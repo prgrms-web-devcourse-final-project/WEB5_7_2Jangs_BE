@@ -62,7 +62,7 @@ public class MongoIdsCollector {
 
         removeBlockIds.removeAll(blockIds);
 
-        return new MongoIdsDto(null, commitBlockSequenceIds, new ArrayList<>(removeBlockIds));
+        return new MongoIdsDto(null, List.of(commit.getCommitMongoId()), new ArrayList<>(removeBlockIds));
     }
 }
 
