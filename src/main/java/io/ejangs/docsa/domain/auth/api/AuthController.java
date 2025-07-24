@@ -11,6 +11,8 @@ import io.ejangs.docsa.domain.auth.swagger.CheckSessionDocs;
 import io.ejangs.docsa.domain.auth.swagger.SendResetPwdCodeDocs;
 import io.ejangs.docsa.domain.auth.swagger.SendSignupCodeDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
@@ -63,7 +65,15 @@ public class AuthController {
     public ResponseEntity<SessionCheckResponse> checkSession(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        SessionCheckResponse response = authService.checkSession(userDetails.getId());
+        if (userDetails == null) {
+            throw new CustomException(AuthErrorCode.LOGIN_REQUIRED);
+        }
+
+        SessionCheckResponse response = new SessionCheckResponse(
+                userDetails.getId(),
+                userDetails.getName()
+        );
+
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(response);
