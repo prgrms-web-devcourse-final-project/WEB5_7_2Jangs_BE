@@ -189,25 +189,28 @@ public class CommitService {
             docService.checkDocByIdAndUserId(docId, userId);
 
             Commit commit = getById(commitId);
+            Doc doc = docService.getById(docId);
             checkLeafCommit(commit);
             checkFromOrRootCommit(commit);
 
-            List<Commit> prevCommits = edgeService.cutEdge(commitId);
+            List<Commit> prevCommits = edgeService.cutEdge(doc, commitId);
 
             for (Commit prevCommit : prevCommits) {
                 Branch branch = prevCommit.getBranch();
                 branch.updateLeafCommit(prevCommit);
+                branch.removeCommit(commit);
                 RenewUpdatedAtHelper.touch(branch);
             }
 
             MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
 
-            commitRepository.delete(commit);
+            commitRepository.deleteById(commit.getId());
             eventPublisher.publishEvent(commitDeleteMongoIds);
         } catch (CustomException e) {
             log.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             // DataIntegrityViolationException 예외처리 도입시 변경될 수 있음
             throw new CustomException(CommitErrorCode.FAIL_DELETE_COMMIT);
         }

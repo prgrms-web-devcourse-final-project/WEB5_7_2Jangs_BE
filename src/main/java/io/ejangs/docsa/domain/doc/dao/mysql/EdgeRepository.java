@@ -6,11 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface EdgeRepository extends JpaRepository<Edge, Integer> {
+public interface EdgeRepository extends JpaRepository<Edge, Long> {
 
     List<Edge> findAllByPrevCommitIdInOrNextCommitIdIn(List<Long> commitIds, List<Long> commitIds1);
 
     List<Edge> findByNextCommitId(Long id);
+
+    List<Edge> findByPrevCommitId(Long id);
 
     @Query("""
         SELECT e
