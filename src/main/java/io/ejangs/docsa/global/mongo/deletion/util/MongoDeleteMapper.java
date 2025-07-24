@@ -1,15 +1,14 @@
-package io.ejangs.docsa.global.mongoDeleteSystem.util;
+package io.ejangs.docsa.global.mongo.deletion.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class MongoDeleteMapper {
+public class MongoDeleteMapper {
 
     public static MongoIdsDto toMongoIdsDto(Branch branch,
             List<String> commitBlockSequenceIds,

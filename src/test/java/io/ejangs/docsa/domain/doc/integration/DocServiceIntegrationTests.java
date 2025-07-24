@@ -26,6 +26,7 @@ import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -40,6 +41,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +52,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class DocServiceIntegrationTests {
 
     @Autowired
@@ -78,6 +85,7 @@ public class DocServiceIntegrationTests {
 
     @AfterEach
     void cleanup() {
+        docRepository.deleteAll();
         saveContentRepository.deleteAll();
     }
 
@@ -199,8 +207,11 @@ public class DocServiceIntegrationTests {
                 saveContentRepository, commitBlockSequenceRepository, blockRepository);
         docRepository.saveAll(docs);
 
+        Pageable pageable = PageableFactory.create("updatedAt", "asc", 0, 10);
+
         // when
-        List<DocListSimpleResponse> results = docService.getSimpleList(user.getId());
+        Page<DocListSimpleResponse> page = docService.getSimpleList(user.getId(), pageable);
+        List<DocListSimpleResponse> results = page.getContent();
 
         // then
         assertEquals(2, results.size());
@@ -227,21 +238,47 @@ public class DocServiceIntegrationTests {
                 saveContentRepository, commitBlockSequenceRepository, blockRepository);
         docRepository.saveAll(docs);
 
+        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
+
         // when
-        List<DocListResponse> results = docService.getList(user.getId());
+        Page<DocListResponse> results = docService.getList(user.getId(), pageable);
 
         // then
-        assertEquals(2, results.size());
+        assertEquals(2, results.getContent().size());
 
-        DocListResponse first = results.get(0);  // updatedAt 기준 최신
-        DocListResponse second = results.get(1);
+        DocListResponse first = results.getContent().getFirst();  // updatedAt 기준 최신
+        DocListResponse second = results.getContent().get(1);
 
-        assertEquals("문서 1", first.title());
-        assertEquals(RecentType.COMMIT, first.recent().recentType());
-        assertTrue(first.preview().startsWith("문단 5: 몰라어쩌구저꺼궁롱ㄹ라알이;ㅇㄹ")); // preview 포함
+        assertEquals("문서 1", second.title());
+        assertEquals(RecentType.COMMIT, second.recent().recentType());
+        assertTrue(second.preview().startsWith("문단 5: 몰라어쩌구저꺼궁롱ㄹ라알이;ㅇㄹ")); // preview 포함
 
-        assertEquals("문서 2", second.title());
-        assertEquals(RecentType.SAVE, second.recent().recentType());
-        assertTrue(second.preview().startsWith("문단 3: 테스트 코드가 너무 싫어서 미치겠다는 문단")); // preview 포함
+        assertEquals("문서 2", first.title());
+        assertEquals(RecentType.SAVE, first.recent().recentType());
+        assertTrue(first.preview().startsWith("문단 3: 테스트 코드가 너무 싫어서 미치겠다는 문단")); // preview 포함
+    }
+
+    @Test
+    @DisplayName("문서 리스트 조회 - 페이지네이션 테스트 100개의 문서를 만들고 페이지 0에서는 10개만 조회한다.")
+    void getDocListInPage() throws Exception {
+        //given
+        User user = userRepository.save(DocTestUtils.createUser());
+        List<Doc> docs = DocTestUtils.createDocList(100, user);
+        docRepository.saveAll(docs);
+
+        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
+
+        //when
+        Page<DocListResponse> result = docService.getList(user.getId(), pageable);
+
+        //then
+        assertEquals(10, result.getContent().size());
+        DocListResponse first = result.getContent().getFirst();
+        assertEquals("테스트 문서 100", first.title());
+        assertEquals(100L, first.id());
+
+        DocListResponse last = result.getContent().getLast();
+        assertEquals("테스트 문서 91", last.title());
+        assertEquals(91L, last.id());
     }
 }
