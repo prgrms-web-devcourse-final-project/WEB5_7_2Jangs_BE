@@ -9,20 +9,57 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
+import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
+import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public class DocTestUtils {
 
-    public static List<Doc> createDocumentList(int count, User user) {
+    public static List<Doc> createDocList(int count, User user) {
+        List<Doc> docs = new ArrayList<>();
+
+        for (int i = 1; i <= count; i++) {
+            Doc doc = null;
+            if (i % 2 == 0) {
+                doc = Doc.builder()
+                        .title("문서 keyword포함" + i)
+                        .user(user)
+                        .build();
+            } else {
+                doc = Doc.builder()
+                        .title("테스트 문서 " + i)
+                        .user(user)
+                        .build();
+            }
+            Branch branch = Branch.builder()
+                    .name("테스트 브랜치" + i)
+                    .doc(doc)
+                    .build();
+
+            doc.addBranch(branch);
+            docs.add(doc);
+        }
+        return docs;
+    }
+
+    public static List<Doc> createDocumentListForUnitTest(int count, User user) {
         List<Doc> docs = new ArrayList<>();
         LocalDateTime baseTime = LocalDateTime.of(2025, 7, 16, 1, 0);
 
@@ -182,5 +219,142 @@ public class DocTestUtils {
                 .build();
 
     }
+
+    public static Doc createForkedBranchScenario(User user,
+            SaveContentRepository saveContentRepository,
+            CommitBlockSequenceRepository commitBlockSequenceRepository,
+            BlockRepository blockRepository) throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, Object>> parsedJson1 = mapper.readValue(editorJson1, new TypeReference<>() {});
+        List<Map<String, Object>> parsedJson2 = mapper.readValue(editorJson2, new TypeReference<>() {});
+
+        Block block1 = blockRepository.save(Block.builder().content(parsedJson1.get(0)).build());
+        Block block2 = blockRepository.save(Block.builder().content(parsedJson2.get(1)).build());
+        Block block3 = blockRepository.save(Block.builder().content(parsedJson2.get(2)).build());
+
+        // 문서 생성
+        Doc doc = Doc.builder().title("브랜치 2개 있는 문서임당").user(user).build();
+
+        // 메인 브랜치
+        Branch main = Branch.builder().name("main").doc(doc).build();
+
+        CommitBlockSequence mainSeq1 = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block1.getId())).build());
+        CommitBlockSequence mainSeq2 = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block2.getId())).build());
+        CommitBlockSequence mainSeq3 = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block3.getId())).build());
+
+        Commit commit1 = Commit.builder()
+                .title("main-commit-1")
+                .description("desc")
+                .commitMongoId(mainSeq1.getId())
+                .branch(main)
+                .build();
+        Commit commit2 = Commit.builder()
+                .title("main-commit-2")
+                .description("desc")
+                .commitMongoId(mainSeq2.getId())
+                .branch(main)
+                .build();
+        Commit commit3 = Commit.builder()
+                .title("main-commit-3")
+                .description("desc")
+                .commitMongoId(mainSeq3.getId())
+                .branch(main)
+                .build();
+
+        main.addCommit(commit1);
+        main.addCommit(commit2);
+        main.addCommit(commit3);
+        main.updateLeafCommit(commit3);
+
+        // 포크 브랜치
+        Branch fork = Branch.builder().name("fork-from-main-commit2").doc(doc).fromCommit(commit2).build();
+
+        CommitBlockSequence forkSeq = commitBlockSequenceRepository.save(
+                CommitBlockSequence.builder().blockOrders(List.of(block1.getId(), block3.getId())).build());
+
+        Commit forkCommit = Commit.builder()
+                .title("fork-commit-1")
+                .description("desc")
+                .commitMongoId(forkSeq.getId())
+                .branch(fork)
+                .build();
+
+        fork.addCommit(forkCommit);
+        fork.updateLeafCommit(forkCommit);
+
+        Map<String, Object> saveJson = parsedJson2.get(3);
+        SaveContent saveContent = saveContentRepository.save(SaveContent.builder()
+                .content(List.of(saveJson)).build());
+
+        Save save = Save.builder().branch(fork).build();
+        save.updateSaveMongoId(saveContent.getId());
+        fork.setSave(save);
+
+        doc.addBranch(main);
+        doc.addBranch(fork);
+
+        Edge edge1 = Edge.builder()
+                .doc(doc)
+                .prevCommit(commit1)
+                .nextCommit(commit2)
+                .build();
+
+        Edge edge2 = Edge.builder()
+                .doc(doc)
+                .prevCommit(commit2)
+                .nextCommit(commit3)
+                .build();
+
+        Edge edge3 = Edge.builder()
+                .doc(doc)
+                .prevCommit(commit2)
+                .nextCommit(forkCommit)
+                .build();
+
+        return doc;
+    }
+
+
+    public static Page<DocListResponse> convertToDocListResponsePage(List<Doc> docs,
+            Pageable pageable) {
+        List<DocListResponse> responses = docs.stream()
+                .map(doc -> {
+                    Long docId = doc.getId();
+                    String title = doc.getTitle();
+                    LocalDateTime createdAt = doc.getCreatedAt();
+                    LocalDateTime updatedAt = doc.getUpdatedAt();
+                    String preview = "미리보기 없음";
+
+                    // 최근 활동 (SAVE > COMMIT 우선)
+                    RecentActivityDto recent = doc.getBranches().stream()
+                            .flatMap(branch -> {
+                                Stream<RecentActivityDto> activityStream = Stream.of(
+                                        branch.getSave() != null
+                                                ? new RecentActivityDto(RecentType.SAVE,
+                                                branch.getSave().getId())
+                                                : null,
+                                        branch.getLeafCommit() != null
+                                                ? new RecentActivityDto(RecentType.COMMIT,
+                                                branch.getLeafCommit().getId())
+                                                : null
+                                );
+                                return activityStream.filter(Objects::nonNull);
+                            })
+                            .sorted(Comparator.comparing(
+                                    dto -> dto.recentType() == RecentType.SAVE ? 0 : 1))
+                            .findFirst()
+                            .orElse(null);
+
+                    return new DocListResponse(docId, title, createdAt, updatedAt, preview, recent);
+                })
+                .toList();
+
+        return new PageImpl<>(responses, pageable, responses.size());
+    }
+
 
 }

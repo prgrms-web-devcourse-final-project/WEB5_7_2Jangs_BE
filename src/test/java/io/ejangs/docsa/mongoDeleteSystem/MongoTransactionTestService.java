@@ -1,20 +1,21 @@
-package io.ejangs.docsa.global.mongo.deletion.app;
+package io.ejangs.docsa.mongoDeleteSystem;
 
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class MongoTransactionTestService {
 
-    private final SaveContentRepository saveContentRepository;
+    @Autowired
+    private SaveContentRepository saveContentRepository;
 
-    private final CommitRepository commitRepository;
+    @Autowired
+    private CommitRepository commitRepository;
 
     @Transactional(transactionManager = "mongoTransactionManager")
     public void saveContent() {

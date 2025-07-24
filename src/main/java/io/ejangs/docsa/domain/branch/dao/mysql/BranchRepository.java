@@ -1,12 +1,23 @@
 package io.ejangs.docsa.domain.branch.dao.mysql;
 
+import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface BranchRepository extends JpaRepository<Branch, Long> {
+
+    @Query("""
+                SELECT new io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto(
+                    b.id, b.name, b.createdAt, b.fromCommit.id, b.rootCommit.id, b.leafCommit.id, b.save.id
+                )
+                FROM Branch b
+                WHERE b.doc.id = :docId
+            """)
+    List<GraphBranchDto> findBranchesByDocId(@Param("docId") Long docId);
 
     boolean existsByIdAndDocIdAndDocUserId(Long branchId, Long documentId, Long userId);
 

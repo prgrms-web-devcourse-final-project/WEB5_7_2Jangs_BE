@@ -7,15 +7,16 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,19 +43,47 @@ public class DocController {
     }
 
     @GetMapping("/sidebar")
-    public ResponseEntity<List<DocListSimpleResponse>> readListSidebar(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<Page<DocListSimpleResponse>> readListSidebar(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "updatedAt") String sort,
+            @RequestParam(defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageableFactory.create(sort, order, page, size);
+
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getSimpleList(userDetails.getId()));
+                .body(docService.getSimpleList(userDetails.getId(), pageable));
     }
 
     @GetMapping
-    public ResponseEntity<List<DocListResponse>> readList(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+    public ResponseEntity<Page<DocListResponse>> readList(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "updatedAt") String sort,
+            @RequestParam(defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageableFactory.create(sort, order, page, size);
+
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getList(userDetails.getId()));
+                .body(docService.getList(userDetails.getId(), pageable));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<DocListResponse>> search(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "updatedAt") String sort,
+            @RequestParam(defaultValue = "desc") String order,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageableFactory.create(sort, order, page, size);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(docService.searchList(userDetails.getId(), keyword, pageable));
     }
 
     @PatchMapping("/{docId}")
@@ -71,7 +100,8 @@ public class DocController {
     public ResponseEntity<CommitGraphResponse> getGraph(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
-        return ResponseEntity.status(HttpStatus.OK).body(docService.getGraph(userDetails.getId(), docId));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(docService.getGraph(userDetails.getId(), docId));
     }
 
     @DeleteMapping("/{docId}")

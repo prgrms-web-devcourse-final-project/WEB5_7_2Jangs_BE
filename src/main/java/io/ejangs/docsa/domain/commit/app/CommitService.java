@@ -59,9 +59,12 @@ public class CommitService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
-    public CreateCommitResponse createCommit(Long docId, CreateCommitRequest commitRequest) {
+    public CreateCommitResponse createCommit(Long docId,
+            CreateCommitRequest commitRequest,
+            Long userId) {
 
         try {
+            branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
             // * 1. documentId로 문서가 존재하는지 검사(JPA)
             Doc doc = docService.getById(docId);
             // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
@@ -124,44 +127,43 @@ public class CommitService {
     }
 
     @Transactional(readOnly = true)
-    public CommitResponse getCommit(Long docId, Long commitId) {
+    public CommitResponse getCommit(Long docId, Long commitId, Long userId) {
 
-        docService.notFoundDocCheck(docId);
+        docService.checkDocByIdAndUserId(docId, userId);
         List<Map<String, Object>> assemble = getWholeContent(commitId);
 
-        return new CommitResponse(assemble);
+        return CommitMapper.toCommitResponse(assemble);
     }
 
     @Transactional(readOnly = true)
-    public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId,
-            Long targetId) {
+    public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId, Long targetId,
+            Long userId) {
 
-        docService.notFoundDocCheck(docId);
+        docService.checkDocByIdAndUserId(docId, userId);
         List<Map<String, Object>> baseContent = getWholeContent(baseId);
         List<Map<String, Object>> targetContent = getWholeContent(targetId);
 
-        return new CompareMergeCommitResponse(baseContent, targetContent);
+        return CommitMapper.toCompareMergeCommitResponse(baseContent, targetContent);
     }
 
     @Transactional
-    public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest) {
-        /**
-         * Block을 저장하고
-         * CommitSequence를 저장하고
-         *
-         * Commit을 생성하고
-         * Commit에 CommitSequence의 _id를 저장하고
-         * 간선을 2개 저장하고
-         * baseBranch의 leaf를 업데이트
-         */
+    public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest,
+            Long userId) {
+
         CommitMongoIdsDto commitMongoIds = null;
         try {
             // 문서가 존재하는지 검사
-            Doc doc = docService.getById(docId);
             // 브랜치가 존재하는지 검사
-            checkBranch(mergeRequest.baseBranchId(), mergeRequest.targetBranchId());
-            Branch baseBranch = branchService.getById(mergeRequest.baseBranchId());
-            Branch targetBranch = branchService.getById(mergeRequest.targetBranchId());
+            Long baseBranchId = mergeRequest.baseBranchId();
+            Long targetBranchId = mergeRequest.targetBranchId();
+
+            checkBranch(baseBranchId, targetBranchId);
+            branchService.checkBranchInDocOwnedByUser(docId, baseBranchId, userId);
+            branchService.checkBranchInDocOwnedByUser(docId, targetBranchId, userId);
+
+            Doc doc = docService.getById(docId);
+            Branch baseBranch = branchService.getById(baseBranchId);
+            Branch targetBranch = branchService.getById(targetBranchId);
 
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());

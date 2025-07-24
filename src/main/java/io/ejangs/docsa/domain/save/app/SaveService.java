@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.save.app;
 
 import com.mongodb.DuplicateKeyException;
+import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -60,6 +61,26 @@ public class SaveService {
         }
 
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
+    }
+
+    @Transactional
+    public void deleteSave(SaveIdentifierDto dto) {
+        Save findSave = getValidSave(dto);
+        Branch branch = findSave.getBranch();
+
+        // 해당 브랜치에 커밋이 하나도 없고 저장만 존재하는 최초 상태에서는 저장을 삭제할 수 없다.
+        if (branch.getCommits().isEmpty()) {
+            throw new CustomException(SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT);
+        }
+
+        RenewUpdatedAtHelper.touch(findSave);
+        saveRepository.delete(findSave);
+        try {
+            saveContentRepository.deleteById(findSave.getSaveMongoId());
+        } catch (Exception e) {
+            log.error("Mongo 삭제 중 실패 실패: {}", e.getMessage(), e);
+            throw new CustomException(SaveErrorCode.FAILED_TO_DELETE_IN_MONGO);
+        }
     }
 
     public Save getSaveById(Long id) {

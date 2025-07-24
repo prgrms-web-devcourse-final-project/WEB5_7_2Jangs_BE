@@ -39,7 +39,7 @@ spring:
       - signupCodeCache
       - passCodeCache
     caffeine:
-      spec: maximumSize=10000, expireAfterWrite=3m
+      spec: maximumSize=10000, expireAfterWrite=4m
 
 auth:
   signup-code-cache-name: signupCodeCache
