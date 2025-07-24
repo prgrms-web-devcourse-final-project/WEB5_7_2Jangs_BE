@@ -13,10 +13,11 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
     boolean existsByFromCommitIdIn(List<Long> commitIds);
 
     @Query("""
-        SELECT COUNT(b) > 0
-        FROM Branch b
-        WHERE b.rootCommit.id = :commitId OR b.fromCommit.id = :commitId
-    """)
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM Branch b
+                    WHERE b.rootCommit.id = :commitId OR b.fromCommit.id = :commitId
+                ) THEN true ELSE false END
+            """)
     boolean existsByRootCommitIdOrFromCommitId(@Param("commitId") Long commitId);
 }
 
