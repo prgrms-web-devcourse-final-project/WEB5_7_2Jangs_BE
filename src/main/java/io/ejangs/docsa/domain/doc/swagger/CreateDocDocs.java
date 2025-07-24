@@ -126,6 +126,6 @@ import org.springframework.http.MediaType;
                 ),
         }
 )
-public @interface CreateDocumentDocs {
+public @interface CreateDocDocs {
 
 }
