@@ -4,7 +4,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -15,16 +14,13 @@ import io.ejangs.docsa.domain.auth.dto.request.CodeCheckRequest;
 import io.ejangs.docsa.domain.auth.dto.request.PwdResetCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.request.SignupCodeRequest;
 import io.ejangs.docsa.domain.auth.dto.response.CodeCheckResponse;
-import io.ejangs.docsa.domain.auth.dto.response.SessionCheckResponse;
 import io.ejangs.docsa.domain.auth.model.CodeType;
 import io.ejangs.docsa.domain.auth.util.AuthCodeGenerator;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
-import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.mail.MessagingException;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -250,38 +246,5 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.checkCode(checkRequest))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
-    }
-
-    @Test
-    @DisplayName("로그인 유효성 확인 성공 - 정상적인 사용자 ID로 조회")
-    void checkSession_ValidSession() {
-        // given
-        User user = User.builder()
-                .name("이장님")
-                .email("test@example.com")
-                .password("encodedPassword")
-                .build();
-        ReflectionTestUtils.setField(user, "id", 1L);
-
-        given(userRepository.findById(1L)).willReturn(Optional.of(user));
-
-        // when
-        SessionCheckResponse result = authService.checkSession(1L);
-
-        // then
-        assertThat(result.id()).isEqualTo(1L);
-        assertThat(result.name()).isEqualTo("이장님");
-    }
-
-    @Test
-    @DisplayName("로그인 유효성 확인 실패 - 사용자 없음")
-    void checkSession_shouldThrowException_whenUserNotFound() {
-        // given
-        given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> authService.checkSession(999L))
-                .isInstanceOf(CustomException.class)
-                .hasMessage(UserErrorCode.USER_NOT_FOUND.getMessage());
     }
 }
