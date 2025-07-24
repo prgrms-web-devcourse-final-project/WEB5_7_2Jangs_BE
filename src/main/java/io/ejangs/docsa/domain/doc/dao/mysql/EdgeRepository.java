@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface EdgeRepository extends JpaRepository<Edge, Integer> {
+public interface EdgeRepository extends JpaRepository<Edge, Long> {
 
     @Query("""
                 SELECT new io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto(
@@ -22,4 +22,12 @@ public interface EdgeRepository extends JpaRepository<Edge, Integer> {
 
     List<Edge> findByNextCommitId(Long id);
 
+    List<Edge> findByPrevCommitId(Long id);
+
+    @Query("""
+        SELECT e
+        FROM Edge e
+        WHERE e.prevCommit.id = :commitId OR e.nextCommit.id = :commitId
+    """)
+    List<Edge> findAllByCommitIdInPrevOrNext(@Param("commitId") Long commitId);
 }
