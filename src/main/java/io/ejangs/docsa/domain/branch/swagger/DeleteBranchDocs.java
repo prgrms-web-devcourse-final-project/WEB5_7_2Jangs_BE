@@ -49,7 +49,7 @@ import java.lang.annotation.Target;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "삭제 불가능한 브랜치 (메인 브랜치이거나 파생 브랜치가 있음)",
+                        description = "브랜치 삭제 실패 - 삭제 불가능한 브랜치",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -96,7 +96,7 @@ import java.lang.annotation.Target;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "문서 또는 브랜치가 존재하지 않음",
+                        description = "브랜치 삭제 실패 - 문서 또는 브랜치가 존재하지 않음",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,

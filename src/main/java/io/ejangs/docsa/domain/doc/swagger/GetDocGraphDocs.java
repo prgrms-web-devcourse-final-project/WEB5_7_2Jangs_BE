@@ -41,12 +41,12 @@ import org.springframework.http.MediaType;
                                 examples = @ExampleObject(
                                         value = """
                                                 {
-                                                		"title": "문서 제목",
+                                                	"title": "문서 제목",
                                                     "commits": [
                                                 		    {
                                                 				    "id": 11,
                                                 				    "branchId": 101,
-                                                				    "title": "이건 첫번째 커밋"
+                                                				    "title": "이건 첫번째 커밋",
                                                 				    "description": "first",
                                                 				    "createdAt": "2025-07-07T12:00:00"
                                                 		    },
@@ -84,7 +84,7 @@ import org.springframework.http.MediaType;
                                                 		    {
                                                 				    "from": 12,
                                                 				    "to": 14
-                                                		    },
+                                                		    }
                                                     ],
                                                     "branches": [
                                                 		    {
@@ -103,7 +103,7 @@ import org.springframework.http.MediaType;
                                                 				    "fromCommitId": 12,
                                                 				    "rootCommitId": 14,
                                                 				    "leafCommitId": 14,
-                                                				    "saveId": 1001 // 최대 1개만 가질 수 있습니다.
+                                                				    "saveId": 1001 
                                                 		    }
                                                     ]
                                                 

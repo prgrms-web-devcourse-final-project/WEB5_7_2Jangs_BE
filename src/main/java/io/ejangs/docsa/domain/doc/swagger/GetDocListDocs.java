@@ -130,70 +130,49 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "정렬 실패 - 기준이 잘못됨",
+                        description = "정렬 실패 - 정렬 옵션이 잘못됨",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = @ExampleObject(
-                                        value = """
-                                                {
-                                                     "status": 400,
-                                                     "message": "지원하지 않는 정렬 기준입니다.",
-                                                     "error": "UNSUPPORTED_SORT_TYPE"
-                                                 }
-                                                """
-                                )
-                        )
-                ),
-                @ApiResponse(
-                        responseCode = "400",
-                        description = "정렬 실패 - 정렬 방향이 잘못됨",
-                        content = @Content(
-                                schema = @Schema(implementation = ErrorResponse.class),
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = @ExampleObject(
-                                        value = """
-                                                {
-                                                      "status": 400,
-                                                      "message": "지원하지 않는 정렬 방향입니다.",
-                                                      "error": "UNSUPPORTED_DIRECTION_TYPE"
-                                                }
-                                                """
-                                )
-                        )
-                ),
-                @ApiResponse(
-                        responseCode = "400",
-                        description = "정렬 실패 - 페이지 크기가 잘못됨",
-                        content = @Content(
-                                schema = @Schema(implementation = ErrorResponse.class),
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = @ExampleObject(
-                                        value = """
-                                                {
-                                                    "status": 400,
-                                                    "message": "페이지 크기는 0 이상이어야 합니다.",
-                                                    "error": "INVALID_PAGE_SIZE"
-                                                }
-                                                """
-                                )
-                        )
-                ),
-                @ApiResponse(
-                        responseCode = "400",
-                        description = "정렬 실패 - 페이지 번호가 잘못됨",
-                        content = @Content(
-                                schema = @Schema(implementation = ErrorResponse.class),
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = @ExampleObject(
-                                        value = """
-                                                {
-                                                    "status": 400,
-                                                    "message": "페이지 번호는 0 이상이어야 합니다.",
-                                                    "error": "INVALID_PAGE"
-                                                }
-                                                """
-                                )
+                                examples = {
+                                        @ExampleObject(
+                                                name = "정렬 기준이 잘못됨",
+                                                value = """
+                                        {
+                                             "status": 400,
+                                             "message": "지원하지 않는 정렬 기준입니다.",
+                                             "error": "UNSUPPORTED_SORT_TYPE"
+                                         }
+                                        """),
+                                        @ExampleObject(
+                                                name = "정렬 방향이 잘못됨",
+                                                value = """
+                                        {
+                                              "status": 400,
+                                              "message": "지원하지 않는 정렬 방향입니다.",
+                                              "error": "UNSUPPORTED_DIRECTION_TYPE"
+                                        }
+                                        """),
+                                        @ExampleObject(
+                                                name = "페이지 크기가 잘못됨",
+                                                value = """
+                                        {
+                                            "status": 400,
+                                            "message": "페이지 크기는 0 이상이어야 합니다.",
+                                            "error": "INVALID_PAGE_SIZE"
+                                        }
+                                        """),
+                                        @ExampleObject(
+                                                name = "페이지 번호가 잘못됨",
+                                                value = """
+                                        {
+                                            "status": 400,
+                                            "message": "페이지 번호는 0 이상이어야 합니다.",
+                                            "error": "INVALID_PAGE"
+                                        }
+                                        """
+                                        )
+                                }
                         )
                 ),
                 @ApiResponse(
