@@ -192,9 +192,12 @@ public class CommitService {
 
             Commit commit = getById(commitId);
             Doc doc = docService.getById(docId);
+            // LeafCommit일 경우에만 삭제 가능
             checkLeafCommit(commit);
+            // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능
             checkFromOrRootCommit(commit);
 
+            // 간선을 삭제하면서 새로 LeafCommit이 될 Commit들을 수집
             List<Commit> prevCommits = edgeService.cutEdge(doc, commitId);
 
             for (Commit prevCommit : prevCommits) {
