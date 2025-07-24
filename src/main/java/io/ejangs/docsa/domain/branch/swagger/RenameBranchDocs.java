@@ -20,8 +20,8 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "브랜치 이름 변경 API",
-        description = "브랜치 이름을 수정합니다.",
+        summary = "브랜치 이름 변경",
+        description = "브랜치의 이름을 수정합니다. 메인브랜치의 이름은 수정할 수 없습니다.",
         parameters = {
                 @Parameter(
                         name = "documentId",
