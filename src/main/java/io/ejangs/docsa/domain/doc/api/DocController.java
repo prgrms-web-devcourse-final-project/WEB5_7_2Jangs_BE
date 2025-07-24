@@ -7,12 +7,12 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.doc.swagger.CreateDocDocs;
 import io.ejangs.docsa.domain.doc.swagger.DeleteDocDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocGraphDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocListDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocSidebarListDocs;
-import io.ejangs.docsa.domain.doc.swagger.CreateDocumentDocs;
-import io.ejangs.docsa.domain.doc.swagger.RenameDocumentDocs;
+import io.ejangs.docsa.domain.doc.swagger.RenameDocDocs;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,7 +42,7 @@ public class DocController {
     private final DocService docService;
 
     @PostMapping
-    @CreateDocumentDocs
+    @CreateDocDocs
     public ResponseEntity<DocCreateResponse> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DocTitleRequest request) {
@@ -83,10 +83,11 @@ public class DocController {
                 .body(docService.getList(userDetails.getId(), pageable));
     }
 
+    @GetDocListDocs
     @GetMapping("/search")
     public ResponseEntity<Page<DocListResponse>> search(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam String keyword,
+            @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "updatedAt") String sort,
             @RequestParam(defaultValue = "desc") String order,
             @RequestParam(defaultValue = "0") int page,
@@ -97,9 +98,9 @@ public class DocController {
                 .body(docService.searchList(userDetails.getId(), keyword, pageable));
     }
 
-    @RenameDocumentDocs
+    @RenameDocDocs
     @PatchMapping("/{docId}")
-    public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
+    public ResponseEntity<DocTitleUpdateResponse> rename(
             @PathVariable Long docId,
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DocTitleRequest request) {
@@ -108,8 +109,8 @@ public class DocController {
                 .body(docService.updateTitle(userDetails.getId(), docId, request));
     }
 
-    @GetMapping("/{docId}/graph")
     @GetDocGraphDocs
+    @GetMapping("/{docId}/graph")
     public ResponseEntity<CommitGraphResponse> getGraph(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
@@ -117,8 +118,8 @@ public class DocController {
                 .body(docService.getGraph(userDetails.getId(), docId));
     }
 
-    @DeleteMapping("/{docId}")
     @DeleteDocDocs
+    @DeleteMapping("/{docId}")
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
