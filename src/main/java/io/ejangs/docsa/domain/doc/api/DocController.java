@@ -11,6 +11,8 @@ import io.ejangs.docsa.domain.doc.swagger.DeleteDocDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocGraphDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocListDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocSidebarListDocs;
+import io.ejangs.docsa.domain.doc.swagger.CreateDocumentDocs;
+import io.ejangs.docsa.domain.doc.swagger.RenameDocumentDocs;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,14 +34,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @Tag(name = "Document API")
 @RequestMapping("/api/document")
-@RequiredArgsConstructor
 public class DocController {
 
     private final DocService docService;
 
     @PostMapping
+    @CreateDocumentDocs
     public ResponseEntity<DocCreateResponse> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody DocTitleRequest request) {
@@ -94,6 +97,7 @@ public class DocController {
                 .body(docService.searchList(userDetails.getId(), keyword, pageable));
     }
 
+    @RenameDocumentDocs
     @PatchMapping("/{docId}")
     public ResponseEntity<DocTitleUpdateResponse> updateDocumentTitle(
             @PathVariable Long docId,
