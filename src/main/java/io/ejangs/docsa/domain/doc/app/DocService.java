@@ -25,6 +25,7 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
@@ -108,10 +109,10 @@ public class DocService {
             return saveContentRepository.save(SaveContent.builder().build());
         } catch (DataAccessException e) {
             log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
-            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
         } catch (Exception e) {
             log.error("DefaultSaveContent Mongo 알 수 없는 오류 - {}", e.getMessage(), e);
-            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
+            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
         }
     }
 

@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.branch.app;
 
-import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
@@ -21,21 +20,21 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-
-import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-
 
 
 @Slf4j
@@ -49,14 +48,10 @@ public class BranchService {
     private final SaveContentRepository saveContentRepository;
     private final DocRepository docRepository;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
-    private final BlockRepository blockRepository;
     private final EdgeRepository edgeRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     private final CommitContentAssembler commitContentAssembler;
-
-    @Value("${default.branch}")
-    private String defaultBranchName;
 
     /**
      * '이어서 작업하기' 로직으로, 브랜치를 생성하고 저장을 추가하거나 기존 브랜치에 저장을 추가합니다.
@@ -151,7 +146,7 @@ public class BranchService {
         } catch (Exception e) {
             // MongoDB 롤백까지 실패할 경우 에러 로그
             log.error("MongoDB 저장 실패로 인해 save(id={}) 에 MongoId 갱신 실패", save.getId(), e);
-            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
+            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
         }
     }
 
@@ -210,7 +205,6 @@ public class BranchService {
 
         // 7. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
         branchRepository.delete(branch);
-
     }
 
 
@@ -271,14 +265,16 @@ public class BranchService {
     }
 
     public void checkDocByIdAndUserId(Long docId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(docId, userId))
+        if (!docRepository.existsByIdAndUserId(docId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+        }
     }
 
     private Commit checkById(Long commitId) {
         return commitRepository.findById(commitId)
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
+
     private void checkDefaultBranch(Branch branch) {
         if (branch.getFromCommit() == null) {
             throw new CustomException(BranchErrorCode.MAIN_BRANCH_FIX_UNAVAILABLE);
@@ -287,7 +283,6 @@ public class BranchService {
 
     public Branch saveBranch(Branch branch) {
         return branchRepository.save(branch);
-
     }
 }
 
