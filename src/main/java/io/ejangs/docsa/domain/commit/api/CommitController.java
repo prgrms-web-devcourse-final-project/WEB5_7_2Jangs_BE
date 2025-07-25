@@ -8,6 +8,7 @@ import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.swagger.CompareMergeCommitDocs;
 import io.ejangs.docsa.domain.commit.swagger.CreateCommitDocs;
+import io.ejangs.docsa.domain.commit.swagger.DeleteCommitDocs;
 import io.ejangs.docsa.domain.commit.swagger.GetCommitDocs;
 import io.ejangs.docsa.domain.commit.swagger.MergeCommitDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
@@ -79,6 +80,7 @@ public class CommitController {
     }
 
     @DeleteMapping("/api/document/{docId}/commit/{commitId}")
+    @DeleteCommitDocs
     public ResponseEntity<Void> deleteCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
