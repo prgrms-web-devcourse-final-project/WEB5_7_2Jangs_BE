@@ -31,7 +31,7 @@ import org.springframework.http.MediaType;
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
+                        name = "docId",
                         description = "기록 삭제하려는 문서의 id",
                         example = "1",
                         required = true,
