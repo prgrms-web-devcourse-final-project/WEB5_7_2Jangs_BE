@@ -27,6 +27,8 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +55,8 @@ public class CommitService {
     private final EdgeService edgeService;
 
     private final CommitContentAssembler assembler;
+    private final MongoIdsCollector mongoIdsCollector;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     public CreateCommitResponse createCommit(Long docId,
@@ -177,6 +182,54 @@ public class CommitService {
             }
             log.error("Create Commit 알 수 없는 오류 - {}", e.getMessage(), e);
             throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCommit(Long docId, Long commitId, Long userId) {
+        try {
+            docService.checkDocByIdAndUserId(docId, userId);
+
+            Commit commit = getById(commitId);
+            Doc doc = docService.getById(docId);
+            // LeafCommit일 경우에만 삭제 가능
+            checkLeafCommit(commit);
+            // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능
+            checkFromOrRootCommit(commit);
+
+            // 간선을 삭제하면서 새로 LeafCommit이 될 Commit들을 수집
+            List<Commit> prevCommits = edgeService.cutEdge(doc, commitId);
+
+            for (Commit prevCommit : prevCommits) {
+                Branch branch = prevCommit.getBranch();
+                branch.updateLeafCommit(prevCommit);
+                branch.removeCommit(commit);
+                RenewUpdatedAtHelper.touch(branch);
+            }
+
+            MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
+
+            commitRepository.deleteById(commit.getId());
+            eventPublisher.publishEvent(commitDeleteMongoIds);
+        } catch (CustomException e) {
+            log.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            // DataIntegrityViolationException 예외처리 도입시 변경될 수 있음
+            throw new CustomException(CommitErrorCode.FAIL_DELETE_COMMIT);
+        }
+    }
+
+    private void checkFromOrRootCommit(Commit commit) {
+        if (branchService.checkFromOrRootCommitInBranch(commit)) {
+            throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
+        }
+    }
+
+    private void checkLeafCommit(Commit commit) {
+        if (!commit.getId().equals(commit.getBranch().getLeafCommit().getId())) {
+            throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
         }
     }
 

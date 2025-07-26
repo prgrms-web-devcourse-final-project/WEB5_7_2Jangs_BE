@@ -20,8 +20,13 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "이어서 작업하기 API",
-        description = "최신 커밋이라면 새로운 저장 생성, 아니라면 새로운 브랜치 + 저장 생성",
+        summary = "이어서 작업하기",
+        description = """
+                새로운 저장을 만듭니다. 직전에 선택한 직전 커밋의 종류에 따라 다음을 실행합니다:
+                
+                - 최신커밋에서 이어서 작업할 경우 그 브랜치에 새로운 저장 생성
+                - 아니라면 새로운 브랜치 생성 후 새로운 저장 생성
+                """,
         parameters = {
                 @Parameter(
                         name = "documentId",
@@ -48,7 +53,7 @@ import org.springframework.http.MediaType;
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "이어서 작업하기 성공 (새로운 저장 or 저장/브랜치 생성",
+                        description = "이어서 작업하기 성공 (새로운 저장 or 새로운 브랜치&저장 생성)",
                         content = @Content(
                                 schema = @Schema(implementation = BranchCreateResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,

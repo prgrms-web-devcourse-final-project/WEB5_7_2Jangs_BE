@@ -1,7 +1,5 @@
-package io.ejangs.docsa.domain.branch.swagger;
+package io.ejangs.docsa.domain.save.swagger;
 
-import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
-import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -9,7 +7,6 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -20,71 +17,61 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "브랜치 이름 변경",
-        description = "브랜치의 이름을 수정합니다. 메인브랜치의 이름은 수정할 수 없습니다.",
+        summary = "유저가 요청한 저장 id에 해당하는 저장 삭제",
+        description = """
+                유저가 소유한 문서의 저장을 삭제합니다.
+                🔐 이 API는 세션 로그인 상태에서 호출되어야 하며,
+                클라이언트는 쿠키(`JSESSIONID`)를 통해 인증 정보를 전송해야 합니다.
+                """,
         parameters = {
                 @Parameter(
                         name = "documentId",
-                        description = "수정하려는 브랜치가 속한 문서 id",
+                        description = "저장이 속한 문서 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
                 ),
                 @Parameter(
-                        name = "branchId",
-                        description = "수정하려는 브랜치의 id",
+                        name = "saveId",
+                        description = "조회하려는 저장 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
                 )
         },
-        requestBody = @RequestBody(
-                content = @Content(
-                        schema = @Schema(implementation = BranchRenameRequest.class),
-                        mediaType = MediaType.APPLICATION_JSON_VALUE,
-                        examples = @ExampleObject(
-                                value = """
-                                        {
-                                        	"newName" : "수정한 브랜치 이름"
-                                        }
-                                        """
-                        )
-                )
-        ),
         responses = {
                 @ApiResponse(
-                        responseCode = "200",
-                        description = "브랜치 이름 수정 성공",
-                        content = @Content(
-                                schema = @Schema(implementation = BranchRenameResponse.class),
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = @ExampleObject(
-                                        value = """
-                                                {
-                                                	"id" : 1,
-                                                	"name": "수정한 브랜치 이름"
-                                                }
-                                                """
-                                )
-                        )
+                        responseCode = "204",
+                        description = "저장 삭제 성공"
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "브랜치 이름 수정 실패 - 해당 문서에 속한 브랜치가 아님",
+                        description = "저장 수정 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples =
-                                @ExampleObject(
-                                        value = """
+                                examples = {
+                                        @ExampleObject(
+                                                name = "해당 유저의 수정이 아님",
+                                                value = """
                                                 {
-                                                   "status": 400,
-                                                   "message": "해당 버전을 찾을 수 없습니다.",
-                                                   "error": "BRANCH_NOT_FOUND_OR_FORBIDDEN"
+                                                    "status": 400,
+                                                    "message": "잘못된 접근입니다",
+                                                    "error": "SAVE_NOT_OWNER"
                                                 }
                                                 """
-                                )
-
+                                        ),
+                                        @ExampleObject(
+                                                name = "해당 브랜치에 커밋이 하나도 없고 저장만 존재하는 최초 상태에서는 저장을 삭제할 수 없다.",
+                                                value = """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "버전에 기록이 하나도 없는 경우, 저장을 삭제할 수 없습니다.",
+                                                            "error": "CANNOT_DELETE_SAVE_WITH_NO_COMMIT"
+                                                        }
+                                                        """
+                                        )
+                                }
                         )
                 ),
                 @ApiResponse(
@@ -106,17 +93,16 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "브랜치 이름 수정 실패 - 해당 id를 가진 브랜치 없음",
+                        description = "저장 수정 실패 - 존재하지 않는 저장",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples =
-                                @ExampleObject(
+                                examples = @ExampleObject(
                                         value = """
                                                 {
-                                                   "status": 404,
-                                                   "message": "해당 버전을 찾을 수 없습니다.",
-                                                   "error": "BRANCH_NOT_FOUND"
+                                                    "status": 404,
+                                                    "message": "해당 저장 데이터를 찾을 수 없습니다.",
+                                                    "error": "SAVE_NOT_FOUND"
                                                 }
                                                 """
                                 )
@@ -124,7 +110,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "브랜치 이름 수정 실패 - MySQL 또는 MongoDB 저장 실패",
+                        description = "저장 삭제 실패 - MySQL 또는 MongoDB 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -144,8 +130,8 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                             {
                                                               "status": 500,
-                                                              "message": "저장에 실패했습니다.",
-                                                              "error": "FAILED_TO_SAVE_IN_MONGO"
+                                                              "message": "삭제를 실패했습니다.",
+                                                              "error": "FAILED_TO_DELETE_IN_MONGO"
                                                             }
                                                         """
                                         )
@@ -154,6 +140,6 @@ import org.springframework.http.MediaType;
                 )
         }
 )
-public @interface RenameBranchDocs {
+public @interface DeleteSaveDocs {
 
 }

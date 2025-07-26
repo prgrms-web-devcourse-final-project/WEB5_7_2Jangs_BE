@@ -81,4 +81,7 @@ public class Doc extends BaseEntity {
         }
     }
 
+    public void removeEdge(Edge edge) {
+        this.edges.remove(edge);
+    }
 }
