@@ -18,7 +18,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -46,35 +45,25 @@ class AuthIntegrationTest {
                 .andDo(print());
     }
 
+    @Test
+    @DisplayName("세션 유효성 확인 실패 (비로그인)")
+    void checkSession_Unauthenticated() throws Exception {
+        mockMvc.perform(get("/api/auth/session/check")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
+                .andExpect(jsonPath("$.error").value("LOGIN_REQUIRED"))
+                .andDo(print());
+    }
+
     private User createTestUser() {
         User user = User.builder()
                 .name("테스트유저")
                 .email("test@test.com")
-                .password("password")
+                .password("Password123")
                 .build();
         ReflectionTestUtils.setField(user, "id", 1L);
         return user;
-    }
-
-    @Test
-    @DisplayName("세션 유효성 확인 실패")
-    void checkSession_Unauthenticated() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/auth/session/check")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andDo(print())
-                .andReturn();
-
-        String responseContent = result.getResponse().getContentAsString();
-        System.out.println("Response content: " + responseContent);
-
-        if (!responseContent.isEmpty()) {
-            mockMvc.perform(get("/api/auth/session/check")
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isUnauthorized())
-                    .andExpect(jsonPath("$.status").value(401))
-                    .andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
-                    .andExpect(jsonPath("$.error").value("LOGIN_REQUIRED"));
-        }
     }
 }
