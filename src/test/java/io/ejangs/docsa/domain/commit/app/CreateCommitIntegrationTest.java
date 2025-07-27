@@ -14,9 +14,11 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitIntegrationTestUtils;
 import io.ejangs.docsa.domain.commit.util.TestCreateCommitRequestDto;
 import io.ejangs.docsa.domain.commit.util.TestDocIntegrationDto;
+import io.ejangs.docsa.domain.commit.util.TestInitDocIntegrationDto;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
@@ -49,6 +51,9 @@ public class CreateCommitIntegrationTest {
 
     @Autowired
     private EdgeRepository edgeRepository;
+
+    @Autowired
+    private SaveContentRepository saveContentRepository;
 
     @Autowired
     private CommitBlockSequenceRepository cbsRepository;
@@ -117,5 +122,24 @@ public class CreateCommitIntegrationTest {
                 .getCommit(testDoc.getId(), response.id(), testUser.getId());
 
         System.out.println("commit = " + commit);
+    }
+
+    @Test
+    @DisplayName("정상적인 최초 Commit 생성 테스트")
+    void create_Init_Commit_Success() throws Exception {
+
+        TestInitDocIntegrationDto dto = CommitIntegrationTestUtils
+                .createInitDocumentForIntegrationTest(testUser, saveContentRepository);
+        Branch main = dto.mainBranch();
+        Doc doc = docRepository.save(dto.doc());
+
+        CreateCommitRequest request = new CreateCommitRequest("title1",
+                "description1",
+                main.getId(),
+                blocks,
+                blockOrders);
+
+        CreateCommitResponse response = commitService
+                .createCommit(doc.getId(), request, testUser.getId());
     }
 }

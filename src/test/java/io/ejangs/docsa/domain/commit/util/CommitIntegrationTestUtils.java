@@ -13,10 +13,12 @@ import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
+import io.ejangs.docsa.domain.save.document.SaveContent;
+import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class CommitIntegrationTestUtils {
 
@@ -99,6 +101,19 @@ public class CommitIntegrationTestUtils {
                 .prevCommit(prev)
                 .nextCommit(next)
                 .build();
+    }
+
+    public static TestInitDocIntegrationDto createInitDocumentForIntegrationTest(User user,
+            SaveContentRepository saveContentRepository) throws JsonProcessingException {
+
+        Doc doc = Doc.builder().title("빈문서1").user(user).build();
+        Branch branch = Branch.builder().name("main").doc(doc).build();
+
+        Save defaultSave = Save.builder().branch(branch).build();
+        SaveContent saveContent = saveContentRepository.save(SaveContent.builder().build());
+        defaultSave.updateSaveMongoId(saveContent.getId());
+
+        return new TestInitDocIntegrationDto(doc, branch);
     }
 
     public static TestDocIntegrationDto createDocumentForIntegrationTest(User user,
