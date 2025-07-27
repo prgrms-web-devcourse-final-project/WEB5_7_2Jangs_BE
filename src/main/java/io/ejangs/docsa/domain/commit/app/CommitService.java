@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +58,9 @@ public class CommitService {
     private final CommitContentAssembler assembler;
     private final MongoIdsCollector mongoIdsCollector;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Value("${default.branch}")
+    private String defaultBranchName;
 
     @Transactional(rollbackFor = Exception.class)
     public CreateCommitResponse createCommit(Long docId,
@@ -82,8 +86,10 @@ public class CommitService {
             branch.updateLeafCommit(savedCommit);
 
             // * 6. 새로운 간선 생성
-            Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
-            edgeService.saveEdge(newEdge);
+            if (baseCommit != null) {
+                Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
+                edgeService.saveEdge(newEdge);
+            }
 
             List<Block> savedBlocks = null;
             CommitBlockSequence savedCbs = null;
