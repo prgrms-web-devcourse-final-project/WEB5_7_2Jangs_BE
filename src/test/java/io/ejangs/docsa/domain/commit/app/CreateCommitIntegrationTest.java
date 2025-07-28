@@ -22,15 +22,18 @@ import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 public class CreateCommitIntegrationTest {
 
@@ -82,8 +85,9 @@ public class CreateCommitIntegrationTest {
         testUser = CommitIntegrationTestUtils.createTestUser();
         userRepository.save(testUser);
 
-        TestDocIntegrationDto dto = CommitIntegrationTestUtils
-                .createDocumentForIntegrationTest(testUser, cbsRepository, blockRepository);
+        TestDocIntegrationDto dto =
+                CommitIntegrationTestUtils.createDocumentForIntegrationTest(testUser, cbsRepository,
+                        blockRepository);
 
         testDoc = dto.doc();
         baseBranch = dto.baseBranch();
@@ -96,8 +100,8 @@ public class CreateCommitIntegrationTest {
 
         docRepository.save(testDoc);
 
-        TestCreateCommitRequestDto commitRequestDto = CommitIntegrationTestUtils
-                .createCommitRequestDto();
+        TestCreateCommitRequestDto commitRequestDto =
+                CommitIntegrationTestUtils.createCommitRequestDto();
 
         blocks = commitRequestDto.blocks();
         blockOrders = commitRequestDto.blockOrders();
@@ -107,19 +111,17 @@ public class CreateCommitIntegrationTest {
     @DisplayName("정상적인 Commit 생성 테스트")
     void create_Commit_Success() throws Exception {
 
-        CreateCommitRequest request = new CreateCommitRequest("title1",
-                "description1",
-                baseBranch.getId(),
-                blocks,
-                blockOrders);
+        CreateCommitRequest request =
+                new CreateCommitRequest("title1", "description1", baseBranch.getId(), blocks,
+                        blockOrders);
 
-        CreateCommitResponse response = commitService
-                .createCommit(testDoc.getId(), request, testUser.getId());
+        CreateCommitResponse response =
+                commitService.createCommit(testDoc.getId(), request, testUser.getId());
 
         System.out.println("response = " + response);
 
-        CommitResponse commit = commitService
-                .getCommit(testDoc.getId(), response.id(), testUser.getId());
+        CommitResponse commit =
+                commitService.getCommit(testDoc.getId(), response.id(), testUser.getId());
 
         System.out.println("commit = " + commit);
     }
@@ -128,18 +130,17 @@ public class CreateCommitIntegrationTest {
     @DisplayName("정상적인 최초 Commit 생성 테스트")
     void create_Init_Commit_Success() throws Exception {
 
-        TestInitDocIntegrationDto dto = CommitIntegrationTestUtils
-                .createInitDocumentForIntegrationTest(testUser, saveContentRepository);
+        TestInitDocIntegrationDto dto =
+                CommitIntegrationTestUtils.createInitDocumentForIntegrationTest(testUser,
+                        saveContentRepository);
         Branch main = dto.mainBranch();
         Doc doc = docRepository.save(dto.doc());
 
-        CreateCommitRequest request = new CreateCommitRequest("title1",
-                "description1",
-                main.getId(),
-                blocks,
-                blockOrders);
+        CreateCommitRequest request =
+                new CreateCommitRequest("title1", "description1", main.getId(), blocks,
+                        blockOrders);
 
-        CreateCommitResponse response = commitService
-                .createCommit(doc.getId(), request, testUser.getId());
+        CreateCommitResponse response =
+                commitService.createCommit(doc.getId(), request, testUser.getId());
     }
 }
