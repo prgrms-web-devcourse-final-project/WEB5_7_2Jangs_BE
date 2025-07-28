@@ -1,8 +1,4 @@
-package io.ejangs.docsa.domain.doc.service;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+package io.ejangs.docsa.domain.doc.integration;
 
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
@@ -13,7 +9,6 @@ import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +17,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class DocGraphIntegrationTest {
@@ -52,8 +52,8 @@ public class DocGraphIntegrationTest {
         user = DocTestUtils.createUser();
         ReflectionTestUtils.setField(user, "id", 1L);
 
-        DocTestUtils.stubSaveMethodsForForkedBranchScenario(
-                blockRepository, commitBlockSequenceRepository, saveContentRepository);
+        DocTestUtils.stubSaveMethodsForForkedBranchScenario(blockRepository,
+                commitBlockSequenceRepository, saveContentRepository);
     }
 
     @Test
@@ -71,9 +71,8 @@ public class DocGraphIntegrationTest {
         assertThat(result.getTitle()).isEqualTo("브랜치 2개 있는 문서임당");
         assertThat(result.getBranches().size()).isEqualTo(2);
         assertThat(result.getEdges()).hasSize(3);
-        long totalCommits = result.getBranches().stream()
-                .mapToLong(branch -> branch.getCommits().size())
-                .sum();
+        long totalCommits =
+                result.getBranches().stream().mapToLong(branch -> branch.getCommits().size()).sum();
         assertThat(totalCommits).isEqualTo(4);
 
     }
