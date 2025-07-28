@@ -76,7 +76,7 @@ public class CommitService {
         branch.initializeRootCommitIfNull(savedCommit);
 
         // * 4. branchId를 기반으로 Save가 있다면 삭제
-        String saveMongoId = saveService.deleteSaveIfExists(branch.getId());
+        String saveMongoId = saveService.deleteSaveIfExists(branch);
 
         // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
         Commit baseCommit = getBaseCommit(branch);
@@ -263,7 +263,7 @@ public class CommitService {
         edgeService.saveEdge(edge2);
 
         baseBranch.updateLeafCommit(savedCommit);
-        String saveMongoId = saveService.deleteSaveIfExists(baseBranch.getId());
+        String saveMongoId = saveService.deleteSaveIfExists(baseBranch);
         RenewUpdatedAtHelper.touch(baseBranch);
 
         branchService.saveBranch(baseBranch);

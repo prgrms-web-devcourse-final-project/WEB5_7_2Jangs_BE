@@ -207,7 +207,7 @@ class CommitServiceMockTest {
 
             // Then
             assertThat(result).isEqualTo(expectedResponse);
-            verify(saveService).deleteSaveIfExists(branch.getId());
+            verify(saveService).deleteSaveIfExists(branch);
         }
     }
 
