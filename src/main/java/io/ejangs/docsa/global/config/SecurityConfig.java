@@ -50,16 +50,7 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        // 기존 인증 불필요한 경로
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/v3/api-docs.yaml",
-                                "/swagger-resources/**",
-                                "/webjars/**"
-                        ).permitAll()
-
+                        .requestMatchers("/api/auth/session/check").permitAll()
                         .requestMatchers(
                                 "/api/auth/code/signup-email",
                                 "/api/user/signup",
