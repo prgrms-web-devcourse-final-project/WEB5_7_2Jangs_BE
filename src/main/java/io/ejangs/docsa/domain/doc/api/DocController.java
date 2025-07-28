@@ -13,6 +13,7 @@ import io.ejangs.docsa.domain.doc.swagger.GetDocGraphDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocListDocs;
 import io.ejangs.docsa.domain.doc.swagger.GetDocSidebarListDocs;
 import io.ejangs.docsa.domain.doc.swagger.RenameDocDocs;
+import io.ejangs.docsa.domain.doc.swagger.SearchDocDocs;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -83,7 +84,7 @@ public class DocController {
                 .body(docService.getList(userDetails.getId(), pageable));
     }
 
-    @GetDocListDocs
+    @SearchDocDocs
     @GetMapping("/search")
     public ResponseEntity<Page<DocListResponse>> search(
             @AuthenticationPrincipal CustomUserDetails userDetails,
