@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.swagger;
 
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
+import io.ejangs.docsa.domain.doc.dto.swagger.PageDocListResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -54,7 +54,7 @@ import org.springframework.http.MediaType;
                         responseCode = "200",
                         description = "문서 목록 조회 성공",
                         content = @Content(
-                                schema = @Schema(implementation = DocListResponse.class),
+                                schema = @Schema(implementation = PageDocListResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
