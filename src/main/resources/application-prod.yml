@@ -37,3 +37,12 @@ springdoc:
     servers:
       - url: ${SWAGGER_SERVER_URL}
         description: Production Server
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: unrestricted
