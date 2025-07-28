@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/api/auth/session/check").permitAll()
                         .requestMatchers(
                                 "/api/auth/code/signup-email",
