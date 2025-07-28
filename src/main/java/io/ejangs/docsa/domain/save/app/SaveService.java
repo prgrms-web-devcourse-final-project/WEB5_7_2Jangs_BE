@@ -14,6 +14,7 @@ import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -93,12 +94,9 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
     }
 
-    public void deleteSaveIfExists(Long branchId) {
-        saveRepository.findByBranchId(branchId).ifPresent(save -> {
-            saveRepository.delete(save);
-            saveContentRepository.findById(save.getSaveMongoId())
-                    .ifPresent(saveContentRepository::delete);
-        });
+    public String deleteSaveIfExists(Long branchId) {
+        Save save = saveRepository.findByBranchId(branchId).orElse(null);
+        return save != null ? save.getSaveMongoId() : null;
     }
 
     private Save getValidSave(SaveIdentifierDto dto) {

@@ -13,6 +13,9 @@ import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
+import io.ejangs.docsa.domain.save.document.SaveContent;
+import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +101,19 @@ public class CommitIntegrationTestUtils {
                 .prevCommit(prev)
                 .nextCommit(next)
                 .build();
+    }
+
+    public static TestInitDocIntegrationDto createInitDocumentForIntegrationTest(User user,
+            SaveContentRepository saveContentRepository) throws JsonProcessingException {
+
+        Doc doc = Doc.builder().title("빈문서1").user(user).build();
+        Branch branch = Branch.builder().name("main").doc(doc).build();
+
+        Save defaultSave = Save.builder().branch(branch).build();
+        SaveContent saveContent = saveContentRepository.save(SaveContent.builder().build());
+        defaultSave.updateSaveMongoId(saveContent.getId());
+
+        return new TestInitDocIntegrationDto(doc, branch);
     }
 
     public static TestDocIntegrationDto createDocumentForIntegrationTest(User user,
@@ -221,6 +237,21 @@ public class CommitIntegrationTestUtils {
                 commit22, commit30);
     }
 
+    public static TestCreateCommitRequestDto createCommitRequestDto()
+            throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<Map<String, Object>> createBlocks =
+                mapper.readValue(editorJsonCreate, new TypeReference<>() {
+                });
+
+        List<BlockDto> blocks = createBlocks.stream().map(BlockDto::new).toList();
+        List<String> blockOrders = List.of("aa1", "aa2", "aa3", "aa4", "aa5");
+
+        return new TestCreateCommitRequestDto(blocks, blockOrders);
+    }
+
     private static final String editorJson10 = """
             [
               { "id": "a1", "type": "paragraph", "data": {"text": "문단 1: 어찌라구저찌라구"} },
@@ -256,6 +287,16 @@ public class CommitIntegrationTestUtils {
               { "id": "b3", "type": "paragraph", "data": {"text": "문단 3: 테스트 코드가 너무 싫어서 미치겠다는 문단"} },
               { "id": "b4", "type": "paragraph", "data": {"text": "문단 4: 하체하기싫다는 문단"} },
               { "id": "b5", "type": "paragraph", "data": {"text": "문단 5: 몰라어쩌구저꺼궁롱ㄹ라알이;ㅇㄹ"} }
+            ]
+            """;
+
+    private static final String editorJsonCreate = """
+            [
+              { "id": "aa1", "type": "paragraph", "data": {"text": "문단 1: 아아아아아아아아아"} },
+              { "id": "aa2", "type": "paragraph", "data": {"text": "문단 2: abcdefg"} },
+              { "id": "aa3", "type": "paragraph", "data": {"text": "문단 3: ㄱㄴㄷㄹㅁㅂㅅ"} },
+              { "id": "aa4", "type": "paragraph", "data": {"text": "문단 4: ㅁㄴㅇㄹㅁㄴㅎ 문단"} },
+              { "id": "aa5", "type": "paragraph", "data": {"text": "문단 5: dfasgagds;ㅇㄹ"} }
             ]
             """;
 }
