@@ -28,6 +28,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class CommitService {
             branch.initializeRootCommitIfNull(savedCommit);
 
             // * 4. branchId를 기반으로 Save가 있다면 삭제
-            saveService.deleteSaveIfExists(branch.getId());
+            String saveMongoId = saveService.deleteSaveIfExists(branch.getId());
 
             // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
             Commit baseCommit = getBaseCommit(branch);
@@ -121,6 +122,10 @@ public class CommitService {
             }
 
             RenewUpdatedAtHelper.touch(branch);
+            MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
+                    .toMongoIdsDto(saveMongoId, null, null);
+
+            eventPublisher.publishEvent(commitDeleteMongoIds);
             return CommitMapper.toCreateCommitResponse(savedCommit);
         } catch (CustomException e) {
             log.error("Create Commit 저장 실패 - {}", e.getMessage(), e);
