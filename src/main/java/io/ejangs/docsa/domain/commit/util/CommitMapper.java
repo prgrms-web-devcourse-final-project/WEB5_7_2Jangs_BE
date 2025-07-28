@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.commit.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.dto.MergeCommitDto;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
@@ -48,5 +49,9 @@ public class CommitMapper {
     public static CompareMergeCommitResponse toCompareMergeCommitResponse(
             List<Map<String, Object>> base, List<Map<String, Object>> target) {
         return new CompareMergeCommitResponse(base, target);
+    }
+
+    public static MergeCommitDto toMergeCommitDto(Commit commit, String saveMongoId) {
+        return new MergeCommitDto(commit, saveMongoId);
     }
 }

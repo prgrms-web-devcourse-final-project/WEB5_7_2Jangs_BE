@@ -10,6 +10,7 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.CommitMongoIdsDto;
+import io.ejangs.docsa.domain.commit.dto.MergeCommitDto;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
@@ -171,10 +172,14 @@ public class CommitService {
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());
 
             // Commit을 저장
-            Commit saveMergeCommit = saveMergeCommit(doc, baseBranch, targetBranch,
+            MergeCommitDto mergeCommitDto = saveMergeCommit(doc, baseBranch, targetBranch,
                     mergeRequest, commitMongoIds.cbsId());
 
-            return CommitMapper.toCreateCommitResponse(saveMergeCommit);
+            MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
+                    .toMongoIdsDto(mergeCommitDto.saveMongoIds(), null, null);
+
+            eventPublisher.publishEvent(commitDeleteMongoIds);
+            return CommitMapper.toCreateCommitResponse(mergeCommitDto.commit());
         } catch (Exception e) {
             if (commitMongoIds != null) {
                 rollbackMongoTransaction(commitMongoIds);
@@ -242,7 +247,7 @@ public class CommitService {
         }
     }
 
-    private Commit saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
+    private MergeCommitDto saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
             MergeCommitRequest request, String commitMongoId) {
 
         Commit commit = CommitMapper.toEntity(baseBranch, request);
@@ -261,12 +266,12 @@ public class CommitService {
         edgeService.saveEdge(edge2);
 
         baseBranch.updateLeafCommit(savedCommit);
-        saveService.deleteSaveIfExists(baseBranch.getId());
+        String saveMongoId = saveService.deleteSaveIfExists(baseBranch.getId());
         RenewUpdatedAtHelper.touch(baseBranch);
 
         branchService.saveBranch(baseBranch);
 
-        return savedCommit;
+        return CommitMapper.toMergeCommitDto(savedCommit, saveMongoId);
     }
 
     private CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {
