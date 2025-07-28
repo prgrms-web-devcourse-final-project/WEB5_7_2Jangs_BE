@@ -70,5 +70,11 @@ public class DocGraphIntegrationTest {
         assertThat(result).isNotNull();
         assertThat(result.getTitle()).isEqualTo("브랜치 2개 있는 문서임당");
         assertThat(result.getBranches().size()).isEqualTo(2);
+        assertThat(result.getEdges()).hasSize(3);
+        long totalCommits = result.getBranches().stream()
+                .mapToLong(branch -> branch.getCommits().size())
+                .sum();
+        assertThat(totalCommits).isEqualTo(4);
+
     }
 }
