@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.doc.swagger;
 
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
 import io.ejangs.docsa.domain.doc.dto.swagger.PageDocListSimpleResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
