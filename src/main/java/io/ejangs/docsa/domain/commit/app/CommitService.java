@@ -87,6 +87,7 @@ public class CommitService {
         branch.updateLeafCommit(savedCommit);
 
         // * 6. 새로운 간선 생성
+        // 문서의 최초 커밋일 경우에는 간선을 새로 만들지 않는다
         if (baseCommit != null) {
             Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
             edgeService.saveEdge(newEdge);
