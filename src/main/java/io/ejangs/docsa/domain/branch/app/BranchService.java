@@ -13,6 +13,7 @@ import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
@@ -209,7 +210,11 @@ public class BranchService {
         // 6. 브랜치가 속한 문서의 수정시간 갱신
         RenewUpdatedAtHelper.touch(branch);
 
-        // 7. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
+        // 7. Doc의 branch 컬렉션에서 branch 수동 삭제
+        Doc doc = branch.getDoc();
+        doc.getBranches().remove(branch);
+
+        // 8. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
         branchRepository.delete(branch);
 
     }
