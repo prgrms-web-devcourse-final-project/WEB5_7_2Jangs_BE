@@ -75,6 +75,7 @@ public class SaveService {
         }
 
         RenewUpdatedAtHelper.touch(findSave);
+        branch.removeSave();
         saveRepository.delete(findSave);
         try {
             saveContentRepository.deleteById(findSave.getSaveMongoId());
@@ -94,9 +95,14 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
     }
 
-    public String deleteSaveIfExists(Long branchId) {
-        Save save = saveRepository.findByBranchId(branchId).orElse(null);
-        return save != null ? save.getSaveMongoId() : null;
+    public String deleteSaveIfExists(Branch branch) {
+        Save save = saveRepository.findByBranchId(branch.getId()).orElse(null);
+        branch.removeSave();
+        String saveMongoId = save != null ? save.getSaveMongoId() : null;
+        if (save != null) {
+            saveRepository.delete(save);
+        }
+        return saveMongoId;
     }
 
     private Save getValidSave(SaveIdentifierDto dto) {
