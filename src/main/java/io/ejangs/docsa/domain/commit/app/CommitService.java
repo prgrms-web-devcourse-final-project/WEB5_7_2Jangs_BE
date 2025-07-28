@@ -68,73 +68,64 @@ public class CommitService {
             CreateCommitRequest commitRequest,
             Long userId) {
 
+        branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
+        // * 1. documentId로 문서가 존재하는지 검사(JPA)
+        Doc doc = docService.getById(docId);
+        // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
+        Branch branch = branchService.getById(commitRequest.branchId());
+
+        // * 3. Commit Entity만들어서 DB에 저장
+        Commit savedCommit = saveCommit(branch, commitRequest);
+        branch.initializeRootCommitIfNull(savedCommit);
+
+        // * 4. branchId를 기반으로 Save가 있다면 삭제
+        String saveMongoId = saveService.deleteSaveIfExists(branch.getId());
+
+        // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
+        Commit baseCommit = getBaseCommit(branch);
+        branch.updateLeafCommit(savedCommit);
+
+        // * 6. 새로운 간선 생성
+        if (baseCommit != null) {
+            Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
+            edgeService.saveEdge(newEdge);
+        }
+
+        List<Block> savedBlocks = null;
+        CommitBlockSequence savedCbs = null;
+
         try {
-            branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
-            // * 1. documentId로 문서가 존재하는지 검사(JPA)
-            Doc doc = docService.getById(docId);
-            // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
-            Branch branch = branchService.getById(commitRequest.branchId());
+            // * 7. 변경사항이 있는 block들을 DB에 저장(MongoDB)
+            savedBlocks = blockService.saveBlocks(commitRequest.blocks());
 
-            // * 3. Commit Entity만들어서 DB에 저장
-            Commit savedCommit = saveCommit(branch, commitRequest);
-            branch.initializeRootCommitIfNull(savedCommit);
+            // * 8. baseCommit에서 사용한 block _id를 가져오기
+            // * 9. block _id 로 이전 Commit에서 사용한 block 가져오기
+            List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
 
-            // * 4. branchId를 기반으로 Save가 있다면 삭제
-            String saveMongoId = saveService.deleteSaveIfExists(branch.getId());
-
-            // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
-            Commit baseCommit = getBaseCommit(branch);
-            branch.updateLeafCommit(savedCommit);
-
-            // * 6. 새로운 간선 생성
-            if (baseCommit != null) {
-                Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
-                edgeService.saveEdge(newEdge);
-            }
-
-            List<Block> savedBlocks = null;
-            CommitBlockSequence savedCbs = null;
-
-            try {
-                // * 7. 변경사항이 있는 block들을 DB에 저장(MongoDB)
-                savedBlocks = blockService.saveBlocks(commitRequest.blocks());
-
-                // * 8. baseCommit에서 사용한 block _id를 가져오기
-                // * 9. block _id 로 이전 Commit에서 사용한 block 가져오기
-                List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
-
-                // * 10. blockId는 editor.js에서 만들어주는 uniqueId
-                List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
-                        baseCommitBlocks);
-                // * 13. MongoDB에 cbs저장
-                savedCbs = saveCommitBlockSequence(newOrder);
-                // * 14. Commit에 MongoId 세팅
-                savedCommit.initializeCommitMongoId(savedCbs.getId());
-            } catch (Exception e) {
-                rollbackMongoDb(savedBlocks, savedCbs);
-                if (e instanceof MongoException) {
-                    throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
-                } else if (e instanceof CustomException) {
-                    throw (CustomException) e;
-                }
-                log.error("fail to save commit ", e);
-                throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
-            }
-
-            RenewUpdatedAtHelper.touch(branch);
-            MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
-                    .toMongoIdsDto(saveMongoId, null, null);
-
-            eventPublisher.publishEvent(commitDeleteMongoIds);
-            return CommitMapper.toCreateCommitResponse(savedCommit);
-        } catch (CustomException e) {
-            log.error("Create Commit 저장 실패 - {}", e.getMessage(), e);
-            throw e;
+            // * 10. blockId는 editor.js에서 만들어주는 uniqueId
+            List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
+                    baseCommitBlocks);
+            // * 13. MongoDB에 cbs저장
+            savedCbs = saveCommitBlockSequence(newOrder);
+            // * 14. Commit에 MongoId 세팅
+            savedCommit.initializeCommitMongoId(savedCbs.getId());
         } catch (Exception e) {
-            log.error("Create Commit 알 수 없는 오류 - {}", e.getMessage(), e);
+            rollbackMongoDb(savedBlocks, savedCbs);
+            if (e instanceof MongoException) {
+                throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
+            } else if (e instanceof CustomException) {
+                throw (CustomException) e;
+            }
+            log.error("fail to save commit ", e);
             throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
         }
 
+        RenewUpdatedAtHelper.touch(branch);
+        MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
+                .toMongoIdsDto(saveMongoId, null, null);
+
+        eventPublisher.publishEvent(commitDeleteMongoIds);
+        return CommitMapper.toCreateCommitResponse(savedCommit);
     }
 
     @Transactional(readOnly = true)
