@@ -30,6 +30,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 public class DocTestUtils {
 
     public static List<Doc> createDocList(int count, User user) {
@@ -294,9 +297,6 @@ public class DocTestUtils {
         save.updateSaveMongoId(saveContent.getId());
         fork.setSave(save);
 
-        doc.addBranch(main);
-        doc.addBranch(fork);
-
         Edge edge1 = Edge.builder()
                 .doc(doc)
                 .prevCommit(commit1)
@@ -317,7 +317,40 @@ public class DocTestUtils {
 
         return doc;
     }
+    public static void stubSaveMethodsForForkedBranchScenario(
+            BlockRepository blockRepository,
+            CommitBlockSequenceRepository commitBlockSequenceRepository,
+            SaveContentRepository saveContentRepository) {
 
+        when(blockRepository.save(any(Block.class))).thenAnswer(invocation -> {
+            Block block = invocation.getArgument(0);
+            if (block.getId() == null) {
+                ReflectionTestUtils.setField(block, "id", String.valueOf(generateUniqueId()));
+            }
+            return block;
+        });
+
+        when(commitBlockSequenceRepository.save(any(CommitBlockSequence.class))).thenAnswer(invocation -> {
+            CommitBlockSequence seq = invocation.getArgument(0);
+            if (seq.getId() == null) {
+                ReflectionTestUtils.setField(seq, "id", "mockSeqId-" + generateUniqueId());
+            }
+            return seq;
+        });
+
+        when(saveContentRepository.save(any(SaveContent.class))).thenAnswer(invocation -> {
+            SaveContent saveContent = invocation.getArgument(0);
+            if (saveContent.getId() == null) {
+                ReflectionTestUtils.setField(saveContent, "id", "mockSaveId-" + generateUniqueId());
+            }
+            return saveContent;
+        });
+    }
+    private static long uniqueIdCounter = 1000L;
+
+    private static synchronized long generateUniqueId() {
+        return uniqueIdCounter++;
+    }
 
     public static Page<DocListResponse> convertToDocListResponsePage(List<Doc> docs,
             Pageable pageable) {

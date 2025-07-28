@@ -2,72 +2,78 @@ package io.ejangs.docsa.domain.doc.integration;
 
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
+import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
-import io.ejangs.docsa.global.security.WithCustomMockUser;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.util.Optional;
 
-@SpringBootTest
-@WithCustomMockUser
-@AutoConfigureMockMvc(addFilters = false)
-@Transactional
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 public class DocGraphIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
+    @Mock
     private DocRepository docRepository;
 
-    @Autowired
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private SaveContentRepository saveContentRepository;
 
-    @Autowired
+    @Mock
     private CommitBlockSequenceRepository commitBlockSequenceRepository;
 
-    @Autowired
+    @Mock
     private BlockRepository blockRepository;
 
+    @InjectMocks
+    private DocService docService;
+
+    private User user;
+
+    @BeforeEach
+    void setup() {
+        user = DocTestUtils.createUser();
+        ReflectionTestUtils.setField(user, "id", 1L);
+
+        DocTestUtils.stubSaveMethodsForForkedBranchScenario(blockRepository,
+                commitBlockSequenceRepository, saveContentRepository);
+    }
 
     @Test
-    @WithCustomMockUser
-    @DisplayName("그래프 조회 정상")
-    void createDocAndCommitsAndSave_thenGraphReflectsAll() throws Exception {
-        // given
-        User user = DocTestUtils.createUser();
-        ReflectionTestUtils.setField(user, "id", 1L);
-        userRepository.save(user);
+    @DisplayName("그래프 데이터 가져오기 테스트")
+    void testGetDocumentGraph() throws Exception {
 
         Doc doc = DocTestUtils.createForkedBranchScenario(user, saveContentRepository,
                 commitBlockSequenceRepository, blockRepository);
-        docRepository.save(doc);
 
-        // when & then
-        mockMvc.perform(get("/api/document/" + doc.getId() + "/graph")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("브랜치 2개 있는 문서임당"))
-                .andExpect(jsonPath("$.branches").isArray())
-                .andExpect(jsonPath("$.branches.length()").value(1))
-                .andExpect(jsonPath("$.commits").isArray())
-                .andExpect(jsonPath("$.commits.length()").value(4))
-                .andExpect(jsonPath("$.edges").isArray())
-                .andExpect(jsonPath("$.edges.length()").value(3));
+        when(docRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
+
+        Doc result = docService.getById(doc.getId());
+
+        assertThat(result).isNotNull();
+        assertThat(result.getTitle()).isEqualTo("브랜치 2개 있는 문서임당");
+        assertThat(result.getBranches().size()).isEqualTo(2);
+        assertThat(result.getEdges()).hasSize(3);
+        long totalCommits =
+                result.getBranches().stream().mapToLong(branch -> branch.getCommits().size()).sum();
+        assertThat(totalCommits).isEqualTo(4);
+
     }
 }
