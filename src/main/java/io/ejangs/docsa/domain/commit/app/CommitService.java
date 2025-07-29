@@ -159,6 +159,8 @@ public class CommitService {
 
             Commit baseCommit = getById(baseCommitId);
             Commit targetCommit = getById(targetCommitId);
+            checkLeafCommit(baseCommit);
+            checkLeafCommit(targetCommit);
 
             Branch baseBranch = baseCommit.getBranch();
             Branch targetBranch = targetCommit.getBranch();
