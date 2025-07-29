@@ -11,6 +11,8 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.mail.MessagingException;
+import java.time.Duration;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
@@ -36,11 +38,18 @@ public class AuthService {
     @Value("${auth.pwd-reset-code-cache-name}")
     private String pwdResetCacheName;
 
+    @Value("${auth.resend-limit-cache-name}")
+    private String resendLimitCacheName;
+
+    private static final long RESEND_INTERVAL_SECONDS = 180; // 3분
+
     public void sendSignupCode(SignupCodeRequest request) throws MessagingException {
 
         if (userRepository.existsByEmail(request.email())) {
             throw new CustomException(AuthErrorCode.DUPLICATE_EMAIL);
         }
+
+        checkResendLimit(request.email());
 
         String code = authCodeGenerator.generateVerifyCode();
         getRequiredCache(signupCacheName).put(request.email(), code);
@@ -52,6 +61,8 @@ public class AuthService {
         if (!userRepository.existsByEmail(request.email())) {
             throw new CustomException(UserErrorCode.USER_NOT_FOUND);
         }
+
+        checkResendLimit(request.email());
 
         String code = authCodeGenerator.generateVerifyCode();
         getRequiredCache(pwdResetCacheName).put(request.email(), code);
@@ -79,6 +90,24 @@ public class AuthService {
         cache.evict(request.email());
 
         return new CodeCheckResponse(passCode);
+    }
+
+    private void checkResendLimit(String email) {
+
+        Cache resendCache = getRequiredCache(resendLimitCacheName);
+        ResendInfo resendInfo = (ResendInfo) resendCache.get(email, ResendInfo.class);
+
+        Instant now = Instant.now();
+
+        if (resendInfo != null) {
+            long secondsSinceLast = Duration.between(resendInfo.lastSentAt(), now).getSeconds();
+
+            if (secondsSinceLast < RESEND_INTERVAL_SECONDS) {
+                throw new CustomException(AuthErrorCode.SEND_INTERVAL_TOO_SHORT);
+            }
+        }
+
+        resendCache.put(email, new ResendInfo(now));
     }
 
     private void validateUserExistence(String email, CodeType type) {
@@ -114,5 +143,9 @@ public class AuthService {
             throw new CustomException(AuthErrorCode.INTERNAL_ERROR);
         }
         return cache;
+    }
+
+    record ResendInfo(Instant lastSentAt) {
+
     }
 }
