@@ -204,7 +204,7 @@ public class DeleteCommitIntegrationTest {
         assertThatThrownBy(
                 () -> commitService.deleteCommit(testDoc.getId(), commit20.getId(), testUser.getId()))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(CommitErrorCode.CAN_NOT_DELETE_COMMIT.getMessage());
+                .hasMessageContaining(CommitErrorCode.IS_NOT_LEAF_COMMIT.getMessage());
     }
 
     @Test
@@ -216,7 +216,7 @@ public class DeleteCommitIntegrationTest {
         assertThatThrownBy(
                 () -> commitService.deleteCommit(testDoc.getId(), commit21.getId(), testUser.getId()))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(CommitErrorCode.CAN_NOT_DELETE_COMMIT.getMessage());
+                .hasMessageContaining(CommitErrorCode.IS_NOT_LEAF_COMMIT.getMessage());
     }
 
     @Test
