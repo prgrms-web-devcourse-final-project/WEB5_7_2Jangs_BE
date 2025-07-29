@@ -17,29 +17,18 @@ spring:
     port: 587
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-
-  cache:
-    cache-names:
-      - signupCodeCache
-      - passCodeCache
-      - pwdResetCodeCache
-    caffeine:
-      spec: maximumSize=10000, expireAfterWrite=4m
+    smtp-auth: true
+    starttls-enable: true
+    starttls-required: true
+    connection-timeout: 5000
+    timeout: 5000
+    write-timeout: 5000
 
 auth:
   signup-code-cache-name: signupCodeCache
   passcode-cache-name: passCodeCache
   pwd-reset-code-cache-name: pwdResetCodeCache
+  resend-limit-cache-name: resendLimitCache
 
 default:
   branch: main
