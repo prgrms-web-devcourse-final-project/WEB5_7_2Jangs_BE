@@ -154,9 +154,8 @@ public class CommitService {
         try {
             // 문서가 존재하는지 검사
             // 브랜치가 존재하는지 검사
-            // ToDo: API 명세 변경 혹은 유지에 따라 수정이 필요함
-            Long baseCommitId = mergeRequest.baseBranchId();
-            Long targetCommitId = mergeRequest.targetBranchId();
+            Long baseCommitId = mergeRequest.baseCommitId();
+            Long targetCommitId = mergeRequest.targetCommitId();
 
             Commit baseCommit = getById(baseCommitId);
             Commit targetCommit = getById(targetCommitId);

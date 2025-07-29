@@ -11,8 +11,8 @@ public record MergeCommitRequest(
         String title,
         @Size(max = 100, message = "기록에 대한 설명은 100자를 초과 할 수 없습니다.")
         String description,
-        Long baseBranchId,
-        Long targetBranchId,
+        Long baseCommitId,
+        Long targetCommitId,
         List<BlockDto> content
 ) {
 
