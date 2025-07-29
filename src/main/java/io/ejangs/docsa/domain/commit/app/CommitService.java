@@ -154,16 +154,26 @@ public class CommitService {
         try {
             // 문서가 존재하는지 검사
             // 브랜치가 존재하는지 검사
-            Long baseBranchId = mergeRequest.baseBranchId();
-            Long targetBranchId = mergeRequest.targetBranchId();
+            // ToDo: API 명세 변경 혹은 유지에 따라 수정이 필요함
+            Long baseCommitId = mergeRequest.baseBranchId();
+            Long targetCommitId = mergeRequest.targetBranchId();
+
+            Commit baseCommit = getById(baseCommitId);
+            Commit targetCommit = getById(targetCommitId);
+            checkLeafCommit(baseCommit);
+            checkLeafCommit(targetCommit);
+
+            Branch baseBranch = baseCommit.getBranch();
+            Branch targetBranch = targetCommit.getBranch();
+
+            Long baseBranchId = baseBranch.getId();
+            Long targetBranchId = targetBranch.getId();
 
             checkBranch(baseBranchId, targetBranchId);
             branchService.checkBranchInDocOwnedByUser(docId, baseBranchId, userId);
             branchService.checkBranchInDocOwnedByUser(docId, targetBranchId, userId);
 
             Doc doc = docService.getById(docId);
-            Branch baseBranch = branchService.getById(baseBranchId);
-            Branch targetBranch = branchService.getById(targetBranchId);
 
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());
@@ -233,13 +243,12 @@ public class CommitService {
 
     private void checkLeafCommit(Commit commit) {
         if (!commit.getId().equals(commit.getBranch().getLeafCommit().getId())) {
-            throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
+            throw new CustomException(CommitErrorCode.IS_NOT_LEAF_COMMIT);
         }
     }
 
     private void checkBranch(Long baseBranchId, Long targetBranchId) {
-        if (baseBranchId == null || targetBranchId == null || baseBranchId < 0 || targetBranchId < 0
-                || baseBranchId.equals(targetBranchId)) {
+        if (baseBranchId.equals(targetBranchId)) {
             throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
         }
     }
@@ -247,12 +256,12 @@ public class CommitService {
     private MergeCommitDto saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
             MergeCommitRequest request, String commitMongoId) {
 
-        Commit commit = CommitMapper.toEntity(baseBranch, request);
+        Commit commit = CommitMapper.toEntity(targetBranch, request);
         commit.initializeCommitMongoId(commitMongoId);
         Commit savedCommit = commitRepository.save(commit);
         commitRepository.flush();
 
-        baseBranch.addCommit(savedCommit);
+        targetBranch.addCommit(savedCommit);
 
         Commit baseCommit = getLeafCommit(baseBranch);
         Commit targetCommit = getLeafCommit(targetBranch);
@@ -262,11 +271,11 @@ public class CommitService {
         edgeService.saveEdge(edge1);
         edgeService.saveEdge(edge2);
 
-        baseBranch.updateLeafCommit(savedCommit);
-        String saveMongoId = saveService.deleteSaveIfExists(baseBranch);
-        RenewUpdatedAtHelper.touch(baseBranch);
+        targetBranch.updateLeafCommit(savedCommit);
+        String saveMongoId = saveService.deleteSaveIfExists(targetBranch);
+        RenewUpdatedAtHelper.touch(targetBranch);
 
-        branchService.saveBranch(baseBranch);
+        branchService.saveBranch(targetBranch);
 
         return CommitMapper.toMergeCommitDto(savedCommit, saveMongoId);
     }

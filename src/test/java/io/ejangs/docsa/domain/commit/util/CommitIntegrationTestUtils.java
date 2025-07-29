@@ -69,13 +69,13 @@ public class CommitIntegrationTestUtils {
                 .build();
     }
 
-    public static MergeCommitRequest createMergeCommitRequest(Branch baseBranch,
-            Branch targetBranch) {
+    public static MergeCommitRequest createMergeCommitRequest(Commit baseCommit,
+            Commit targetCommit) {
         return new MergeCommitRequest(
                 "Merge commit",
                 "Merge feature into main",
-                baseBranch.getId(),
-                targetBranch.getId(),
+                baseCommit.getId(),
+                targetCommit.getId(),
                 createTestBlockContent()
         );
     }
