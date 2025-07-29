@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Docsa 이메일 인증</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background-color: #f9f9f9;">
+<div style="max-width: 500px; margin: 40px auto; background: #ffffff; padding: 40px 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;">
+
+  <!-- 로고 -->
+  <img src="cid:docsa-logo" alt="Docsa 로고" style="width: 200px; margin-bottom: 5px;" />
+
+  <!-- 제목 -->
+  <h2 style="margin-bottom: 16px; font-size: 22px; color: #333333;">이메일 인증 코드 안내</h2>
+
+  <!-- 안내 문구 -->
+  <p style="font-size: 15px; color: #444444; margin: 0 0 24px 0;">
+    아래의 인증 코드를 입력해 주세요.<br />
+    이 코드는 <strong>발송된 시점부터 3분간</strong> 유효합니다.
+  </p>
+
+  <!-- 인증 코드 박스 -->
+  <div style="background-color: #f0f0f0; padding: 16px 0; border-radius: 8px; margin: 0 auto 30px auto; width: 200px;">
+    <span style="font-size: 24px; font-weight: bold; color: #3366cc;">[[${code}]]</span>
+  </div>
+
+  <!-- 푸터 -->
+  <p style="font-size: 15px; color: #444444; margin: 0;">감사합니다.<br /></p>
+</div>
+</body>
+</html>
