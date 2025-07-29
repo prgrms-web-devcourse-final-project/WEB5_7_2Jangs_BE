@@ -1,16 +1,22 @@
 package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.*;
+import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.DocListAssembler;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.doc.util.GraphMapper;
@@ -28,6 +34,7 @@ import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,7 +44,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Optional;
 
 
 @Slf4j
@@ -209,10 +215,11 @@ public class DocService {
     public void delete(Long docId, Long userId) {
         User user = getUserOrThrow(userId);
         Doc doc = getDocByIdAndUserId(docId, userId);
-
+        List<Edge> edges = doc.getEdges();
         List<Branch> branches = doc.getBranches();
 
         MongoIdsDto docDeleteMongoIds = mongoIdsCollector.collectFrom(branches);
+        edgeRepository.deleteAll(edges);
 
         user.removeDocument(doc);
         eventPublisher.publishEvent(docDeleteMongoIds);
