@@ -295,7 +295,7 @@ public class CommitService {
             if (savedBlocks != null) {
                 savedBlocks.forEach(block -> blockService.deleteBlock(block.getId()));
             }
-            throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+            throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
         }
     }
 

@@ -20,9 +20,9 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "request 에 담긴 2개의 branch id 를 기반으로 merge 합니다.",
+        summary = "request 에 담긴 2개의 commit id 를 기반으로 merge 합니다.",
         description = """
-                유저가 소유한 문서에서 branch 2개를 merge 합니다.
+                유저가 소유한 문서에서 commit 2개를 merge 합니다.
                 🔐 이 API는 세션 로그인 상태에서 호출되어야 하며,
                 클라이언트는 쿠키(`JSESSIONID`)를 통해 인증 정보를 전송해야 합니다.
                 """,
@@ -42,39 +42,39 @@ import org.springframework.http.MediaType;
                         examples = @ExampleObject(
                                 value = """
                                         {
-                                          "title": "문서 병합 완료",
-                                          "description": "병합 커밋입니다.",
-                                          "baseBranchId": 1,
-                                          "targetBranchId": 2,
-                                          "content": [
-                                            {
-                                              "id": "mhTl6ghSkV",
-                                              "type": "paragraph",
-                                              "data": {
-                                                "text": "Hey. Meet the new Editor. On this picture you can see it in action. Then, try a demo 🤓"
-                                              }
-                                            },
-                                            {
-                                              "id": "l98dyx3yjb",
-                                              "type": "header",
-                                              "data": {
-                                                "text": "Key features",
-                                                "level": 3
-                                              }
-                                            },
-                                            {
-                                              "id": "os_YI4eub4",
-                                              "type": "list",
-                                              "data": {
-                                                "type": "unordered",
-                                                "items": [
-                                                  "It is a block-style editor",
-                                                  "It returns clean data output in JSON",
-                                                  "Designed to be extendable and pluggable with a <a href=\\"https://editorjs.io/creating-a-block-tool\\">simple API</a>"
-                                                ]
-                                              }
-                                            }
-                                          ]
+                                            "title": "문서 병합 완료",
+                                            "description": "병합 커밋입니다.",
+                                            "baseCommitId": 1,
+                                            "targetCommitId": 2,
+                                            "content": [
+                                                {
+                                                    "id": "mhTl6ghSkV",
+                                                    "type": "paragraph",
+                                                    "data": {
+                                                        "text": "Hey. Meet the new Editor. On this picture you can see it in action. Then, try a demo 🤓"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "l98dyx3yjb",
+                                                    "type": "header",
+                                                    "data": {
+                                                        "text": "Key features",
+                                                        "level": 3
+                                                    }
+                                                },
+                                                {
+                                                    "id": "os_YI4eub4",
+                                                    "type": "list",
+                                                    "data": {
+                                                        "type": "unordered",
+                                                        "items": [
+                                                            "It is a block-style editor",
+                                                            "It returns clean data output in JSON",
+                                                            "Designed to be extendable and pluggable with a <a href=\\"https://editorjs.io/creating-a-block-tool\\">simple API</a>"
+                                                        ]
+                                                    }
+                                                }
+                                            ]
                                         }
                                         """
                         )
@@ -135,12 +135,22 @@ import org.springframework.http.MediaType;
                                                         """
                                         ),
                                         @ExampleObject(
-                                                name = "변경 사항이 없는 경우",
+                                                name = "전달 받은 두 브랜치가 같은 브랜치인 경우",
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "변경 사항이 없습니다.",
+                                                            "message": "잘못된 요청입니다.",
                                                             "error": "COMMIT_BAD_REQUEST"
+                                                        }
+                                                        """
+                                        ),
+                                        @ExampleObject(
+                                                name = "Leaf Commit이 필요한 상황에 전달 받은 Commit이 Leaf Commit이 아닌 경우",
+                                                value = """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "브랜치의 마지막 기록이 아닙니다.",
+                                                            "error": "IS_NOT_LEAF_COMMIT"
                                                         }
                                                         """
                                         )
@@ -172,12 +182,22 @@ import org.springframework.http.MediaType;
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "존재하지 않는 브랜치",
+                                                name = "존재하지 않는 기록",
                                                 value = """
                                                         {
                                                             "status": 404,
-                                                            "message": "해당 브랜치를 찾을 수 없습니다.",
-                                                            "error": "BRANCH_NOT_FOUND"
+                                                            "message": "해당 기록을 찾을 수 없습니다.",
+                                                            "error": "COMMIT_NOT_FOUND"
+                                                        }
+                                                        """
+                                        ),
+                                        @ExampleObject(
+                                                name = "해당 문서에 속한 브랜치가 아닐 경우",
+                                                value = """
+                                                        {
+                                                            "status": 404,
+                                                            "message": "해당 버전을 찾을 수 없습니다",
+                                                            "error": "BRANCH_NOT_FOUND_OR_FORBIDDEN"
                                                         }
                                                         """
                                         ),
@@ -205,9 +225,9 @@ import org.springframework.http.MediaType;
                                                 name = "MySQL 저장 실패",
                                                 value = """
                                                             {
-                                                              "status": 500,
-                                                              "message": "서버 오류로 인해 기록 생성에 실패했습니다.",
-                                                              "error": "FAIL_CREATE_COMMIT"
+                                                                "status": 500,
+                                                                "message": "서버 오류로 인해 기록 생성에 실패했습니다.",
+                                                                "error": "FAIL_CREATE_COMMIT"
                                                             }
                                                         """
                                         ),
@@ -215,9 +235,9 @@ import org.springframework.http.MediaType;
                                                 name = "MongoDB 저장 실패",
                                                 value = """
                                                             {
-                                                              "status": 500,
-                                                              "message": "MongoDB 저장에 문제가 생겼습니다.",
-                                                              "error": "FAIL_SAVE_MONGODB"
+                                                                "status": 500,
+                                                                "message": "MongoDB 저장에 문제가 생겼습니다.",
+                                                                "error": "FAIL_SAVE_MONGODB"
                                                             }
                                                         """
                                         )
