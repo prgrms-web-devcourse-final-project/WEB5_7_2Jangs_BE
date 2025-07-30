@@ -20,16 +20,16 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "request 에 담긴 2개의 commit id 를 기반으로 merge 합니다.",
+        summary = "request 에 담긴 2개의 commit id 를 기반으로 병합 합니다.",
         description = """
-                유저가 소유한 문서에서 commit 2개를 merge 합니다.
+                유저가 소유한 문서에서 기록 2개를 병합 합니다.
                 🔐 이 API는 세션 로그인 상태에서 호출되어야 하며,
                 클라이언트는 쿠키(`JSESSIONID`)를 통해 인증 정보를 전송해야 합니다.
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
-                        description = "merge 하려는 문서의 id",
+                        name = "docId",
+                        description = "병합 하려는 문서의 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
@@ -83,7 +83,7 @@ import org.springframework.http.MediaType;
         responses = {
                 @ApiResponse(
                         responseCode = "201",
-                        description = "기록 merge 성공 후 새로운 commit 생성 및 id 할당",
+                        description = "기록 병합 성공 후 새로운 기록 생성 및 id 할당",
                         content = @Content(
                                 schema = @Schema(implementation = CreateCommitResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -99,7 +99,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "기록 (commit) merge 실패 - 잘못된 요청",
+                        description = "기록(commit) 병합 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -135,7 +135,7 @@ import org.springframework.http.MediaType;
                                                         """
                                         ),
                                         @ExampleObject(
-                                                name = "전달 받은 두 브랜치가 같은 브랜치인 경우",
+                                                name = "전달 받은 두 기록이 같은 버전안에 있는 경우",
                                                 value = """
                                                         {
                                                             "status": 400,
@@ -145,11 +145,11 @@ import org.springframework.http.MediaType;
                                                         """
                                         ),
                                         @ExampleObject(
-                                                name = "Leaf Commit이 필요한 상황에 전달 받은 Commit이 Leaf Commit이 아닌 경우",
+                                                name = "Leaf Commit이 필요한 상황에 전달 받은 기록이 Leaf Commit이 아닌 경우",
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "브랜치의 마지막 기록이 아닙니다.",
+                                                            "message": "버전의 마지막 기록이 아닙니다.",
                                                             "error": "IS_NOT_LEAF_COMMIT"
                                                         }
                                                         """
@@ -176,7 +176,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "기록 (commit) merge 실패 - 존재하지 않는 데이터",
+                        description = "기록(commit) merge 실패 - 존재하지 않는 데이터",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -192,11 +192,11 @@ import org.springframework.http.MediaType;
                                                         """
                                         ),
                                         @ExampleObject(
-                                                name = "해당 문서에 속한 브랜치가 아닐 경우",
+                                                name = "해당 문서에 속한 버전이 아닐 경우",
                                                 value = """
                                                         {
                                                             "status": 404,
-                                                            "message": "해당 버전을 찾을 수 없습니다",
+                                                            "message": "해당 버전을 찾을 수 없습니다.",
                                                             "error": "BRANCH_NOT_FOUND_OR_FORBIDDEN"
                                                         }
                                                         """
@@ -216,35 +216,24 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "기록 (commit) merge 실패 - MySQL 또는 MongoDB 저장 실패",
+                        description = "기록 생성 실패 - MySQL 또는 MongoDB 데이터 처리 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "MySQL 저장 실패",
+                                                name = "MySQL 또는 MongoDB 데이터 처리 실패",
                                                 value = """
-                                                            {
-                                                                "status": 500,
-                                                                "message": "서버 오류로 인해 기록 생성에 실패했습니다.",
-                                                                "error": "FAIL_CREATE_COMMIT"
-                                                            }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "MongoDB 저장 실패",
-                                                value = """
-                                                            {
-                                                                "status": 500,
-                                                                "message": "MongoDB 저장에 문제가 생겼습니다.",
-                                                                "error": "FAIL_SAVE_MONGODB"
-                                                            }
+                                                        {
+                                                            "status": 500,
+                                                            "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                            "error": "DATABASE_ERROR"
+                                                        }
                                                         """
                                         )
                                 }
                         )
                 )
-
         }
 )
 public @interface MergeCommitDocs {

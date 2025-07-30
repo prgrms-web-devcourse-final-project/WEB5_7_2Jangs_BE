@@ -18,16 +18,16 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "머지할 2개의 커밋 내용을 조회합니다.",
+        summary = "병합할 2개의 기록을 조회합니다.",
         description = """
-                유저가 소유한 문서에서 머지할 2개의 커밋 내용을 조회합니다.
+                유저가 소유한 문서에서 병합할 2개의 기록을 조회합니다.
                 🔐 이 API는 세션 로그인 상태에서 호출되어야 하며,
                 클라이언트는 쿠키(`JSESSIONID`)를 통해 인증 정보를 전송해야 합니다.
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
-                        description = "커밋들이 속한 문서 id",
+                        name = "docId",
+                        description = "기록들이 속한 문서 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
@@ -50,7 +50,7 @@ import org.springframework.http.MediaType;
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "2개의 기록 (commit) 조회 성공 - content 2개 반환",
+                        description = "2개의 기록(commit) 조회 성공 - content 2개 반환",
                         content = @Content(
                                 schema = @Schema(implementation = CompareMergeCommitResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -58,14 +58,43 @@ import org.springframework.http.MediaType;
                                         value = """
                                                 {
                                                     "base": {
-                                                      "id": "base123",
-                                                      "title": "기록A 제목",
-                                                      "content": "기록A 문서내용 ....."
+                                                        "id": "base123",
+                                                        "title": "기록A 제목",
+                                                        "content": [
+                                                            {
+                                                                "id": "mhTl6ghSkV",
+                                                                "type": "paragraph",
+                                                                "data": {
+                                                                    "text": "Hey. Meet the new Editor. On this picture you can see it in action. Then, try a demo 🤓"
+                                                                }
+                                                            }
+                                                        ]
                                                     },
                                                     "target": {
-                                                      "id": "target456",
-                                                      "title": "기록 B 제목",
-                                                      "content": "기록B 문서내용 ....."
+                                                        "id": "target456",
+                                                        "title": "기록 B 제목",
+                                                        "content": [
+                                                            {
+                                                                "id": "l98dyx3yjb",
+                                                                "type": "header",
+                                                                "data": {
+                                                                    "text": "Key features",
+                                                                    "level": 3
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "os_YI4eub4",
+                                                                "type": "list",
+                                                                "data": {
+                                                                    "type": "unordered",
+                                                                    "items": [
+                                                                        "It is a block-style editor",
+                                                                        "It returns clean data output in JSON",
+                                                                        "Designed to be extendable and pluggable with a simple API"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 }
                                                 """
@@ -91,7 +120,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "기록 (commit) 실패",
+                        description = "기록(commit) 실패 - 존재하지 않는 데이터",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -119,6 +148,26 @@ import org.springframework.http.MediaType;
                                 }
                         )
                 ),
+                @ApiResponse(
+                        responseCode = "500",
+                        description = "기록 조회 실패 - MySQL 또는 MongoDB 데이터 처리 실패",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = {
+                                        @ExampleObject(
+                                                name = "MySQL 또는 MongoDB 데이터 처리 실패",
+                                                value = """
+                                                        {
+                                                            "status": 500,
+                                                            "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                            "error": "DATABASE_ERROR"
+                                                        }
+                                                        """
+                                        )
+                                }
+                        )
+                )
         }
 )
 public @interface CompareMergeCommitDocs {
