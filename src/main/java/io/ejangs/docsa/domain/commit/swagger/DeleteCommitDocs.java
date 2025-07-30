@@ -25,9 +25,9 @@ import org.springframework.http.MediaType;
                 
                 삭제 조건은 아래와 같습니다:
                 
-                - 각 브랜치의 LeafCommit만 삭제 가능
-                - 어느 브랜치의 FromCommit이면 삭제 불가
-                - 브랜치의 RootCommit은 삭제 불가(RootCommit까지 삭제하고 싶은 경우 브랜치 삭제를 권장합니다)
+                - 각 버전의 LeafCommit만 삭제 가능
+                - 어느 버전의 FromCommit이면 삭제 불가
+                - 버전의 RootCommit은 삭제 불가(RootCommit까지 삭제하고 싶은 경우 버전 삭제를 권장합니다)
                 """,
         parameters = {
                 @Parameter(
@@ -39,7 +39,7 @@ import org.springframework.http.MediaType;
                 ),
                 @Parameter(
                         name = "commitId",
-                        description = "삭제하려는 commit의 id",
+                        description = "삭제하려는 기록의 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
@@ -58,7 +58,18 @@ import org.springframework.http.MediaType;
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "삭제하려는 기록이 LeafCommit이 아니거나 FromCommit, RootCommit인 경우 삭제할 수 없다.",
+                                                name = "삭제하려는 기록이 LeafCommit이 아닐 경우 삭제할 수 없다.",
+                                                value = """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "버전의 마지막 기록이 아닙니다.",
+                                                            "error": "IS_NOT_LEAF_COMMIT"
+                                                        }
+                                                        """
+
+                                        ),
+                                        @ExampleObject(
+                                                name = "삭제하려는 기록이 FromCommit, RootCommit인 경우 삭제할 수 없다.",
                                                 value = """
                                                         {
                                                             "status": 400,
@@ -120,18 +131,18 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "기록 삭제 실패 - 서버 내에서 알 수 없는 이유로 기록 삭제 실패",
+                        description = "기록 삭제 실패 - MySQL 또는 MongoDB 데이터 처리 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "서버 오류로 기록 삭제 실패",
+                                                name = "MySQL 또는 MongoDB 데이터 처리 실패",
                                                 value = """
                                                         {
                                                             "status": 500,
-                                                            "message": "서버 오류로 인해 기록 삭제에 실패했습니다.",
-                                                            "error": "FAIL_DELETE_COMMIT"
+                                                            "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                            "error": "DATABASE_ERROR"
                                                         }
                                                         """
                                         ),
