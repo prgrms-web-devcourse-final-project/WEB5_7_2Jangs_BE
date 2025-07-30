@@ -302,13 +302,10 @@ public class BranchService {
     }
 
     private void checkDuplicatedWithBranchName(Long docId, String requestName) {
-        List<Branch> branches = branchRepository.findAllByDocId(docId);
-
-        boolean isDuplicate = branches.stream().anyMatch(branch -> branch.getName().equals(requestName));
+        boolean isDuplicate = branchRepository.existsByDocIdAndName(docId, requestName);
 
         if (isDuplicate) {
-                throw new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED);
-
+            throw new CustomException(BranchErrorCode. BRANCH_NAME_DUPLICATED);
         }
     }
 }

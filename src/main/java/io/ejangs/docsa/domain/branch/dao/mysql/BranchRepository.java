@@ -39,6 +39,6 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
             """)
     boolean existsByRootCommitIdOrFromCommitId(@Param("commitId") Long commitId);
 
-    List<Branch> findAllByDocId(Long docId);
+    boolean existsByDocIdAndName(Long docId, String name);
 }
 
