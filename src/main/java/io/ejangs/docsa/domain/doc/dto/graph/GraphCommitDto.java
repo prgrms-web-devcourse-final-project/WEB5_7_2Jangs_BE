@@ -11,6 +11,6 @@ public record GraphCommitDto(Long id, Long branchId, String title, String descri
         this.branchId = branchId;
         this.title = title;
         this.description = description;
-        this.createdAt = createdAt.plusHours(9);
+        this.createdAt = createdAt.plusHours(9L);
     }
 }
