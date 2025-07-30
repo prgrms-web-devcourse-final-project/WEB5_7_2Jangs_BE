@@ -3,23 +3,17 @@ package io.ejangs.docsa.domain.save.util;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
 public class SaveMapper {
 
     public static SaveUpdateResponse toSaveUpdateResponse(LocalDateTime localDateTime) {
-        return new SaveUpdateResponse(toOffsetDateTime(localDateTime));
+        return new SaveUpdateResponse(localDateTime.plusHours(9L));
     }
 
     public static SaveGetResponse toSaveGetResponse(LocalDateTime localDateTime,
             List<Map<String, Object>> content) {
-        return new SaveGetResponse(toOffsetDateTime(localDateTime), content);
-    }
-
-    private static OffsetDateTime toOffsetDateTime(LocalDateTime localDateTime) {
-        return localDateTime.atOffset(ZoneOffset.ofHours(9));
+        return new SaveGetResponse(localDateTime.plusHours(9L), content);
     }
 }

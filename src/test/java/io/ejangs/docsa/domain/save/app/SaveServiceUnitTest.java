@@ -28,7 +28,6 @@ import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +74,7 @@ class SaveServiceUnitTest {
     @Test
     @DisplayName("성공적인 getSave")
     void getSave_success() throws Exception {
-        SaveGetResponse expectedResponse = new SaveGetResponse(OffsetDateTime.now(), data);
+        SaveGetResponse expectedResponse = new SaveGetResponse(LocalDateTime.now(), data);
         SaveContent saveContent = SaveContent.builder().content(data).build();
 
         when(saveRepository.findById(idDto.saveId())).thenReturn(Optional.of(mockSave));
@@ -124,7 +123,7 @@ class SaveServiceUnitTest {
     @Test
     @DisplayName("성공적인 updateSave")
     void updateSave_success() {
-        SaveUpdateResponse expectedResponse = new SaveUpdateResponse(OffsetDateTime.now());
+        SaveUpdateResponse expectedResponse = new SaveUpdateResponse(LocalDateTime.now());
 
         when(saveRepository.findById(idDto.saveId())).thenReturn(Optional.of(mockSave));
         when(saveContentRepository.findById(mockSave.getSaveMongoId())).thenReturn(

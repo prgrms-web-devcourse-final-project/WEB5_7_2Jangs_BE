@@ -29,7 +29,6 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -231,7 +230,7 @@ public class DocServiceUnitTests {
                 .thenReturn(Optional.of(new DocTitleOnlyResponse("Test Document")));
 
         // Mock Branch, Commit, Edge 리스트
-        OffsetDateTime now = OffsetDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
         List<GraphBranchDto> branches = List.of(
                 new GraphBranchDto(1L, "main", now, null, null, null, null)
         );

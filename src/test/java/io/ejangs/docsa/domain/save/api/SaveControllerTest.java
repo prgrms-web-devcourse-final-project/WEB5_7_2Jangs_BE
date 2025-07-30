@@ -1,12 +1,10 @@
 package io.ejangs.docsa.domain.save.api;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,7 +15,7 @@ import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.global.security.WithCustomMockUser;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +66,7 @@ class SaveControllerTest {
         Long saveId = 1L;
 
         when(saveService.updateSave(dto, request)).thenReturn(new SaveUpdateResponse(
-                OffsetDateTime.now()));
+                LocalDateTime.now()));
 
         mockMvc.perform(
                         put("/api/document/{documentId}/save/{saveId}", documentId, saveId)
@@ -104,7 +102,7 @@ class SaveControllerTest {
         Long saveId = 1L;
 
         when(saveService.getSave(dto)).thenReturn(new SaveGetResponse(
-                OffsetDateTime.now(), data));
+                LocalDateTime.now(), data));
 
         mockMvc.perform(
                         get("/api/document/{documentId}/save/{saveId}", documentId, saveId))

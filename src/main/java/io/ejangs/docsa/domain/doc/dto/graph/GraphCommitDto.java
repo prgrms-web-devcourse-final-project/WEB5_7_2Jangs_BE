@@ -1,16 +1,16 @@
 package io.ejangs.docsa.domain.doc.dto.graph;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
 public record GraphCommitDto(Long id, Long branchId, String title, String description,
-                             OffsetDateTime createdAt) {
+                             LocalDateTime createdAt) {
+
     public GraphCommitDto(Long id, Long branchId, String title, String description,
-            LocalDateTime createdAt
-
-    ) {
-        this(id, branchId, title, description, createdAt.atOffset(ZoneOffset.ofHours(9)));
+            LocalDateTime createdAt) {
+        this.id = id;
+        this.branchId = branchId;
+        this.title = title;
+        this.description = description;
+        this.createdAt = createdAt.plusHours(9);
     }
-
 }
