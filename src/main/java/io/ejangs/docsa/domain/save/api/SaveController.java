@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/document/{documentId}/save/{saveId}")
+@RequestMapping("/api/document/{docId}/save/{saveId}")
 @Tag(name = "Save API")
 public class SaveController {
 
@@ -34,10 +34,10 @@ public class SaveController {
     @GetSaveDocs
     public ResponseEntity<SaveGetResponse> getSave(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Long saveId,
-            @PathVariable Long documentId) {
+            @PathVariable Long docId,
+            @PathVariable Long saveId) {
         SaveGetResponse response = saveService.getSave(
-                SaveIdentifierDto.of(documentId, saveId, userDetails.getId()));
+                SaveIdentifierDto.of(docId, saveId, userDetails.getId()));
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
@@ -45,11 +45,11 @@ public class SaveController {
     @UpdateSaveDocs
     public ResponseEntity<SaveUpdateResponse> updateSave(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Long documentId,
+            @PathVariable Long docId,
             @PathVariable Long saveId,
             @RequestBody SaveUpdateRequest saveUpdateRequest) {
         SaveUpdateResponse response = saveService.updateSave(
-                SaveIdentifierDto.of(documentId, saveId, userDetails.getId()), saveUpdateRequest);
+                SaveIdentifierDto.of(docId, saveId, userDetails.getId()), saveUpdateRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
@@ -57,10 +57,10 @@ public class SaveController {
     @DeleteSaveDocs
     public ResponseEntity<Void> deleteSave(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Long documentId,
+            @PathVariable Long docId,
             @PathVariable Long saveId
     ) {
-        saveService.deleteSave(SaveIdentifierDto.of(documentId, saveId, userDetails.getId()));
+        saveService.deleteSave(SaveIdentifierDto.of(docId, saveId, userDetails.getId()));
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

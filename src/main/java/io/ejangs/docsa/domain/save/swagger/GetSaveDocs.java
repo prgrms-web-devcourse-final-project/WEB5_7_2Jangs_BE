@@ -26,7 +26,7 @@ import org.springframework.http.MediaType;
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
+                        name = "docId",
                         description = "저장이 속한 문서 id",
                         example = "1",
                         required = true,
