@@ -274,7 +274,7 @@ public class BranchService {
         boolean exists =
                 branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);
         if (!exists) {
-            throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN);
+            throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
         }
     }
 

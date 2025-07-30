@@ -105,7 +105,7 @@ import java.lang.annotation.Target;
                                                 {
                                                     "status": 404,
                                                     "message": "해당 버전을 찾을 수 없습니다.",
-                                                    "error": "BRANCH_NOT_FOUND_OR_FORBIDDEN"
+                                                    "error": "BRANCH_NOT_FOUND"
                                                 }
                                                 """
                                 )
