@@ -108,10 +108,10 @@ public class DocService {
             return saveContentRepository.save(SaveContent.builder().build());
         } catch (DataAccessException e) {
             log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         } catch (Exception e) {
             log.error("DefaultSaveContent Mongo 알 수 없는 오류 - {}", e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 

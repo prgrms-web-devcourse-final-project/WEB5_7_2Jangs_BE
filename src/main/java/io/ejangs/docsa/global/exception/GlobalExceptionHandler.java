@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException e) {
         log.error("DataAccessException 발생 : {}", e.getMessage());
-        return ResponseEntity.status(DatabaseErrorCode.MYSQL_ERROR.getStatus())
-                .body(ErrorResponse.from(DatabaseErrorCode.MYSQL_ERROR));
+        return ResponseEntity.status(DatabaseErrorCode.DATABASE_ERROR.getStatus())
+                .body(ErrorResponse.from(DatabaseErrorCode.DATABASE_ERROR));
     }
 }

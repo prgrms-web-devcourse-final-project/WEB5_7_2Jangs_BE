@@ -55,10 +55,10 @@ public class SaveService {
         } catch (DuplicateKeyException e) {
             log.warn("중복 키로 Mongo 저장 실패 - saveId={}, mongoId={}, message={}", findSave.getId(),
                     findSave.getSaveMongoId(), e.getMessage());
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         } catch (DataAccessException e) {
             log.error("Mongo 저장 실패: {}", e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
 
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
@@ -83,7 +83,7 @@ public class SaveService {
                     findSave.getSaveMongoId());
         } catch (Exception e) {
             log.error("Mongo 삭제 중 실패 실패: {}", e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 

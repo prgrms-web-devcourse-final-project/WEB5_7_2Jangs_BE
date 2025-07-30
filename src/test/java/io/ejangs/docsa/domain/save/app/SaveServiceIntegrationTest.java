@@ -119,11 +119,11 @@ class SaveServiceIntegrationTest {
                     Optional.of(saveContent));
 
             when(saveContentRepository.save(any()))
-                    .thenThrow(new CustomException(DatabaseErrorCode.MONGO_ERROR));
+                    .thenThrow(new CustomException(DatabaseErrorCode.DATABASE_ERROR));
 
             assertThatThrownBy(() -> saveService.updateSave(dto, request))
                     .isInstanceOf(CustomException.class)
-                    .hasMessageContaining(DatabaseErrorCode.MONGO_ERROR.getMessage());
+                    .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
 
             // then
             Save after = saveRepository.findById(save.getId()).orElse(null);

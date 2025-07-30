@@ -349,7 +349,7 @@ class SaveServiceUnitTest {
         // when & then
         assertThatThrownBy(() -> saveService.deleteSave(idDto))
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(DatabaseErrorCode.MONGO_ERROR.getMessage());
+                .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
 
         verify(saveRepository).delete(mockSave);
         verify(saveContentRepository).deleteById("mongoId1");

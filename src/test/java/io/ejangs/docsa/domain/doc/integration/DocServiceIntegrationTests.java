@@ -163,7 +163,7 @@ public class DocServiceIntegrationTests {
 
             assertThatThrownBy(() -> docService.create(request, user.getId()))
                     .isInstanceOf(CustomException.class)
-                    .hasMessageContaining(DatabaseErrorCode.MONGO_ERROR.getMessage());
+                    .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
 
             assertThat(docRepository.findAll()).isEmpty();
             assertThat(branchRepository.findAll()).isEmpty();

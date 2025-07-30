@@ -153,7 +153,7 @@ public class BranchService {
         } catch (Exception e) {
             // MongoDB 롤백까지 실패할 경우 에러 로그
             log.error("MongoDB 저장 실패로 인해 save(id={}) 에 MongoId 갱신 실패", save.getId(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 
