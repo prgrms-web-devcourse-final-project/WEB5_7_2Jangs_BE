@@ -147,17 +147,6 @@ import org.springframework.http.MediaType;
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "MySQL 저장 실패",
-                                                value = """
-                                                            {
-                                                              "status": 500,
-                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-                                                              "error": "DATABASE_ERROR"
-                                                            }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "MongoDB 저장 실패",
                                                 value = """
                                                             {
                                                               "status": 500,

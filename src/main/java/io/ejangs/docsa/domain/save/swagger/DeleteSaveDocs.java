@@ -54,12 +54,12 @@ import org.springframework.http.MediaType;
                                         @ExampleObject(
                                                 name = "해당 유저의 수정이 아님",
                                                 value = """
-                                                {
-                                                    "status": 400,
-                                                    "message": "잘못된 접근입니다",
-                                                    "error": "SAVE_NOT_OWNER"
-                                                }
-                                                """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "잘못된 접근입니다",
+                                                            "error": "SAVE_NOT_OWNER"
+                                                        }
+                                                        """
                                         ),
                                         @ExampleObject(
                                                 name = "해당 브랜치에 커밋이 하나도 없고 저장만 존재하는 최초 상태에서는 저장을 삭제할 수 없다.",
@@ -116,17 +116,6 @@ import org.springframework.http.MediaType;
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "MySQL 저장 실패",
-                                                value = """
-                                                            {
-                                                              "status": 500,
-                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-                                                              "error": "DATABASE_ERROR"
-                                                            }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "MongoDB 저장 실패",
                                                 value = """
                                                             {
                                                               "status": 500,
