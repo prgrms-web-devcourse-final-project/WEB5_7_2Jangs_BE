@@ -79,6 +79,7 @@ public class SaveService {
         saveRepository.delete(findSave);
         try {
             saveContentRepository.deleteById(findSave.getSaveMongoId());
+            log.warn("[MONGO] SaveService 에서 deleteSave() 호출로 saveContent 삭제 : {}", findSave.getSaveMongoId());
         } catch (Exception e) {
             log.error("Mongo 삭제 중 실패 실패: {}", e.getMessage(), e);
             throw new CustomException(SaveErrorCode.FAILED_TO_DELETE_IN_MONGO);

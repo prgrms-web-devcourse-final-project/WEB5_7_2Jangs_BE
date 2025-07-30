@@ -205,6 +205,8 @@ public class BranchService {
 
         // 5. 브랜치에서 삭제 가능한 블록과 시퀀스, SaveContent 삭제 이벤트 발행
         MongoIdsDto deletableMongoIds = collectDeletableMongoDataForBranch(branch, branchCommits);
+
+        log.warn("[MONGO] deleteBranch");
         eventPublisher.publishEvent(deletableMongoIds);
 
         // 6. 브랜치가 속한 문서의 수정시간 갱신

@@ -16,7 +16,7 @@ public class MongoDeleteHandler {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleDeleteEvent(MongoIdsDto mongoIdsDto) {
-        log.info("MongoDeleteHandler Listened");
+        log.warn("[MONGO] MongoDeleteHandler Listened");
         retryService.deleteMongoData(mongoIdsDto);
     }
 }

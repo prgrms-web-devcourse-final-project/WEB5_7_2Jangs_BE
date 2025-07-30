@@ -222,6 +222,8 @@ public class DocService {
         edgeRepository.deleteAll(edges);
 
         user.removeDocument(doc);
+
+        log.warn("[MONGO] deleteDocument");
         eventPublisher.publishEvent(docDeleteMongoIds);
     }
 
