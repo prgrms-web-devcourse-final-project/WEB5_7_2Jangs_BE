@@ -195,6 +195,42 @@ import org.springframework.http.MediaType;
                                                 """
                                 )
                         )
+                ),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "문서 검색 실패 - 존재하지 않는 커밋",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = @ExampleObject(
+                                        value = """
+                                                {
+                                                    "status": 404,
+                                                    "message": "해당 기록을 찾을 수 없습니다.",
+                                                    "error": "COMMIT_NOT_FOUND"
+                                                }
+                                                """
+                                )
+                        )
+                ),
+                @ApiResponse(
+                        responseCode = "500",
+                        description = "문서 검색 실패 - MySQL 또는 MongoDB 접근 실패",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = {
+                                        @ExampleObject(
+                                                value = """
+                                                {
+                                                    "status": 500,
+                                                    "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                    "error": "DATABASE_ERROR"
+                                                }
+                                                """
+                                        )
+                                }
+                        )
                 )
         }
 )
