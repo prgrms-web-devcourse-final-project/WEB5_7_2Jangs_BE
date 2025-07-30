@@ -50,16 +50,8 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        // 기존 인증 불필요한 경로
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/v3/api-docs.yaml",
-                                "/swagger-resources/**",
-                                "/webjars/**"
-                        ).permitAll()
-
+                        .requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers("/api/auth/session/check").permitAll()
                         .requestMatchers(
                                 "/api/auth/code/signup-email",
                                 "/api/user/signup",
@@ -106,8 +98,10 @@ public class SecurityConfig {
                 List.of(
                         "http://localhost:3000",
                         "http://localhost:5173",
+                        "https://app.docsa.kro.kr",
                         "https://web5-7-2jangs-fe.pages.dev",
-                        "http://ec2-3-34-159-207.ap-northeast-2.compute.amazonaws.com:8080"
+                        "http://ec2-3-34-159-207.ap-northeast-2.compute.amazonaws.com:8080",
+                        "https://docsa.kro.kr"
                 ));
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")

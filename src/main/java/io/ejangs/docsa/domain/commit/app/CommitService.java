@@ -10,6 +10,7 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.CommitMongoIdsDto;
+import io.ejangs.docsa.domain.commit.dto.MergeCommitDto;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
@@ -27,6 +28,9 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,73 +57,75 @@ public class CommitService {
     private final EdgeService edgeService;
 
     private final CommitContentAssembler assembler;
+    private final MongoIdsCollector mongoIdsCollector;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     public CreateCommitResponse createCommit(Long docId,
             CreateCommitRequest commitRequest,
             Long userId) {
 
-        try {
-            branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
-            // * 1. documentId로 문서가 존재하는지 검사(JPA)
-            Doc doc = docService.getById(docId);
-            // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
-            Branch branch = branchService.getById(commitRequest.branchId());
+        branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
+        // * 1. documentId로 문서가 존재하는지 검사(JPA)
+        Doc doc = docService.getById(docId);
+        // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
+        Branch branch = branchService.getById(commitRequest.branchId());
 
-            // * 3. Commit Entity만들어서 DB에 저장
-            Commit savedCommit = saveCommit(branch, commitRequest);
-            branch.initializeRootCommitIfNull(savedCommit);
+        // * 3. Commit Entity만들어서 DB에 저장
+        Commit savedCommit = saveCommit(branch, commitRequest);
+        branch.initializeRootCommitIfNull(savedCommit);
 
-            // * 4. branchId를 기반으로 Save가 있다면 삭제
-            saveService.deleteSaveIfExists(branch.getId());
+        // * 4. branchId를 기반으로 Save가 있다면 삭제
+        String saveMongoId = saveService.deleteSaveIfExists(branch);
 
-            // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
-            Commit baseCommit = getBaseCommit(branch);
-            branch.updateLeafCommit(savedCommit);
+        // * 5. 변경 전 Commit이 어떤 것인지 branch의 데이터를 통해 찾기(JPA - 지연로딩)
+        Commit baseCommit = getBaseCommit(branch);
+        branch.updateLeafCommit(savedCommit);
 
-            // * 6. 새로운 간선 생성
+        // * 6. 새로운 간선 생성
+        // 문서의 최초 커밋일 경우에는 간선을 새로 만들지 않는다
+        if (baseCommit != null) {
             Edge newEdge = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
             edgeService.saveEdge(newEdge);
+        }
 
-            List<Block> savedBlocks = null;
-            CommitBlockSequence savedCbs = null;
+        List<Block> savedBlocks = null;
+        CommitBlockSequence savedCbs = null;
 
-            try {
-                // * 7. 변경사항이 있는 block들을 DB에 저장(MongoDB)
-                savedBlocks = blockService.saveBlocks(commitRequest.blocks());
+        try {
+            // * 7. 변경사항이 있는 block들을 DB에 저장(MongoDB)
+            savedBlocks = blockService.saveBlocks(commitRequest.blocks());
 
-                // * 8. baseCommit에서 사용한 block _id를 가져오기
-                // * 9. block _id 로 이전 Commit에서 사용한 block 가져오기
-                List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
+            // * 8. baseCommit에서 사용한 block _id를 가져오기
+            // * 9. block _id 로 이전 Commit에서 사용한 block 가져오기
+            List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommit);
 
-                // * 10. blockId는 editor.js에서 만들어주는 uniqueId
-                List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
-                        baseCommitBlocks);
-                // * 13. MongoDB에 cbs저장
-                savedCbs = saveCommitBlockSequence(newOrder);
-                // * 14. Commit에 MongoId 세팅
-                savedCommit.initializeCommitMongoId(savedCbs.getId());
-            } catch (Exception e) {
-                rollbackMongoDb(savedBlocks, savedCbs);
-                if (e instanceof MongoException) {
-                    throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
-                } else if (e instanceof CustomException) {
-                    throw (CustomException) e;
-                }
-                log.error("fail to save commit ", e);
-                throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
-            }
-
-            RenewUpdatedAtHelper.touch(branch);
-            return CommitMapper.toCreateCommitResponse(savedCommit);
-        } catch (CustomException e) {
-            log.error("Create Commit 저장 실패 - {}", e.getMessage(), e);
-            throw e;
+            // * 10. blockId는 editor.js에서 만들어주는 uniqueId
+            List<String> newOrder = createBlockOrder(commitRequest.blockOrders(), savedBlocks,
+                    baseCommitBlocks);
+            // * 13. MongoDB에 cbs저장
+            savedCbs = saveCommitBlockSequence(newOrder);
+            // * 14. Commit에 MongoId 세팅
+            savedCommit.initializeCommitMongoId(savedCbs.getId());
         } catch (Exception e) {
-            log.error("Create Commit 알 수 없는 오류 - {}", e.getMessage(), e);
+            rollbackMongoDb(savedBlocks, savedCbs);
+            if (e instanceof MongoException) {
+                throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
+            } else if (e instanceof CustomException) {
+                throw (CustomException) e;
+            }
+            log.error("fail to save commit ", e);
             throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
         }
 
+        RenewUpdatedAtHelper.touch(branch);
+        MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
+                .toMongoIdsDto(saveMongoId, null, null);
+
+
+        log.warn("[MONGO] createCommit");
+        eventPublisher.publishEvent(commitDeleteMongoIds);
+        return CommitMapper.toCreateCommitResponse(savedCommit);
     }
 
     @Transactional(readOnly = true)
@@ -149,25 +156,40 @@ public class CommitService {
         try {
             // 문서가 존재하는지 검사
             // 브랜치가 존재하는지 검사
-            Long baseBranchId = mergeRequest.baseBranchId();
-            Long targetBranchId = mergeRequest.targetBranchId();
+            // ToDo: API 명세 변경 혹은 유지에 따라 수정이 필요함
+            Long baseCommitId = mergeRequest.baseBranchId();
+            Long targetCommitId = mergeRequest.targetBranchId();
+
+            Commit baseCommit = getById(baseCommitId);
+            Commit targetCommit = getById(targetCommitId);
+            checkLeafCommit(baseCommit);
+            checkLeafCommit(targetCommit);
+
+            Branch baseBranch = baseCommit.getBranch();
+            Branch targetBranch = targetCommit.getBranch();
+
+            Long baseBranchId = baseBranch.getId();
+            Long targetBranchId = targetBranch.getId();
 
             checkBranch(baseBranchId, targetBranchId);
             branchService.checkBranchInDocOwnedByUser(docId, baseBranchId, userId);
             branchService.checkBranchInDocOwnedByUser(docId, targetBranchId, userId);
 
             Doc doc = docService.getById(docId);
-            Branch baseBranch = branchService.getById(baseBranchId);
-            Branch targetBranch = branchService.getById(targetBranchId);
 
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());
 
             // Commit을 저장
-            Commit saveMergeCommit = saveMergeCommit(doc, baseBranch, targetBranch,
+            MergeCommitDto mergeCommitDto = saveMergeCommit(doc, baseBranch, targetBranch,
                     mergeRequest, commitMongoIds.cbsId());
 
-            return CommitMapper.toCreateCommitResponse(saveMergeCommit);
+            MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
+                    .toMongoIdsDto(mergeCommitDto.saveMongoIds(), null, null);
+
+            log.warn("[MONGO] mergeCommit");
+            eventPublisher.publishEvent(commitDeleteMongoIds);
+            return CommitMapper.toCreateCommitResponse(mergeCommitDto.commit());
         } catch (Exception e) {
             if (commitMongoIds != null) {
                 rollbackMongoTransaction(commitMongoIds);
@@ -180,22 +202,71 @@ public class CommitService {
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCommit(Long docId, Long commitId, Long userId) {
+        try {
+            docService.checkDocByIdAndUserId(docId, userId);
+
+            Commit commit = getById(commitId);
+            Doc doc = docService.getById(docId);
+            // LeafCommit일 경우에만 삭제 가능
+            checkLeafCommit(commit);
+            // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능
+            checkFromOrRootCommit(commit);
+
+            // 간선을 삭제하면서 새로 LeafCommit이 될 Commit들을 수집
+            List<Commit> prevCommits = edgeService.cutEdge(doc, commitId);
+
+            for (Commit prevCommit : prevCommits) {
+                Branch branch = prevCommit.getBranch();
+                branch.updateLeafCommit(prevCommit);
+                branch.removeCommit(commit);
+                RenewUpdatedAtHelper.touch(branch);
+            }
+
+            MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
+
+            commitRepository.deleteById(commit.getId());
+
+            log.warn("[MONGO] deleteCommit");
+            eventPublisher.publishEvent(commitDeleteMongoIds);
+        } catch (CustomException e) {
+            log.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            // DataIntegrityViolationException 예외처리 도입시 변경될 수 있음
+            throw new CustomException(CommitErrorCode.FAIL_DELETE_COMMIT);
+        }
+    }
+
+    private void checkFromOrRootCommit(Commit commit) {
+        if (branchService.checkFromOrRootCommitInBranch(commit)) {
+            throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
+        }
+    }
+
+    private void checkLeafCommit(Commit commit) {
+        if (!commit.getId().equals(commit.getBranch().getLeafCommit().getId())) {
+            throw new CustomException(CommitErrorCode.IS_NOT_LEAF_COMMIT);
+        }
+    }
+
     private void checkBranch(Long baseBranchId, Long targetBranchId) {
-        if (baseBranchId == null || targetBranchId == null || baseBranchId < 0 || targetBranchId < 0
-                || baseBranchId.equals(targetBranchId)) {
+        if (baseBranchId.equals(targetBranchId)) {
             throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
         }
     }
 
-    private Commit saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
+    private MergeCommitDto saveMergeCommit(Doc doc, Branch baseBranch, Branch targetBranch,
             MergeCommitRequest request, String commitMongoId) {
 
-        Commit commit = CommitMapper.toEntity(baseBranch, request);
+        Commit commit = CommitMapper.toEntity(targetBranch, request);
         commit.initializeCommitMongoId(commitMongoId);
         Commit savedCommit = commitRepository.save(commit);
         commitRepository.flush();
 
-        baseBranch.addCommit(savedCommit);
+        targetBranch.addCommit(savedCommit);
 
         Commit baseCommit = getLeafCommit(baseBranch);
         Commit targetCommit = getLeafCommit(targetBranch);
@@ -205,13 +276,13 @@ public class CommitService {
         edgeService.saveEdge(edge1);
         edgeService.saveEdge(edge2);
 
-        baseBranch.updateLeafCommit(savedCommit);
-        saveService.deleteSaveIfExists(baseBranch.getId());
-        RenewUpdatedAtHelper.touch(baseBranch);
+        targetBranch.updateLeafCommit(savedCommit);
+        String saveMongoId = saveService.deleteSaveIfExists(targetBranch);
+        RenewUpdatedAtHelper.touch(targetBranch);
 
-        branchService.saveBranch(baseBranch);
+        branchService.saveBranch(targetBranch);
 
-        return savedCommit;
+        return CommitMapper.toMergeCommitDto(savedCommit, saveMongoId);
     }
 
     private CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {

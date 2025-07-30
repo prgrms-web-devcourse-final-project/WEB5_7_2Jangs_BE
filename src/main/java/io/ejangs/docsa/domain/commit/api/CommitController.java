@@ -6,12 +6,19 @@ import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
+import io.ejangs.docsa.domain.commit.swagger.CompareMergeCommitDocs;
+import io.ejangs.docsa.domain.commit.swagger.CreateCommitDocs;
+import io.ejangs.docsa.domain.commit.swagger.DeleteCommitDocs;
+import io.ejangs.docsa.domain.commit.swagger.GetCommitDocs;
+import io.ejangs.docsa.domain.commit.swagger.MergeCommitDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,11 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Commit API")
 public class CommitController {
 
     private final CommitService commitService;
 
     @PostMapping("/api/document/{docId}/commit")
+    @CreateCommitDocs
     public ResponseEntity<CreateCommitResponse> createCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
@@ -36,6 +45,7 @@ public class CommitController {
     }
 
     @GetMapping("/api/document/{docId}/commit/{commitId}")
+    @GetCommitDocs
     public ResponseEntity<CommitResponse> getCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
@@ -46,6 +56,7 @@ public class CommitController {
     }
 
     @GetMapping("/api/document/{docId}/merge")
+    @CompareMergeCommitDocs
     public ResponseEntity<CompareMergeCommitResponse> compareMergeCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
@@ -58,6 +69,7 @@ public class CommitController {
     }
 
     @PostMapping("/api/document/{docId}/merge")
+    @MergeCommitDocs
     public ResponseEntity<CreateCommitResponse> mergeCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
@@ -65,5 +77,16 @@ public class CommitController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(commitService.mergeCommit(docId, mergeRequest, userDetails.getId()));
+    }
+
+    @DeleteMapping("/api/document/{docId}/commit/{commitId}")
+    @DeleteCommitDocs
+    public ResponseEntity<Void> deleteCommit(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable("docId") Long docId,
+            @PathVariable("commitId") Long commitId) {
+
+        commitService.deleteCommit(docId, commitId, userDetails.getId());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

@@ -12,9 +12,9 @@ import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -52,12 +52,13 @@ public class SaveService {
         saveContent.updateContent(request.content());
         try {
             saveContentRepository.save(saveContent);
+        } catch (DuplicateKeyException e) {
+            log.warn("중복 키로 Mongo 저장 실패 - saveId={}, mongoId={}, message={}", findSave.getId(),
+                    findSave.getSaveMongoId(), e.getMessage());
+            throw new CustomException(SaveErrorCode.FAIL_TO_SAVE_IN_MYSQL);
         } catch (DataAccessException e) {
-            log.error("[Mongo 저장 실패 - DataAccess] saveId={}, message={}", findSave.getId(), e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
-        } catch (Exception e) {
-            log.error("[Mongo 저장 실패 - Unknown] saveId={}, message={}", findSave.getId(), e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            log.error("Mongo 저장 실패: {}", e.getMessage(), e);
+            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
         }
 
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
@@ -74,15 +75,14 @@ public class SaveService {
         }
 
         RenewUpdatedAtHelper.touch(findSave);
+        branch.removeSave();
         saveRepository.delete(findSave);
         try {
             saveContentRepository.deleteById(findSave.getSaveMongoId());
-        } catch (DataAccessException e) {
-            log.error("[Mongo 삭제 실패 - DataAccess] saveId={}, message={}", findSave.getId(), e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            log.warn("[MONGO] SaveService 에서 deleteSave() 호출로 saveContent 삭제 : {}", findSave.getSaveMongoId());
         } catch (Exception e) {
-            log.error("[Mongo 삭제 실패 - Unknown] saveId={}, message={}", findSave.getId(), e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
+            log.error("Mongo 삭제 중 실패 실패: {}", e.getMessage(), e);
+            throw new CustomException(SaveErrorCode.FAILED_TO_DELETE_IN_MONGO);
         }
     }
 
@@ -96,12 +96,14 @@ public class SaveService {
                 .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
     }
 
-    public void deleteSaveIfExists(Long branchId) {
-        saveRepository.findByBranchId(branchId).ifPresent(save -> {
+    public String deleteSaveIfExists(Branch branch) {
+        Save save = saveRepository.findByBranchId(branch.getId()).orElse(null);
+        branch.removeSave();
+        String saveMongoId = save != null ? save.getSaveMongoId() : null;
+        if (save != null) {
             saveRepository.delete(save);
-            saveContentRepository.findById(save.getSaveMongoId())
-                    .ifPresent(saveContentRepository::delete);
-        });
+        }
+        return saveMongoId;
     }
 
     private Save getValidSave(SaveIdentifierDto dto) {

@@ -42,6 +42,28 @@ public class MongoIdsCollector {
         return new MongoIdsDto(saveContentMongoIds, commitBlockSequenceIds,
                 new ArrayList<>(blockIds));
     }
+
+    public MongoIdsDto collectFrom(List<Commit> prevCommits, Commit commit) {
+
+        List<String> commitBlockSequenceIds = prevCommits.stream()
+                .map(Commit::getCommitMongoId)
+                .toList();
+
+        Set<String> blockIds = commitBlockSequenceIds.stream()
+                .map(commitBlockSequenceRepository::findById)
+                .flatMap(Optional::stream)
+                .flatMap(cbs -> cbs.getBlockOrders().stream())
+                .collect(Collectors.toSet());
+
+        Set<String> removeBlockIds = commitBlockSequenceRepository
+                .findById(commit.getCommitMongoId()).stream()
+                .flatMap(cbs -> cbs.getBlockOrders().stream())
+                .collect(Collectors.toSet());
+
+        removeBlockIds.removeAll(blockIds);
+
+        return new MongoIdsDto(null, List.of(commit.getCommitMongoId()), new ArrayList<>(removeBlockIds));
+    }
 }
 
 

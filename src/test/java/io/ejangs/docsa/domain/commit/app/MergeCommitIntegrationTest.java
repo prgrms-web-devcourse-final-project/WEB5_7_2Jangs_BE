@@ -21,7 +21,6 @@ import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -103,11 +102,11 @@ class MergeCommitIntegrationTest {
     void mergeCommit_Success() {
         // given
         MergeCommitRequest request =
-                CommitIntegrationTestUtils.createMergeCommitRequest(baseBranch, targetBranch);
+                CommitIntegrationTestUtils.createMergeCommitRequest(baseCommit, targetCommit);
 
         // when
-        CreateCommitResponse response = commitService.mergeCommit(testDoc.getId(), request,
-                userDetails.getId());
+        CreateCommitResponse response =
+                commitService.mergeCommit(testDoc.getId(), request, userDetails.getId());
 
         // then
         assertThat(response).isNotNull();
@@ -120,9 +119,9 @@ class MergeCommitIntegrationTest {
         assertThat(mergeCommit.getDescription()).isEqualTo("Merge feature into main");
         assertThat(mergeCommit.getCommitMongoId()).isNotNull();
 
-        // 베이스 브랜치의 leafCommit이 업데이트되었는지 확인
-        Branch updatedBaseBranch = branchRepository.findById(baseBranch.getId()).orElse(null);
-        assertThat(updatedBaseBranch.getLeafCommit().getId()).isEqualTo(response.id());
+        // 타겟 브랜치의 leafCommit이 업데이트되었는지 확인
+        Branch updatedTargetBranch = branchRepository.findById(targetBranch.getId()).orElse(null);
+        assertThat(updatedTargetBranch.getLeafCommit().getId()).isEqualTo(response.id());
 
         // 두 개의 간선이 생성되었는지 확인
         List<Edge> edges = edgeRepository.findByNextCommitId(response.id());
@@ -147,14 +146,14 @@ class MergeCommitIntegrationTest {
         MergeCommitRequest request = new MergeCommitRequest(
                 "Empty merge commit",
                 "Merge with empty content",
-                baseBranch.getId(),
-                targetBranch.getId(),
+                baseCommit.getId(),
+                targetCommit.getId(),
                 List.of()
         );
 
         // when
-        CreateCommitResponse response = commitService.mergeCommit(testDoc.getId(), request,
-                userDetails.getId());
+        CreateCommitResponse response =
+                commitService.mergeCommit(testDoc.getId(), request, userDetails.getId());
 
         // then
         assertThat(response).isNotNull();
@@ -172,73 +171,77 @@ class MergeCommitIntegrationTest {
         // given
         Long nonExistentDocId = 999L;
         MergeCommitRequest request =
-                CommitIntegrationTestUtils.createMergeCommitRequest(baseBranch, targetBranch);
+                CommitIntegrationTestUtils.createMergeCommitRequest(baseCommit, targetCommit);
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(nonExistentDocId, request,
-                userDetails.getId()))
+        assertThatThrownBy(
+                () -> commitService.mergeCommit(nonExistentDocId, request, userDetails.getId())
+        )
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN.getMessage());
     }
 
     @Test
-    @DisplayName("존재하지 않는 베이스 브랜치 ID로 병합 시도 시 예외 발생")
+    @DisplayName("존재하지 않는 베이스 커밋 ID로 병합 시도 시 예외 발생")
     void mergeCommit_BaseBranch_NotFound() {
         // given
         MergeCommitRequest request = new MergeCommitRequest(
                 "Merge commit",
                 "Merge feature into main",
-                999L,   // 존재하지 않는 베이스 브랜치 ID
-                targetBranch.getId(),
+                999L,   // 존재하지 않는 베이스 커밋 ID
+                targetCommit.getId(),
                 blockContent
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
-                userDetails.getId()))
+        assertThatThrownBy(
+                () -> commitService.mergeCommit(testDoc.getId(), request, userDetails.getId())
+        )
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN.getMessage());
+                .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
     }
 
     @Test
-    @DisplayName("존재하지 않는 타겟 브랜치 ID로 병합 시도 시 예외 발생")
+    @DisplayName("존재하지 않는 타겟 커밋 ID로 병합 시도 시 예외 발생")
     void mergeCommit_TargetBranch_NotFound() {
         // given
         MergeCommitRequest request = new MergeCommitRequest(
                 "Merge commit",
                 "Merge feature into main",
-                baseBranch.getId(),
-                999L,   // 존재하지 않는 타겟 브랜치 ID
+                baseCommit.getId(),
+                999L,   // 존재하지 않는 타겟 커밋 ID
                 blockContent
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
-                userDetails.getId()))
+        assertThatThrownBy(
+                () -> commitService.mergeCommit(testDoc.getId(), request, userDetails.getId())
+        )
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN.getMessage());
+                .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
     }
 
     @Test
-    @DisplayName("leafCommit이 없는 브랜치로 병합 시도 시 예외 발생")
+    @DisplayName("leafCommit이 아닌 커밋을 병합 시도 시 예외 발생")
     void mergeCommit_NoLeafCommit() {
         // given
-        Branch branchWithoutLeaf = CommitIntegrationTestUtils.createTestBranch("no-leaf", testDoc);
-        branchRepository.save(branchWithoutLeaf);
+        Commit testMiddleCommit = CommitIntegrationTestUtils.createTestCommit(baseBranch, "Not Leaf Commit");
+        commitRepository.save(testMiddleCommit);
 
         MergeCommitRequest request = new MergeCommitRequest(
                 "Merge commit",
                 "Merge feature into main",
-                branchWithoutLeaf.getId(),
-                targetBranch.getId(),
+                testMiddleCommit.getId(),
+                targetCommit.getId(),
                 blockContent
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
-                userDetails.getId()))
+        assertThatThrownBy(
+                () -> commitService.mergeCommit(testDoc.getId(), request, userDetails.getId())
+        )
                 .isInstanceOf(CustomException.class)
-                .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
+                .hasMessageContaining(CommitErrorCode.IS_NOT_LEAF_COMMIT.getMessage());
     }
 
     @Test
@@ -248,14 +251,15 @@ class MergeCommitIntegrationTest {
         MergeCommitRequest request = new MergeCommitRequest(
                 "Self merge commit",
                 "Merge branch into itself",
-                baseBranch.getId(),
-                baseBranch.getId(), // 동일한 브랜치
+                baseCommit.getId(),
+                baseCommit.getId(), // 동일한 브랜치
                 blockContent
         );
 
         // when & then
-        assertThatThrownBy(() -> commitService.mergeCommit(testDoc.getId(), request,
-                userDetails.getId()))
+        assertThatThrownBy(
+                () -> commitService.mergeCommit(testDoc.getId(), request, userDetails.getId())
+        )
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(CommitErrorCode.COMMIT_BAD_REQUEST.getMessage());
     }

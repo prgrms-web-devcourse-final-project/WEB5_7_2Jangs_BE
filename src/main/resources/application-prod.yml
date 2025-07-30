@@ -23,6 +23,8 @@ server:
   servlet:
     session:
       cookie:
+        name: ${SESSION_COOKIE_NAME}
+        domain: ${SESSION_COOKIE_DOMAIN}
         secure: true
         same-site: None
 
@@ -35,3 +37,12 @@ springdoc:
     servers:
       - url: ${SWAGGER_SERVER_URL}
         description: Production Server
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: unrestricted

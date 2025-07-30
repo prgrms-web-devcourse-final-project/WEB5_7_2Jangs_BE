@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetrySynchronizationManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MongoDeleteRetryService {
 
-    private int retryCnt = 1;
 
     private final SaveContentRepository saveContentRepository;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
@@ -33,16 +33,22 @@ public class MongoDeleteRetryService {
     )
     @Transactional(transactionManager = "mongoTransactionManager")
     public void deleteMongoData(MongoIdsDto dto) {
-        log.info("MongoDelete Retry : {}", retryCnt++);
+        int retryCount = RetrySynchronizationManager.getContext() != null
+                ? RetrySynchronizationManager.getContext().getRetryCount()
+                : 0;
+        log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Retry count = {}", retryCount);
 
         for (String saveContentId : dto.saveContentsIds()) {
             saveContentRepository.deleteById(saveContentId);
+            log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Save Content id = {}", saveContentId);
         }
         for (String commitBlockSequenceId : dto.commitBlockSequenceIds()) {
             commitBlockSequenceRepository.deleteById(commitBlockSequenceId);
+            log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Commit Block Sequence id = {}", commitBlockSequenceId);
         }
         for (String blockId : dto.blockIds()) {
             blockRepository.deleteById(blockId);
+            log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Block id = {}", blockId);
         }
     }
 

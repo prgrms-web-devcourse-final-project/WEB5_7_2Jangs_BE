@@ -37,24 +37,18 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     }
 
     private ErrorResponse determineErrorResponse(AuthenticationException authException) {
-        return switch (authException) {
-            // 잘못된 이메일 or 비밀번호 입력
-            case BadCredentialsException ignored ->
-                    ErrorResponse.from(AuthErrorCode.INVALID_CREDENTIALS);
-            // 존재하지 않는 이메일로 로그인 시도
-            case UsernameNotFoundException ignored ->
-                    ErrorResponse.from(AuthErrorCode.INVALID_CREDENTIALS);
-            // 세션이 없거나 만료된 상황
-            case InsufficientAuthenticationException ignored ->
-                    ErrorResponse.from(AuthErrorCode.LOGIN_REQUIRED);
-            // 동시 로그인 제한 초과 등 세션 관련 문제 발생
-            case SessionAuthenticationException ignored ->
-                    ErrorResponse.from(AuthErrorCode.INVALID_SESSION);
-            default -> {
-                log.error("Unhandled authentication exception: {}",
-                        authException.getClass().getSimpleName(), authException);
-                yield ErrorResponse.from(AuthErrorCode.AUTHENTICATION_FAILED);
-            }
-        };
+        if (authException instanceof BadCredentialsException ||
+                authException instanceof UsernameNotFoundException) {
+            return ErrorResponse.from(AuthErrorCode.INVALID_CREDENTIALS);
+        }
+
+        if (authException instanceof InsufficientAuthenticationException ||
+                authException instanceof SessionAuthenticationException) {
+            return ErrorResponse.from(AuthErrorCode.LOGIN_REQUIRED);
+        }
+
+        log.error("Unhandled authentication exception: {}",
+                authException.getClass().getSimpleName(), authException);
+        return ErrorResponse.from(AuthErrorCode.AUTHENTICATION_FAILED);
     }
 }

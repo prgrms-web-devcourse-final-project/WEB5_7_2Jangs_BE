@@ -11,16 +11,32 @@ import java.util.List;
 public interface BranchRepository extends JpaRepository<Branch, Long> {
 
     @Query("""
-                SELECT new io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto(
-                    b.id, b.name, b.createdAt, b.fromCommit.id, b.rootCommit.id, b.leafCommit.id, b.save.id
-                )
-                FROM Branch b
-                WHERE b.doc.id = :docId
-            """)
+    SELECT new io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto(
+        b.id,
+        b.name,
+        b.createdAt,
+        b.fromCommit.id,
+        b.rootCommit.id,
+        b.leafCommit.id,
+        (
+            SELECT s.id FROM Save s WHERE s.branch.id = b.id
+        )
+    )
+    FROM Branch b
+    WHERE b.doc.id = :docId
+""")
     List<GraphBranchDto> findBranchesByDocId(@Param("docId") Long docId);
 
     boolean existsByIdAndDocIdAndDocUserId(Long branchId, Long documentId, Long userId);
 
     boolean existsByFromCommitIdIn(List<Long> commitIds);
+
+    @Query("""
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM Branch b
+                    WHERE b.rootCommit.id = :commitId OR b.fromCommit.id = :commitId
+                ) THEN true ELSE false END
+            """)
+    boolean existsByRootCommitIdOrFromCommitId(@Param("commitId") Long commitId);
 }
 

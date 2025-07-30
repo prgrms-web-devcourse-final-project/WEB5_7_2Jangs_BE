@@ -44,6 +44,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class CommitServiceMockTest {
@@ -68,6 +69,9 @@ class CommitServiceMockTest {
 
     @Mock
     private EdgeService edgeService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private CommitService commitService;
@@ -203,7 +207,7 @@ class CommitServiceMockTest {
 
             // Then
             assertThat(result).isEqualTo(expectedResponse);
-            verify(saveService).deleteSaveIfExists(branch.getId());
+            verify(saveService).deleteSaveIfExists(branch);
         }
     }
 
@@ -305,13 +309,13 @@ class CommitServiceMockTest {
             when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
                     savedCommit);
             when(commitRepository.save(savedCommit)).thenThrow(
-                    new RuntimeException("Block save failed"));
+                    new RuntimeException("[Test message] Block save failed"));
 
             // When & Then
             assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
                     userDetails.getId()))
                     .isInstanceOf(RuntimeException.class)
-                    .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
+                    .hasMessage("[Test message] Block save failed");
 
             // MongoDB에 반영 안됨
             verify(cbsRepository, never()).save(savedCbs);

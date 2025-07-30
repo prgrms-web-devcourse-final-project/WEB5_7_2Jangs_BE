@@ -2,7 +2,6 @@ package io.ejangs.docsa.domain.doc.dao.mysql;
 
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +27,12 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     Page<Doc> findAllByUserId(Long userId, Pageable pageable);
 
-    List<Doc> findAllByUserId(Long userId);
+    @Query("""
+            SELECT d
+            FROM Doc d
+            WHERE d.user.id = :userId AND d.title LIKE CONCAT('%', :title, '%')
+            """)
+    Page<Doc> searchDocByTitle(@Param("title") String title, @Param("userId") Long userId,
+            Pageable pageable);
 
 }
