@@ -153,7 +153,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "저장 수정 실패 - MySQL 또는 MongoDB 저장 실패",
+                        description = "저장 수정 실패 - MySQL 또는 MongoDB 접근 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -163,8 +163,8 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                             {
                                                               "status": 500,
-                                                              "message": "저장에 실패했습니다.",
-                                                              "error": "FAIL_TO_SAVE_IN_MYSQL"
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
                                                             }
                                                         """
                                         ),
@@ -173,8 +173,8 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                             {
                                                               "status": 500,
-                                                              "message": "저장에 실패했습니다.",
-                                                              "error": "FAILED_TO_SAVE_IN_MONGO"
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
                                                             }
                                                         """
                                         )

@@ -87,7 +87,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "저장 수정 실패 - 요청을 보낸 유저의 저장이 아님",
+                        description = "저장 조회 실패 - 요청을 보낸 유저의 저장이 아님",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -121,7 +121,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "저장 조회 실패 - 존재하지 않는 저장이거나 존재하지 않는 문서",
+                        description = "저장 조회 실패 - 존재하지 않는 데이터",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -135,16 +135,37 @@ import org.springframework.http.MediaType;
                                                             "error": "SAVE_NOT_FOUND"
                                                         }
                                                         """
-                                        ), @ExampleObject(
-                                        name = "존재하지 않는 문서",
-                                        value = """
-                                                {
-                                                    "status": 404,
-                                                    "message": "해당 문서를 찾을 수 없습니다.",
-                                                    "error": "DOCUMENT_NOT_FOUND"
-                                                }
-                                                """
-                                )
+                                        )
+                                }
+                        )
+                ),
+                @ApiResponse(
+                        responseCode = "500",
+                        description = "저장 조회 실패 - MySQL 또는 MongoDB 접근 실패",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = {
+                                        @ExampleObject(
+                                                name = "MySQL 저장 실패",
+                                                value = """
+                                                            {
+                                                              "status": 500,
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
+                                                            }
+                                                        """
+                                        ),
+                                        @ExampleObject(
+                                                name = "MongoDB 저장 실패",
+                                                value = """
+                                                            {
+                                                              "status": 500,
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
+                                                            }
+                                                        """
+                                        )
                                 }
                         )
                 )

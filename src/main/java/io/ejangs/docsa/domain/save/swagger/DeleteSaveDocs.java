@@ -46,7 +46,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "저장 수정 실패 - 잘못된 요청",
+                        description = "저장 삭제 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -93,7 +93,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "저장 수정 실패 - 존재하지 않는 저장",
+                        description = "저장 삭제 실패 - 존재하지 않는 저장",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -110,7 +110,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "저장 삭제 실패 - MySQL 또는 MongoDB 실패",
+                        description = "저장 삭제 실패 - MySQL 또는 MongoDB 접근 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -120,8 +120,8 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                             {
                                                               "status": 500,
-                                                              "message": "저장에 실패했습니다.",
-                                                              "error": "FAIL_TO_SAVE_IN_MYSQL"
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
                                                             }
                                                         """
                                         ),
@@ -130,8 +130,8 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                             {
                                                               "status": 500,
-                                                              "message": "삭제를 실패했습니다.",
-                                                              "error": "FAILED_TO_DELETE_IN_MONGO"
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
                                                             }
                                                         """
                                         )
