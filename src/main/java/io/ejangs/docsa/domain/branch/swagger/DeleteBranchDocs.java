@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
+                        name = "docId",
                         description = "문서 ID",
                         example = "1",
                         required = true,

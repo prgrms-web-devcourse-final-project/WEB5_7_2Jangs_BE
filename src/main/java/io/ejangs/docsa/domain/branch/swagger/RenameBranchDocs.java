@@ -24,7 +24,7 @@ import org.springframework.http.MediaType;
         description = "버전의 이름을 수정합니다. 메인버전의 이름은 수정할 수 없습니다.",
         parameters = {
                 @Parameter(
-                        name = "documentId",
+                        name = "docId",
                         description = "수정하려는 버전이 속한 문서 id",
                         example = "1",
                         required = true,
