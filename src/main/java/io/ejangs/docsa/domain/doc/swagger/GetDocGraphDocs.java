@@ -148,16 +148,6 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                             {
                                                               "status": 404,
-                                                              "message": "그래프 조회에 오류가 발생했습니다.",
-                                                              "error": "DOCUMENT_GRAPH_NOT_FOUND"
-                                                            }
-                                                        """,
-                                                name = "그래프 조회 실패."
-                                        ),
-                                        @ExampleObject(
-                                                value = """
-                                                            {
-                                                              "status": 404,
                                                               "message": "해당 버전을 찾을 수 없습니다.",
                                                               "error": "BRANCH_NOT_FOUND"
                                                             }

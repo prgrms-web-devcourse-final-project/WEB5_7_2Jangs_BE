@@ -14,9 +14,7 @@ public enum DocErrorCode implements ErrorCode {
     TITLE_DUPLICATION(HttpStatus.BAD_REQUEST, "이미 사용중인 제목입니다.", "TITLE_DUPLICATION"),
     SAME_AS_CURRENT_TITLE(HttpStatus.BAD_REQUEST, "현재 제목과 동일한 제목입니다.", "SAME_AS_CURRENT_TITLE"),
     FAIL_CREATE_DOCUMENT(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류로 인해 문서 생성에 실패했습니다.",
-            "FAIL_CREATE_DOCUMENT"),
-    DOCUMENT_GRAPH_NOT_FOUND(HttpStatus.NOT_FOUND, "그래프 조회에 오류가 발생했습니다.",
-            "DOCUMENT_GRAPH_NOT_FOUND");
+            "FAIL_CREATE_DOCUMENT");
     private final HttpStatus status;
     private final String message;
     private final String error;
