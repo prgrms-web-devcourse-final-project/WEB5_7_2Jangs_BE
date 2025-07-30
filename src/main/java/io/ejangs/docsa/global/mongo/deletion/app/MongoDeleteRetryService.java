@@ -36,18 +36,20 @@ public class MongoDeleteRetryService {
         int retryCount = RetrySynchronizationManager.getContext() != null
                 ? RetrySynchronizationManager.getContext().getRetryCount()
                 : 0;
-        log.info("MongoDelete Retry count = {}", retryCount);
+        log.warn("[MONGO] MongoDelete Retry count = {}", retryCount);
 
         for (String saveContentId : dto.saveContentsIds()) {
             saveContentRepository.deleteById(saveContentId);
+            log.warn("[MONGO] MongoDelete Save Content id = {}", saveContentId);
         }
         for (String commitBlockSequenceId : dto.commitBlockSequenceIds()) {
             commitBlockSequenceRepository.deleteById(commitBlockSequenceId);
+            log.warn("[MONGO] MongoDelete Commit Block Sequence id = {}", commitBlockSequenceId);
         }
         for (String blockId : dto.blockIds()) {
             blockRepository.deleteById(blockId);
+            log.warn("[MONGO] MongoDelete Block id = {}", blockId);
         }
-
     }
 
     @Recover
