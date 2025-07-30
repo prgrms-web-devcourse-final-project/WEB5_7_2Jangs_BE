@@ -42,4 +42,4 @@ auth:
   pwd-reset-code-cache-name: pwdResetCodeCache
 
 default:
-  branch: main
+  branch: default

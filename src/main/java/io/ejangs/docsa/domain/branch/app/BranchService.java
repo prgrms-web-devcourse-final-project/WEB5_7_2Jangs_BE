@@ -27,11 +27,9 @@ import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,6 +70,8 @@ public class BranchService {
             Long userId) {
 
         checkDocByIdAndUserId(documentId, userId);
+
+        checkDuplicatedWithMainBranchName(documentId, request.name());
 
         Long fromCommitId = request.fromCommitId();
 
@@ -299,5 +299,15 @@ public class BranchService {
 
     public boolean checkFromOrRootCommitInBranch(Commit commit) {
         return branchRepository.existsByRootCommitIdOrFromCommitId(commit.getId());
+    }
+
+    private void checkDuplicatedWithMainBranchName(Long docId, String requestName) {
+        Optional<Branch> mainBranchOpt = branchRepository.findMainBranchByDocumentId(docId);
+        if (mainBranchOpt.isPresent()) {
+            String mainBranchName = mainBranchOpt.get().getName();
+            if (mainBranchName.equals(requestName)) {
+                throw new CustomException(BranchErrorCode.MAIN_BRANCH_NAME_DUPLICATED);
+            }
+        }
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface BranchRepository extends JpaRepository<Branch, Long> {
 
@@ -38,5 +39,8 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
                 ) THEN true ELSE false END
             """)
     boolean existsByRootCommitIdOrFromCommitId(@Param("commitId") Long commitId);
+
+    @Query("SELECT b FROM Branch b WHERE b.doc.id = :documentId AND b.fromCommit IS NULL")
+    Optional<Branch> findMainBranchByDocumentId(Long documentId);
 }
 
