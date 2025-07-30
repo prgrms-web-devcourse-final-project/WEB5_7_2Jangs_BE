@@ -205,8 +205,8 @@ public class DocService {
         Optional<DocTitleOnlyResponse> optionalTitle = docRepository.findTitleOnlyById(documentId);
 
         if (optionalTitle.isEmpty()) {
-            log.error("문서 ID {}의 제목 찾지 못함 (DocErrorCode.DOCUMENT_GRAPH_NOT_FOUND)", documentId);
-            throw new CustomException(DocErrorCode.DOCUMENT_GRAPH_NOT_FOUND);
+            log.error("문서 ID {}의 제목 찾지 못함 (DocErrorCode.DOCUMENT_NOT_FOUND)", documentId);
+            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
         }
 
         return optionalTitle.get().title();

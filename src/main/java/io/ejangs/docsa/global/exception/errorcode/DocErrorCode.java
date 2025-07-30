@@ -9,13 +9,12 @@ import org.springframework.http.HttpStatus;
 public enum DocErrorCode implements ErrorCode {
 
     DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 문서를 찾을 수 없습니다.", "DOCUMENT_NOT_FOUND"),
-    COMMIT_NOT_IN_DOCUMENT(HttpStatus.BAD_REQUEST, "기록이 해당 문서에 속해있지 않습니다",
+    COMMIT_NOT_IN_DOCUMENT(HttpStatus.BAD_REQUEST, "기록이 해당 문서에 속해있지 않습니다.",
             "COMMIT_NOT_IN_DOCUMENT"),
     TITLE_DUPLICATION(HttpStatus.BAD_REQUEST, "이미 사용중인 제목입니다.", "TITLE_DUPLICATION"),
     SAME_AS_CURRENT_TITLE(HttpStatus.BAD_REQUEST, "현재 제목과 동일한 제목입니다.", "SAME_AS_CURRENT_TITLE"),
     FAIL_CREATE_DOCUMENT(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류로 인해 문서 생성에 실패했습니다.",
-            "FAIL_CREATE_DOCUMENT"),
-    DOCUMENT_GRAPH_NOT_FOUND(HttpStatus.NOT_FOUND, "그래프 조회에 오류가 발생했습니다.", "DOCUMENT_GRAPH_NOT_FOUND");
+            "FAIL_CREATE_DOCUMENT");
     private final HttpStatus status;
     private final String message;
     private final String error;

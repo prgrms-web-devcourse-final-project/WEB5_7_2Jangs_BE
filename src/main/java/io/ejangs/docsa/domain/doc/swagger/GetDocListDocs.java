@@ -187,7 +187,56 @@ import org.springframework.http.MediaType;
                                                 """
                                 )
                         )
-                )
+                ),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "존재하지 않는 데이터",
+                        content = @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                examples = {
+                                        @ExampleObject(
+                                                value = """
+                                                            {
+                                                              "status": 404,
+                                                              "message": "해당 저장 데이터를 찾을 수 없습니다.",
+                                                              "error": "SAVE_NOT_FOUND"
+                                                            }
+                                                        """,
+                                                name = "저장을 찾을 수 없음."
+                                        ),
+                                        @ExampleObject(
+                                                value = """
+                                                            {
+                                                              "status": 404,
+                                                              "message": "해당 기록을 찾을 수 없습니다.",
+                                                              "error": "COMMIT_NOT_FOUND"
+                                                            }
+                                                        """,
+                                                name = "커밋 내용을 찾을 수 없음."
+                                        ),
+
+                                }
+                        )
+                ),
+                @ApiResponse(
+                        responseCode = "500",
+                        description = "서버오류로 인한 문서 조회 실패.",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = @ExampleObject(
+                                        value = """
+                                                {
+                                                    "status": 500,
+                                                    "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                    "error": "DATABASE_ERROR"
+                                                }
+                                                """
+                                )
+                        )
+                ),
+
         }
 )
 public @interface GetDocListDocs {
