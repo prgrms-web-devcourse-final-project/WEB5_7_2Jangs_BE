@@ -305,7 +305,7 @@ public class BranchService {
         boolean isDuplicate = branchRepository.existsByDocIdAndName(docId, requestName);
 
         if (isDuplicate) {
-            throw new CustomException(BranchErrorCode. BRANCH_NAME_DUPLICATED);
+            throw new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED);
         }
     }
 }
