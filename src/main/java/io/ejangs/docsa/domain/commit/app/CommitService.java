@@ -28,6 +28,7 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
@@ -110,7 +111,7 @@ public class CommitService {
         } catch (Exception e) {
             rollbackMongoDb(savedBlocks, savedCbs);
             if (e instanceof MongoException) {
-                throw new CustomException(CommitErrorCode.FAIL_SAVE_MONGODB);
+                throw new CustomException(DatabaseErrorCode.MONGO_ERROR);
             } else if (e instanceof CustomException) {
                 throw (CustomException) e;
             }
@@ -121,7 +122,6 @@ public class CommitService {
         RenewUpdatedAtHelper.touch(branch);
         MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
                 .toMongoIdsDto(saveMongoId, null, null);
-
 
         log.warn("[MONGO] createCommit");
         eventPublisher.publishEvent(commitDeleteMongoIds);
