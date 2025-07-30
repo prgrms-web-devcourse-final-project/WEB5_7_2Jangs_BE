@@ -166,7 +166,6 @@ import org.springframework.http.MediaType;
                                 }
                         )
                 )
-
         }
 )
 public @interface RenameDocDocs {

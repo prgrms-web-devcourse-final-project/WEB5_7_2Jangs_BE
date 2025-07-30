@@ -35,7 +35,7 @@ public class CommitContentAssembler {
 
         return blockIds.stream()
                 .map(id -> Optional.ofNullable(blockMap.get(id))
-                        .orElseThrow(() -> new CustomException(BlockErrorCode.BLOCK_NOT_FOUND)))
+                        .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND)))
                 .map(Block::getContent)
                 .toList();
     }
