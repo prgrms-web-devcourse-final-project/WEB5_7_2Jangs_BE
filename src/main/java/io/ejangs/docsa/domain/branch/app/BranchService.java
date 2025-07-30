@@ -71,8 +71,6 @@ public class BranchService {
 
         checkDocByIdAndUserId(documentId, userId);
 
-        checkDuplicatedWithBranchName(documentId, request.name());
-
         Long fromCommitId = request.fromCommitId();
 
         // 1. fromCommitId가 null이면 최초 브랜치 생성 시도 -> 여기서는 허용하지 않음
@@ -104,6 +102,8 @@ public class BranchService {
 
         } else {
             // 중간 커밋에서 작업을 이어가는 경우 → 새로운 브랜치를 생성하고 저장도 함께 생성
+            checkDuplicatedWithBranchName(documentId, request.name());
+
             Branch newBranch = Branch.builder().name(request.name()).doc(fromBranch.getDoc())
                     .fromCommit(fromCommit).build();
 
