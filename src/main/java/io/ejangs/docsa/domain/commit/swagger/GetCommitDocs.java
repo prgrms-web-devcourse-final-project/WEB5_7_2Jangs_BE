@@ -26,7 +26,7 @@ import org.springframework.http.MediaType;
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
+                        name = "docId",
                         description = "기록 조회하려는 문서의 id",
                         example = "1",
                         required = true,
@@ -34,7 +34,7 @@ import org.springframework.http.MediaType;
                 ),
                 @Parameter(
                         name = "commitId",
-                        description = "조회하려는 commit의 id",
+                        description = "조회하려는 기록의 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
@@ -50,35 +50,35 @@ import org.springframework.http.MediaType;
                                 examples = @ExampleObject(
                                         value = """
                                                 {
-                                                  "title": "문서 초안 작성 완료",
-                                                  "description": "1차 초안 커밋입니다.",
-                                                  "branchId": 1,
-                                                  "blocks": [
-                                                    {
-                                                      "id": "mhTl6ghSkV",
-                                                      "type": "paragraph",
-                                                      "data": {
-                                                        "text": "Hey. Meet the new Editor. On this picture you can see it in action. Then, try a demo 🤓"
-                                                      }
-                                                    },
-                                                    {
-                                                      "id": "os_YI4eub4",
-                                                      "type": "list",
-                                                      "data": {
-                                                        "type": "unordered",
-                                                        "items": [
-                                                          "It is a block-style editor",
-                                                          "It returns clean data output in JSON",
-                                                          "Designed to be extendable and pluggable with a <a href=\\"https://editorjs.io/creating-a-block-tool\\">simple API</a>"
-                                                        ]
-                                                      }
-                                                    }
-                                                  ],
-                                                  "blockOrders": [
-                                                    "mhTl6ghSkV",
-                                                    "l98dyx3yjb",
-                                                    "os_YI4eub4"
-                                                  ]
+                                                    "title": "문서 초안 작성 완료",
+                                                    "description": "1차 초안 커밋입니다.",
+                                                    "branchId": 1,
+                                                    "blocks": [
+                                                        {
+                                                            "id": "mhTl6ghSkV",
+                                                            "type": "paragraph",
+                                                            "data": {
+                                                                "text": "Hey. Meet the new Editor. On this picture you can see it in action. Then, try a demo 🤓"
+                                                            }
+                                                        },
+                                                        {
+                                                            "id": "os_YI4eub4",
+                                                            "type": "list",
+                                                            "data": {
+                                                                "type": "unordered",
+                                                                "items": [
+                                                                    "It is a block-style editor",
+                                                                    "It returns clean data output in JSON",
+                                                                    "Designed to be extendable and pluggable with a <a href=\\"https://editorjs.io/creating-a-block-tool\\">simple API</a>"
+                                                                ]
+                                                            }
+                                                        }
+                                                    ],
+                                                    "blockOrders": [
+                                                        "mhTl6ghSkV",
+                                                        "l98dyx3yjb",
+                                                        "os_YI4eub4"
+                                                    ]
                                                 }
                                                 """
                                 )
@@ -103,7 +103,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "기록 (commit) 실패",
+                        description = "기록 (commit) 실패 - 존재하지 않는 데이터",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,

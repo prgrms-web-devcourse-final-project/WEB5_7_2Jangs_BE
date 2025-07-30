@@ -25,7 +25,7 @@ public class CommitContentAssembler {
 
     public List<Map<String, Object>> assemble(String commitMongoId) {
         CommitBlockSequence blockSeq = commitBlockSequenceRepository.findById(commitMongoId)
-                .orElseThrow(() -> new CustomException(CommitErrorCode.MONGO_COMMIT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
 
         List<String> blockIds = blockSeq.getBlockOrders();
 
@@ -35,7 +35,7 @@ public class CommitContentAssembler {
 
         return blockIds.stream()
                 .map(id -> Optional.ofNullable(blockMap.get(id))
-                        .orElseThrow(() -> new CustomException(BlockErrorCode.MONGO_BLOCK_NOT_FOUND)))
+                        .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND)))
                 .map(Block::getContent)
                 .toList();
     }
