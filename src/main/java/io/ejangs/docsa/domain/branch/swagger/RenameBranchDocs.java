@@ -25,7 +25,7 @@ import org.springframework.http.MediaType;
         parameters = {
                 @Parameter(
                         name = "documentId",
-                        description = "수정하려는 버전가 속한 문서 id",
+                        description = "수정하려는 버전이 속한 문서 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH

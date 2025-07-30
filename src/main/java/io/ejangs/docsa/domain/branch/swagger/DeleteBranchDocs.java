@@ -20,10 +20,10 @@ import java.lang.annotation.Target;
 @Operation(
         summary = "버전 삭제",
         description = """
-                버전를 삭제합니다. 삭제 조건은 아래와 같습니다:
+                버전을 삭제합니다. 삭제 조건은 아래와 같습니다:
 
                 - 메인 버전(`fromCommit == null`)는 삭제 불가
-                - 다른 버전이 이 버전를 기반(fromCommit)으로 만들어졌다면 삭제 불가
+                - 다른 버전이 이 버전을 기반(fromCommit)으로 만들어졌다면 삭제 불가
                 - 블록, 시퀀스, 저장(MongoDB)도 함께 삭제됨
                 """,
         parameters = {
