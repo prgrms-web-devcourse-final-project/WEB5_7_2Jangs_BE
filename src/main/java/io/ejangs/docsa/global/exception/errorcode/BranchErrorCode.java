@@ -13,7 +13,7 @@ public enum BranchErrorCode implements ErrorCode {
     MAIN_BRANCH_FIX_UNAVAILABLE(HttpStatus.BAD_REQUEST, "메인 버전은 삭제 또는 수정할 수 없습니다", "MAIN_BRANCH_FIX_UNAVAILABLE"),
     SUB_BRANCH_DELETE_UNAVAILABLE(HttpStatus.BAD_REQUEST, "서브 버전이 있어 해당 브랜치를 삭제할 수 없습니다", "SUB_BRANCH_DELETE_UNAVAILABLE"),
     BRANCH_DELETE_UNAVAILABLE(HttpStatus.BAD_REQUEST, "해당 버전을 삭제할 수 없습니다", "BRANCH_DELETE_UNAVAILABLE"),
-    MAIN_BRANCH_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "새로운 버전의 이름이 메인 버전의 이름과 동일합니다", "MAIN_BRANCH_NAME_DUPLICATED");
+    BRANCH_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "새로운 버전의 이름은 다른 버전과 중복될 수 없습니다.", "BRANCH_NAME_DUPLICATED");
     private final HttpStatus status;
     private final String message;
     private final String error;

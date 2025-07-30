@@ -71,7 +71,7 @@ public class BranchService {
 
         checkDocByIdAndUserId(documentId, userId);
 
-        checkDuplicatedWithMainBranchName(documentId, request.name());
+        checkDuplicatedWithBranchName(documentId, request.name());
 
         Long fromCommitId = request.fromCommitId();
 
@@ -301,13 +301,14 @@ public class BranchService {
         return branchRepository.existsByRootCommitIdOrFromCommitId(commit.getId());
     }
 
-    private void checkDuplicatedWithMainBranchName(Long docId, String requestName) {
-        Optional<Branch> mainBranchOpt = branchRepository.findMainBranchByDocumentId(docId);
-        if (mainBranchOpt.isPresent()) {
-            String mainBranchName = mainBranchOpt.get().getName();
-            if (mainBranchName.equals(requestName)) {
-                throw new CustomException(BranchErrorCode.MAIN_BRANCH_NAME_DUPLICATED);
-            }
+    private void checkDuplicatedWithBranchName(Long docId, String requestName) {
+        List<Branch> branches = branchRepository.findAllByDocId(docId);
+
+        boolean isDuplicate = branches.stream().anyMatch(branch -> branch.getName().equals(requestName));
+
+        if (isDuplicate) {
+                throw new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED);
+
         }
     }
 }
