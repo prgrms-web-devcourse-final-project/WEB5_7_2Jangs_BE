@@ -117,8 +117,8 @@ import org.springframework.http.MediaType;
                                         value = """
                                                 {
                                                     "status": 500,
-                                                    "message": "서버 오류로 인해 문서 생성에 실패했습니다.",
-                                                    "error": "FAIL_CREATE_DOCUMENT"
+                                                    "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                    "error": "DATABASE_ERROR"
                                                 }
                                                 """
                                 )

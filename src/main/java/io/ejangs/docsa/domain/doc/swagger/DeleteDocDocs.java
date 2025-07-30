@@ -55,7 +55,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "문서 또는 사용자 정보가 존재하지 않음",
+                        description = "문서가 존재하지 않음",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -69,8 +69,26 @@ import org.springframework.http.MediaType;
                                                 """
                                 )
                         )
-                )
+                ),
+                @ApiResponse(
+                        responseCode = "500",
+                        description = "서버오류로 인한 문서 삭제 실패",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = @ExampleObject(
+                                        value = """
+                                                {
+                                                    "status": 500,
+                                                    "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                    "error": "DATABASE_ERROR"
+                                                }
+                                                """
+                                )
+                        )
+                ),
         }
 )
 public @interface DeleteDocDocs {
+
 }
