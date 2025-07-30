@@ -29,7 +29,7 @@ import org.springframework.http.MediaType;
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
+                        name = "docId",
                         description = "저장이 속한 문서 id",
                         example = "1",
                         required = true,
@@ -153,28 +153,17 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "저장 수정 실패 - MySQL 또는 MongoDB 저장 실패",
+                        description = "저장 수정 실패 - MySQL 또는 MongoDB 접근 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "MySQL 저장 실패",
                                                 value = """
                                                             {
                                                               "status": 500,
-                                                              "message": "저장에 실패했습니다.",
-                                                              "error": "FAIL_TO_SAVE_IN_MYSQL"
-                                                            }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "MongoDB 저장 실패",
-                                                value = """
-                                                            {
-                                                              "status": 500,
-                                                              "message": "저장에 실패했습니다.",
-                                                              "error": "FAILED_TO_SAVE_IN_MONGO"
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
                                                             }
                                                         """
                                         )

@@ -25,7 +25,7 @@ import org.springframework.http.MediaType;
                 """,
         parameters = {
                 @Parameter(
-                        name = "documentId",
+                        name = "docId",
                         description = "저장이 속한 문서 id",
                         example = "1",
                         required = true,
@@ -46,7 +46,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "저장 수정 실패 - 잘못된 요청",
+                        description = "저장 삭제 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -54,12 +54,12 @@ import org.springframework.http.MediaType;
                                         @ExampleObject(
                                                 name = "해당 유저의 수정이 아님",
                                                 value = """
-                                                {
-                                                    "status": 400,
-                                                    "message": "잘못된 접근입니다",
-                                                    "error": "SAVE_NOT_OWNER"
-                                                }
-                                                """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "잘못된 접근입니다",
+                                                            "error": "SAVE_NOT_OWNER"
+                                                        }
+                                                        """
                                         ),
                                         @ExampleObject(
                                                 name = "해당 브랜치에 커밋이 하나도 없고 저장만 존재하는 최초 상태에서는 저장을 삭제할 수 없다.",
@@ -93,7 +93,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "저장 수정 실패 - 존재하지 않는 저장",
+                        description = "저장 삭제 실패 - 존재하지 않는 저장",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -110,28 +110,17 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "저장 삭제 실패 - MySQL 또는 MongoDB 실패",
+                        description = "저장 삭제 실패 - MySQL 또는 MongoDB 접근 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "MySQL 저장 실패",
                                                 value = """
                                                             {
                                                               "status": 500,
-                                                              "message": "저장에 실패했습니다.",
-                                                              "error": "FAIL_TO_SAVE_IN_MYSQL"
-                                                            }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "MongoDB 저장 실패",
-                                                value = """
-                                                            {
-                                                              "status": 500,
-                                                              "message": "삭제를 실패했습니다.",
-                                                              "error": "FAILED_TO_DELETE_IN_MONGO"
+                                                              "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                              "error": "DATABASE_ERROR"
                                                             }
                                                         """
                                         )
