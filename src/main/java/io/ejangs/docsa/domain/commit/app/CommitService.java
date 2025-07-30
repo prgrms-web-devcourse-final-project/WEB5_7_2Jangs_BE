@@ -122,6 +122,8 @@ public class CommitService {
         MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
                 .toMongoIdsDto(saveMongoId, null, null);
 
+
+        log.warn("[MONGO] createCommit");
         eventPublisher.publishEvent(commitDeleteMongoIds);
         return CommitMapper.toCreateCommitResponse(savedCommit);
     }
@@ -185,6 +187,7 @@ public class CommitService {
             MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
                     .toMongoIdsDto(mergeCommitDto.saveMongoIds(), null, null);
 
+            log.warn("[MONGO] mergeCommit");
             eventPublisher.publishEvent(commitDeleteMongoIds);
             return CommitMapper.toCreateCommitResponse(mergeCommitDto.commit());
         } catch (Exception e) {
@@ -224,6 +227,8 @@ public class CommitService {
             MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
 
             commitRepository.deleteById(commit.getId());
+
+            log.warn("[MONGO] deleteCommit");
             eventPublisher.publishEvent(commitDeleteMongoIds);
         } catch (CustomException e) {
             log.error(e.getMessage(), e);
