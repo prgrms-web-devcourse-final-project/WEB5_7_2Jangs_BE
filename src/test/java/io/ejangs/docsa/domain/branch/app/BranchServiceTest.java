@@ -206,7 +206,7 @@ class BranchServiceTest {
 
         CustomException e = assertThrows(CustomException.class,
                 () -> branchService.renameBranch(1L, 2L, "new", 3L));
-        assertEquals(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN, e.getErrorCode());
+        assertEquals(BranchErrorCode.BRANCH_NOT_FOUND, e.getErrorCode());
     }
 
     @Test
