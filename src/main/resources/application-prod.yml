@@ -27,6 +27,7 @@ server:
         domain: ${SESSION_COOKIE_DOMAIN}
         secure: true
         same-site: None
+      timeout: 24h # TODO: 테스트 완료 후 제거
 
 springdoc:
   api-docs:
