@@ -7,7 +7,7 @@ spring:
 
   data:
     mongodb:
-      uri: ${MONGO_URI}
+      uri: ${TEST_MONGO_URI}
 
   jpa:
     hibernate:
