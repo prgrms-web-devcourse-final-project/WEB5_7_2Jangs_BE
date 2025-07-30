@@ -198,7 +198,7 @@ public class CommitService {
                 throw (CustomException) e;
             }
             log.error("Create Commit 알 수 없는 오류 - {}", e.getMessage(), e);
-            throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 
@@ -292,7 +292,7 @@ public class CommitService {
             if (savedBlocks != null) {
                 savedBlocks.forEach(block -> blockService.deleteBlock(block.getId()));
             }
-            throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 

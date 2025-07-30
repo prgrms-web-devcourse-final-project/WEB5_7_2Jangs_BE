@@ -34,6 +34,7 @@ import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -284,7 +285,7 @@ class CommitServiceMockTest {
             assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
                     userDetails.getId()))
                     .isInstanceOf(RuntimeException.class)
-                    .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
+                    .hasMessage(DatabaseErrorCode.DATABASE_ERROR.getMessage());
 
             verify(docService).getById(docId);
             verify(branchService).getById(branchId);
