@@ -131,6 +131,26 @@ import org.springframework.http.MediaType;
                                 }
                         )
                 ),
+                @ApiResponse(
+                        responseCode = "500",
+                        description = "기록 조회 실패 - MySQL 또는 MongoDB 데이터 처리 실패",
+                        content = @Content(
+                                schema = @Schema(implementation = ErrorResponse.class),
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                examples = {
+                                        @ExampleObject(
+                                                name = "MySQL 또는 MongoDB 데이터 처리 실패",
+                                                value = """
+                                                        {
+                                                            "status": 500,
+                                                            "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                            "error": "DATABASE_ERROR"
+                                                        }
+                                                        """
+                                        )
+                                }
+                        )
+                )
         }
 )
 public @interface GetCommitDocs {
