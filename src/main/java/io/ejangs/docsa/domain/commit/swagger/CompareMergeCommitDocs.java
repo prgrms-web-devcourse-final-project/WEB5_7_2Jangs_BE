@@ -60,12 +60,41 @@ import org.springframework.http.MediaType;
                                                     "base": {
                                                         "id": "base123",
                                                         "title": "기록A 제목",
-                                                        "content": "기록A 문서내용 ....."
+                                                        "content": [
+                                                            {
+                                                                "id": "mhTl6ghSkV",
+                                                                "type": "paragraph",
+                                                                "data": {
+                                                                    "text": "Hey. Meet the new Editor. On this picture you can see it in action. Then, try a demo 🤓"
+                                                                }
+                                                            }
+                                                        ]
                                                     },
                                                     "target": {
                                                         "id": "target456",
                                                         "title": "기록 B 제목",
-                                                        "content": "기록B 문서내용 ....."
+                                                        "content": [
+                                                            {
+                                                                "id": "l98dyx3yjb",
+                                                                "type": "header",
+                                                                "data": {
+                                                                    "text": "Key features",
+                                                                    "level": 3
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "os_YI4eub4",
+                                                                "type": "list",
+                                                                "data": {
+                                                                    "type": "unordered",
+                                                                    "items": [
+                                                                        "It is a block-style editor",
+                                                                        "It returns clean data output in JSON",
+                                                                        "Designed to be extendable and pluggable with a simple API"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
                                                     }
                                                 }
                                                 """
