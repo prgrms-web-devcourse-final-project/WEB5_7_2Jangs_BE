@@ -2,7 +2,7 @@ package io.ejangs.docsa.global.exception;
 
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -37,11 +37,10 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.from(errorMessage));
     }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
-            DataIntegrityViolationException e) {
-        log.error("DataIntegrityViolationException 발생 : {}", e.getMessage());
-        return ResponseEntity.status(DatabaseErrorCode.FAIL_TO_SAVE.getStatus())
-                .body(ErrorResponse.from(DatabaseErrorCode.FAIL_TO_SAVE));
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException e) {
+        log.error("DataAccessException 발생 : {}", e.getMessage());
+        return ResponseEntity.status(DatabaseErrorCode.DATABASE_ERROR.getStatus())
+                .body(ErrorResponse.from(DatabaseErrorCode.DATABASE_ERROR));
     }
 }

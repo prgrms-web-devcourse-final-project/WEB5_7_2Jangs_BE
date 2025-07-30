@@ -22,8 +22,8 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
@@ -153,7 +153,7 @@ public class BranchService {
         } catch (Exception e) {
             // MongoDB 롤백까지 실패할 경우 에러 로그
             log.error("MongoDB 저장 실패로 인해 save(id={}) 에 MongoId 갱신 실패", save.getId(), e);
-            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 
