@@ -27,11 +27,9 @@ import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,6 +102,8 @@ public class BranchService {
 
         } else {
             // 중간 커밋에서 작업을 이어가는 경우 → 새로운 브랜치를 생성하고 저장도 함께 생성
+            checkDuplicatedWithBranchName(documentId, request.name());
+
             Branch newBranch = Branch.builder().name(request.name()).doc(fromBranch.getDoc())
                     .fromCommit(fromCommit).build();
 
@@ -301,5 +301,13 @@ public class BranchService {
 
     public boolean checkFromOrRootCommitInBranch(Commit commit) {
         return branchRepository.existsByRootCommitIdOrFromCommitId(commit.getId());
+    }
+
+    private void checkDuplicatedWithBranchName(Long docId, String requestName) {
+        boolean isDuplicate = branchRepository.existsByDocIdAndName(docId, requestName);
+
+        if (isDuplicate) {
+            throw new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED);
+        }
     }
 }
