@@ -9,11 +9,11 @@ import java.util.Map;
 public class SaveMapper {
 
     public static SaveUpdateResponse toSaveUpdateResponse(LocalDateTime localDateTime) {
-        return new SaveUpdateResponse(localDateTime.plusHours(9L));
+        return new SaveUpdateResponse(localDateTime);
     }
 
     public static SaveGetResponse toSaveGetResponse(LocalDateTime localDateTime,
             List<Map<String, Object>> content) {
-        return new SaveGetResponse(localDateTime.plusHours(9L), content);
+        return new SaveGetResponse(localDateTime, content);
     }
 }
