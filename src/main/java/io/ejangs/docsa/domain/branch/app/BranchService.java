@@ -22,16 +22,14 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,6 +102,8 @@ public class BranchService {
 
         } else {
             // 중간 커밋에서 작업을 이어가는 경우 → 새로운 브랜치를 생성하고 저장도 함께 생성
+            checkDuplicatedWithBranchName(documentId, request.name());
+
             Branch newBranch = Branch.builder().name(request.name()).doc(fromBranch.getDoc())
                     .fromCommit(fromCommit).build();
 
@@ -153,7 +153,7 @@ public class BranchService {
         } catch (Exception e) {
             // MongoDB 롤백까지 실패할 경우 에러 로그
             log.error("MongoDB 저장 실패로 인해 save(id={}) 에 MongoId 갱신 실패", save.getId(), e);
-            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 
@@ -205,6 +205,8 @@ public class BranchService {
 
         // 5. 브랜치에서 삭제 가능한 블록과 시퀀스, SaveContent 삭제 이벤트 발행
         MongoIdsDto deletableMongoIds = collectDeletableMongoDataForBranch(branch, branchCommits);
+
+        log.warn("[MONGO] deleteBranch");
         eventPublisher.publishEvent(deletableMongoIds);
 
         // 6. 브랜치가 속한 문서의 수정시간 갱신
@@ -299,5 +301,13 @@ public class BranchService {
 
     public boolean checkFromOrRootCommitInBranch(Commit commit) {
         return branchRepository.existsByRootCommitIdOrFromCommitId(commit.getId());
+    }
+
+    private void checkDuplicatedWithBranchName(Long docId, String requestName) {
+        boolean isDuplicate = branchRepository.existsByDocIdAndName(docId, requestName);
+
+        if (isDuplicate) {
+            throw new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED);
+        }
     }
 }

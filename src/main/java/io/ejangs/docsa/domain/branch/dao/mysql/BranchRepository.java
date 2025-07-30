@@ -38,5 +38,7 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
                 ) THEN true ELSE false END
             """)
     boolean existsByRootCommitIdOrFromCommitId(@Param("commitId") Long commitId);
+
+    boolean existsByDocIdAndName(Long docId, String name);
 }
 

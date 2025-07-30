@@ -21,6 +21,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import jakarta.mail.MessagingException;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,9 @@ class AuthServiceTest {
     private Cache pwdResetCodeCache;
 
     @Mock
+    private Cache resendLimitCache;
+
+    @Mock
     private AuthCodeGenerator authCodeGenerator;
 
     @InjectMocks
@@ -70,10 +74,12 @@ class AuthServiceTest {
         ReflectionTestUtils.setField(authService, "signupCacheName", "signupCodeCache");
         ReflectionTestUtils.setField(authService, "passcodeCacheName", "passCodeCache");
         ReflectionTestUtils.setField(authService, "pwdResetCacheName", "pwdResetCodeCache");
+        ReflectionTestUtils.setField(authService, "resendLimitCacheName", "resendLimitCache");
 
         lenient().when(cacheManager.getCache("signupCodeCache")).thenReturn(signupCodeCache);
         lenient().when(cacheManager.getCache("passcodeCache")).thenReturn(passCodeCache);
         lenient().when(cacheManager.getCache("pwdResetCodeCache")).thenReturn(pwdResetCodeCache);
+        lenient().when(cacheManager.getCache("resendLimitCache")).thenReturn(resendLimitCache);
     }
 
     @Test
@@ -246,5 +252,41 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.checkCode(checkRequest))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("인증코드 재전송 성공")
+    void resendSignupCode_Success() throws MessagingException {
+        // given
+        String email = signupRequest.email();
+
+        when(userRepository.existsByEmail(email)).thenReturn(false);
+        when(resendLimitCache.get(email, AuthService.ResendInfo.class)).thenReturn(null);
+        when(authCodeGenerator.generateVerifyCode()).thenReturn("NEW123");
+
+        // when
+        authService.sendSignupCode(signupRequest);
+
+        // then
+        verify(signupCodeCache).put(email, "NEW123");
+        verify(mailService).sendCodeMail(email, "NEW123");
+    }
+
+    @Test
+    @DisplayName("인증코드 재전송 - 3분 이내 재전송하여 예외 발생")
+    void resendSignupCode_RateLimitExceeded() throws MessagingException {
+        // given
+        String email = signupRequest.email();
+
+        when(userRepository.existsByEmail(email)).thenReturn(false);
+        when(resendLimitCache.get(email, AuthService.ResendInfo.class))
+                .thenReturn(new AuthService.ResendInfo(Instant.now()));
+
+        // when & then
+        assertThatThrownBy(() -> authService.sendSignupCode(signupRequest))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.SEND_INTERVAL_TOO_SHORT);
+
+        verify(mailService, never()).sendCodeMail(any(), any());
     }
 }

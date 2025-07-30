@@ -73,11 +73,6 @@ class BranchServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @BeforeEach
-    void setup() {
-        ReflectionTestUtils.setField(branchService, "defaultBranchName", "main");
-    }
-
     @Test
     @DisplayName("fromCommitId가 null이면 예외 발생")
     void testThrowWhenFromCommitIdIsNull() {

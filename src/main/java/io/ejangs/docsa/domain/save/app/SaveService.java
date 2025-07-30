@@ -12,9 +12,9 @@ import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -55,10 +55,10 @@ public class SaveService {
         } catch (DuplicateKeyException e) {
             log.warn("중복 키로 Mongo 저장 실패 - saveId={}, mongoId={}, message={}", findSave.getId(),
                     findSave.getSaveMongoId(), e.getMessage());
-            throw new CustomException(SaveErrorCode.FAIL_TO_SAVE_IN_MYSQL);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         } catch (DataAccessException e) {
             log.error("Mongo 저장 실패: {}", e.getMessage(), e);
-            throw new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
 
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
@@ -79,9 +79,11 @@ public class SaveService {
         saveRepository.delete(findSave);
         try {
             saveContentRepository.deleteById(findSave.getSaveMongoId());
+            log.warn("[MONGO] SaveService 에서 deleteSave() 호출로 saveContent 삭제 : {}",
+                    findSave.getSaveMongoId());
         } catch (Exception e) {
             log.error("Mongo 삭제 중 실패 실패: {}", e.getMessage(), e);
-            throw new CustomException(SaveErrorCode.FAILED_TO_DELETE_IN_MONGO);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 

@@ -21,6 +21,7 @@ import io.ejangs.docsa.domain.save.util.SaveServiceUtil;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -118,11 +119,11 @@ class SaveServiceIntegrationTest {
                     Optional.of(saveContent));
 
             when(saveContentRepository.save(any()))
-                    .thenThrow(new CustomException(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO));
+                    .thenThrow(new CustomException(DatabaseErrorCode.DATABASE_ERROR));
 
             assertThatThrownBy(() -> saveService.updateSave(dto, request))
                     .isInstanceOf(CustomException.class)
-                    .hasMessageContaining(SaveErrorCode.FAILED_TO_SAVE_IN_MONGO.getMessage());
+                    .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
 
             // then
             Save after = saveRepository.findById(save.getId()).orElse(null);
