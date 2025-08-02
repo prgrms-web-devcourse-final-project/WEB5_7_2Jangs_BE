@@ -55,11 +55,11 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 | [<img width="40" height="40" alt="image" src="https://avatars.githubusercontent.com/u/117032989?v=4" />](https://github.com/ky1nonly)<br> [이예원](https://github.com/ky1nonly) | **BE 팀원** | - 버전(브랜치) 관련 API 구현<br> - 그래프 조회 API 구현 |  
 
 ### 팀 컨벤션
-[Git 컨벤션]()
-[Code 컨벤션]()
-[package 구조]()
+[Git 컨벤션](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-%ED%8C%80-%EC%BB%A8%EB%B2%A4%EC%85%98#git-%EC%BB%A8%EB%B2%A4%EC%85%98)<br>
+[Code 컨벤션](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-%ED%8C%80-%EC%BB%A8%EB%B2%A4%EC%85%98#code-%EC%BB%A8%EB%B2%A4%EC%85%98)<br>
+[package 구조](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-%ED%8C%80-%EC%BB%A8%EB%B2%A4%EC%85%98#%ED%8C%A8%ED%82%A4%EC%A7%80-%EA%B5%AC%EC%A1%B0)<br>
 
-## 🌐 시스탬 아키텍처
+## 🌐 시스템 아키텍처
 <img width="2000" height="1000" alt="이장님들-System-arch (1)" src="https://github.com/user-attachments/assets/fa59f678-fd4e-4e1e-af54-a61d502a206f" />
 
 
@@ -86,20 +86,21 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 
 🔗 [(서버 중단 대비) Swagger 문서 Github Page 배포 주소](https://ky1nonly.github.io/docsa_swagger/)
 
+<br>
   
 ## 📲 애플리케이션 UI
 🔗 [서비스 배포 주소](https://app.docsa.kro.kr/)
 ### [UI 스크린샷 및 상세 설명](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%92%BB-UI-%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7-%EB%B0%8F-%EC%83%81%EC%84%B8-%EC%84%A4%EB%AA%85) 
-
+*프론트 이슈 해결 후 정상화되면 내용 추가 예정, 대표사진 한두개는 걸지도
 
 ## 📄 ERD
 ### [데이터 모델 도출 과정](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%93%84-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EB%AA%A8%EB%8D%B8-%EB%8F%84%EC%B6%9C-%EA%B3%BC%EC%A0%95) 
 <img width="1700" height="806" alt="docsa-몽고도입 후" src="https://github.com/user-attachments/assets/fa0367db-218b-4553-891f-23c9615e73ca" />
 
 ## 📄 Flow Chart
+<img width="1468" height="1021" alt="이장님들-페이지-1 drawio" src="https://github.com/user-attachments/assets/1204efd2-94d9-42db-a7fd-c79af0efeace" />
 
-*수정 후 다시 재업예정
-https://app.diagrams.net/?src=about#G143M_9Qwt8kcRclqAi-bmlmyzPJ7uOf0Q#%7B%22pageId%22%3A%22NG0Hxv0g_xsVVYsCFs-f%22%7D
+
 
 ## ⚡ 기술적 이슈
 *정리 후 이슈마다 블록 링크 걸 예정
@@ -121,3 +122,6 @@ https://app.diagrams.net/?src=about#G143M_9Qwt8kcRclqAi-bmlmyzPJ7uOf0Q#%7B%22pag
 3. 질문 3
 
 # 🔭 회고
+간략하게 적고 링크 달까 고민중
+
+
