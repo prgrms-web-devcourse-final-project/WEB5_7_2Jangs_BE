@@ -84,7 +84,7 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 
 🔗 [swagger 배포 주소](https://docsa.kro.kr/swagger-ui/index.html#/)
 
-🔗 [(서버 중단 대비) Swagger 문서 Github Page 배포 주소](https://ky1nonly.github.io/docsa_swagger/)
+🔗 [(서버 중단시 조회용) Swagger 문서 Github Page 배포 주소](https://ky1nonly.github.io/docsa_swagger/)
 
 <br>
   
@@ -114,14 +114,14 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 - 이슈2
 - 이슈3
 
-# ❓QnA
+## ❓QnA
 ### [답변 정리 링크](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%E2%9D%93-QnA) 
-*실제 발표때 받은 질문과 멘토링때 받은 질문, 예상질문 등 정리 예정
+*멘토링때 받은 질문, 예상질문 등 정리 예정, 실제 발표때 받은 질문도 괜찮은거 았으면 추가 예정
 1. 질문 1
 2. 질문 2
 3. 질문 3
 
-# 🔭 회고
+## 🔭 회고
 간략하게 적고 링크 달까 고민중
 
 
