@@ -105,9 +105,17 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 <br>
   
 ## 📲 애플리케이션 UI
-🔗 [서비스 배포 주소](https://app.docsa.kro.kr/)
+🔗 [서비스 배포 주소](https://app.docsa.kro.kr/)<br>
+<img width="20" height="20" alt="image" src="https://github.com/user-attachments/assets/6cdb07df-add0-4338-8bf5-6dae97a69dee" />
+[시연 영상](https://www.youtube.com/watch?v=-1J7JvvATXw&t=2s)
+
 ### [UI 스크린샷 및 상세 설명](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%92%BB-UI-%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7-%EB%B0%8F-%EC%83%81%EC%84%B8-%EC%84%A4%EB%AA%85) 
-*내용 추가 예정
+[대표 사진]
+<img width="1658" height="891" alt="image" src="https://github.com/user-attachments/assets/2873f6bb-33c2-4d79-91e8-80cbf6e3b54f" />
+<img width="1646" height="927" alt="image" src="https://github.com/user-attachments/assets/12121c14-ccb3-4167-b633-11cfbb134fa8" />
+<img width="1652" height="927" alt="화면 캡처 2025-08-03 184713" src="https://github.com/user-attachments/assets/be0454ed-4350-4ae7-962c-608acbea41a3" />
+
+
 
 ## 📄 ERD
 ### [데이터 모델 도출 과정](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%93%84-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EB%AA%A8%EB%8D%B8-%EB%8F%84%EC%B6%9C-%EA%B3%BC%EC%A0%95) 
