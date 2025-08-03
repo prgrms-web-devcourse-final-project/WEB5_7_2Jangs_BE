@@ -43,74 +43,82 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 
 
 ## 👩‍💻 팀 이장님 소개
+<table align="center"> <thead> <tr> <th style="text-align:center;">팀원</th> <th style="text-align:center;">역할</th> <th style="text-align:left;">담당 업무</th> </tr> </thead> <tbody> <tr> <td align="center"> <a href="https://github.com/sleepyhoon"> <img src="https://avatars.githubusercontent.com/u/101882530?v=4" width="60"><br/> <sub><b>한승훈</b></sub> </a> </td> <td align="center"><b>PO</b></td> <td> - 프론트 개발자님과 소통<br> - 프로젝트 일정 관리<br> - 저장 관련 API 구현 </td> </tr> <tr> <td align="center"> <a href="https://github.com/heets-blue"> <img src="https://avatars.githubusercontent.com/u/89324994?v=4" width="60"><br/> <sub><b>배문성</b></sub> </a> </td> <td align="center"><b>BE 팀장</b></td> <td> - 문서 관련 API 구현<br> - 이종간 트랜잭션 삭제 로직 설계 및 구현 </td> </tr> <tr> <td align="center"> <a href="https://github.com/Jeongmin39"> <img src="https://avatars.githubusercontent.com/u/80705450?v=4" width="60"><br/> <sub><b>한정민</b></sub> </a> </td> <td align="center"><b>AWS 관리자</b></td> <td> - 인증 및 사용자 관련 API 구현<br> - AWS 인프라 운영<br> - Docker 기반 배포<br> - 모니터링 시스템 구축 </td> </tr> <tr> <td align="center"> <a href="https://github.com/2ternal"> <img src="https://avatars.githubusercontent.com/u/26919446?v=4" width="60"><br/> <sub><b>권우철</b></sub> </a> </td> <td align="center"><b>BE 팀원</b></td> <td> - 기록(커밋) 관련 API 구현<br> - 병합기능(머지) API 구현<br> - 이종간 트랜잭션 삭제 로직 설계 </td> </tr> <tr> <td align="center"> <a href="https://github.com/ky1nonly"> <img src="https://avatars.githubusercontent.com/u/117032989?v=4" width="60"><br/> <sub><b>이예원</b></sub> </a> </td> <td align="center"><b>BE 팀원</b></td> <td> - 버전(브랜치) 관련 API 구현<br> - 그래프 조회 API 구현 </td> </tr> </tbody> </table>
 
-### 팀원 및 역할
-| 팀원 | 역할 | 담당 |
-|------|--------|------|
-| [<img width="40" height="40" alt="image" src="https://avatars.githubusercontent.com/u/101882530?v=4" />](https://github.com/sleepyhoon)<br> [한승훈](https://github.com/sleepyhoon)| **PO** | - 프론트 개발자님과 소통<br> - 프로젝트 일정 관리<br> - 저장 관련 API구현<br> |  
-| [<img width="40" height="40" alt="image" src="https://avatars.githubusercontent.com/u/89324994?v=4" />](https://github.com/heets-blue)<br> [배문성](https://github.com/heets-blue) | **BE 팀장** | - 문서 관련 API구현<br> - 이종간 트랜잭션 삭제 로직 설계 및 구현<br> |  
-| [<img width="40" height="40" alt="image" src="https://avatars.githubusercontent.com/u/80705450?v=4" />](https://github.com/Jeongmin39)<br> [한정민](https://github.com/Jeongmin39) | **AWS 관리자** | - 인증 및 사용자 관련 API 구현<br> - AWS 인프라 운영<br> - Docker 기반 배포<br> - 모니터링 시스템 구축|  
-| [<img width="40" height="40" alt="image" src="https://avatars.githubusercontent.com/u/26919446?v=4" />](https://github.com/2ternal)<br> [권우철](https://github.com/2ternal) | **BE 팀원** | - 기록(커밋) 관련 API구현<br> - 병합기능(머지) API 구현<br> - 이종간 트랜잭션 삭제 로직 설계 |  
-| [<img width="40" height="40" alt="image" src="https://avatars.githubusercontent.com/u/117032989?v=4" />](https://github.com/ky1nonly)<br> [이예원](https://github.com/ky1nonly) | **BE 팀원** | - 버전(브랜치) 관련 API 구현<br> - 그래프 조회 API 구현 |  
-
-### 팀 컨벤션
+<div align="center">
+  
+### 🤝 팀 컨벤션
 [Git 컨벤션](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-%ED%8C%80-%EC%BB%A8%EB%B2%A4%EC%85%98#git-%EC%BB%A8%EB%B2%A4%EC%85%98)<br>
 [Code 컨벤션](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-%ED%8C%80-%EC%BB%A8%EB%B2%A4%EC%85%98#code-%EC%BB%A8%EB%B2%A4%EC%85%98)<br>
 [package 구조](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-%ED%8C%80-%EC%BB%A8%EB%B2%A4%EC%85%98#%ED%8C%A8%ED%82%A4%EC%A7%80-%EA%B5%AC%EC%A1%B0)<br>
+
+</div>
 
 ## 🌐 시스템 아키텍처
 <img width="2000" height="1000" alt="이장님들-System-arch (1)" src="https://github.com/user-attachments/assets/fa59f678-fd4e-4e1e-af54-a61d502a206f" />
 
 
-## 🔨 기술 스택
 
+<div align="center">
+  
 ### Backend
 
-![Java](https://img.shields.io/badge/Java-21-orange)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.3-%236DB33F)
-![Spring MVC](https://img.shields.io/badge/Spring%20MVC-%236DB33F)
-![Spring Security](https://img.shields.io/badge/Spring%20Security-%236DB33F)
-![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-%236DB33F)
+![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=java&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![Spring MVC](https://img.shields.io/badge/Spring%20MVC-%236DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring%20Security-%236DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)
+![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-%236DB33F?style=for-the-badge&logo=spring&logoColor=white)
 
-![MySQL](https://img.shields.io/badge/MySQL-005C84?logo=mysql&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?logo=mongodb&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+![Caffeine Cache](https://img.shields.io/badge/Caffeine%20Cache-F7DF1E?style=for-the-badge&logo=caffeine&logoColor=black)
 
-![Caffeine Cache](https://img.shields.io/badge/Caffeine%20Cache-%23F7DF1E)
+![AWS EC2](https://img.shields.io/badge/AWS%20EC2-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
+![AWS RDS](https://img.shields.io/badge/AWS%20RDS-527FFF?style=for-the-badge&logo=amazonrds&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
 
-![AWS EC2](https://img.shields.io/badge/AWS%20EC2-%23FF9900?logo=amazon-aws&logoColor=white)
-![AWS RDS](https://img.shields.io/badge/AWS%20RDS-%23232F3E?logo=amazon-aws&logoColor=white)
-![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)
 
-![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white)
-![Grafana](https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white)
-
-![JUnit5](https://img.shields.io/badge/JUnit5-25A162?logo=java&logoColor=white)
-![Mockito](https://img.shields.io/badge/Mockito-FFDE57?logo=java&logoColor=white)
-![Postman](https://img.shields.io/badge/Postman-FF6C37?logo=postman&logoColor=white)
+![JUnit5](https://img.shields.io/badge/JUnit5-25A162?style=for-the-badge&logo=java&logoColor=white)
+![Mockito](https://img.shields.io/badge/Mockito-FFDE57?style=for-the-badge&logo=java&logoColor=black)
+![Postman](https://img.shields.io/badge/Postman-FF6C37?style=for-the-badge&logo=postman&logoColor=white)
 
 
 ### Collaboration & Tools
 
-![Slack](https://img.shields.io/badge/Slack-4A154B?logo=slack&logoColor=white)
-![Notion](https://img.shields.io/badge/Notion-000000?logo=notion&logoColor=white)
-![IntelliJ](https://img.shields.io/badge/IntelliJ%20IDEA-000000?logo=intellij-idea&logoColor=white)
-![Git](https://img.shields.io/badge/Git-F05032?logo=git&logoColor=white)
-![GitHub Projects](https://img.shields.io/badge/GitHub%20Projects-181717?logo=github&logoColor=white)
-## <img width="30" height="30" alt="image" src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Swagger-logo.png" /> Swagger API spec
+![Slack](https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=slack&logoColor=white)
+![Notion](https://img.shields.io/badge/Notion-000000?style=for-the-badge&logo=notion&logoColor=white)
+![IntelliJ IDEA](https://img.shields.io/badge/IntelliJ%20IDEA-000000?style=for-the-badge&logo=intellijidea&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+![GitHub Projects](https://img.shields.io/badge/GitHub%20Projects-181717?style=for-the-badge&logo=github&logoColor=white)
 
-🔗 [swagger 배포 주소](https://docsa.kro.kr/swagger-ui/index.html#/)
+</div>
 
-🔗 [(서버 중단시 조회용) Swagger 문서 Github Page 배포 주소](https://ky1nonly.github.io/docsa_swagger/)
+## 📚 Swagger API 문서
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger Badge"/>
+</div>
+
+<p align="center">
+  🧪 API 명세서 및 테스트를 위한 Swagger 문서입니다.
+</p>
+
+<div align="center">
+  🔗 <a href="https://docsa.kro.kr/swagger-ui/index.html#/"><strong>배포 서버 Swagger 문서 보기</strong></a><br/>
+  🔗 <a href="https://ky1nonly.github.io/docsa_swagger/"><strong>(서버 중단시 조회용) GitHub Pages Swagger 문서 보기</strong></a>
+</div>
 
 <br>
   
 ## 📲 애플리케이션 UI
+
 🔗 [서비스 배포 주소](https://app.docsa.kro.kr/)<br>
-<img width="20" height="20" alt="image" src="https://github.com/user-attachments/assets/6cdb07df-add0-4338-8bf5-6dae97a69dee" />
-[시연 영상](https://www.youtube.com/watch?v=-1J7JvvATXw&t=2s)
+🎥 [시연 영상](https://www.youtube.com/watch?v=-1J7JvvATXw&t=2s)
 
 ### [UI 스크린샷 및 상세 설명](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%92%BB-UI-%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7-%EB%B0%8F-%EC%83%81%EC%84%B8-%EC%84%A4%EB%AA%85) 
-*지금 위 링크로 연결된 wiki에 아무것도 없는데, 승훈님이 찍은 시연영상 캡처하고 정리할 것 같습니다 ㅋㅋㅋ 약간의 날먹 .. 감사합니다
+
 
 [대표 사진]
 <img width="1658" height="891" alt="image" src="https://github.com/user-attachments/assets/2873f6bb-33c2-4d79-91e8-80cbf6e3b54f" />
@@ -135,14 +143,13 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 ## 🎇 트러블 슈팅
 *정리 후 이슈마다 블록 링크 걸 예정
 - [RDB-MongoDB간 트랜잭션 분리](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%8E%87-%ED%8A%B8%EB%9F%AC%EB%B8%94-%EC%8A%88%ED%8C%85#rdb--mongodb-%ED%8A%B8%EB%9E%9C%EC%9E%AD%EC%85%98-%EB%B6%84%EB%A6%AC)
-- 쿠키문제
-- 간선 cascade 관련 오류 해결
+- [간선 CASCADE 삭제 시도시 오류와 해결](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%8E%87-%ED%8A%B8%EB%9F%AC%EB%B8%94-%EC%8A%88%ED%8C%85#%EC%97%B0%EA%B4%80%EA%B4%80%EA%B3%84-cascade-%EC%98%A4%EB%A5%98-%EB%B0%8F-%ED%95%B4%EA%B2%B0)
 
 
 ## ❓ QnA
 ### [답변 정리 링크](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%E2%9D%93-QnA) 
-*위 링크로 연결된 wiki도 아직 비어있습니다
-멘토링때 받은 질문, 예상질문 등 정리 예정, 실제 발표때 받은 질문도 괜찮은거 았으면 추가 예정
+*추가 예정
+
 1. 질문 1
 2. 질문 2
 3. 질문 3
