@@ -128,16 +128,14 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 
 ## ⚡ 기술적 이슈
 *정리 후 이슈마다 블록 링크 걸 예정
-- 비즈니스 로직 구현 상세 (기록하기, 병합하기, diff비교, 기록 삭제등등 .. 추가 설명이 필요한 기능)
-- DB 설계 과정 (wiki vs Git 방식, 블록 변경감지 아이디어, RDB에 메타데이터 MongoDB에 json, 이후 생긴 문제)
-- 이슈3
+- [비즈니스 로직 구현 방식 상세](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%E2%9A%A1-%EA%B8%B0%EC%88%A0%EC%A0%81-%EC%9D%B4%EC%8A%88#%EB%B9%84%EC%A6%88%EB%8B%88%EC%8A%A4-%EB%A1%9C%EC%A7%81-%EA%B5%AC%ED%98%84-%EC%84%A4%EB%AA%85)
   
 ## 🎇 트러블 슈팅
 *정리 후 이슈마다 블록 링크 걸 예정
-- RDB-MongoDB 보상 트랜잭션 설명
+- [RDB-MongoDB간 트랜잭션 분리](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%8E%87-%ED%8A%B8%EB%9F%AC%EB%B8%94-%EC%8A%88%ED%8C%85#rdb--mongodb-%ED%8A%B8%EB%9E%9C%EC%9E%AD%EC%85%98-%EB%B6%84%EB%A6%AC)
 - 쿠키문제
 - 간선 cascade 관련 오류 해결
-- 이슈4
+
 
 ## ❓ QnA
 ### [답변 정리 링크](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%E2%9D%93-QnA) 
