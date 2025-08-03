@@ -9,8 +9,7 @@ Docsa는 문서의 변경 이력과 다양한 버전을 효율적으로 관리�
 이 프로젝트의 목표는 Git을 모르는 사용자도 손쉽게 버전 관리를 활용하여 문서를 편집하고 운용할 수 있도록 돕는 것입니다.
 <br><br>
 사용자는 그래프로 구현된 시각적인 UI를 통해 문서를 직접 편집하고, 다양한 버전 흐름을 한눈에 확인하며 관리할 수 있습니다.
-<br><br>
-Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버전(branch) 를 분기하거나, 서로 다른 버전을 병합(merge) 할 수 있는 강력한 기능을 제공합니다. 
+Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버전(branch) 를 분기하거나, 서로 다른 버전을 병합(merge) 할 수 있는 강력한 기능을 제공합니다. <br><br>
 이러한 기능은 editor.js 기반의 블록 단위 저장 방식을 통해 구현되며, 변경된 블록만을 감지하여 데이터베이스에 저장하고 이를 조합하여 기록함으로써 저장 효율성과 자원 활용도를 극대화합니다.
 
 ## 📌 주요 기능
@@ -66,20 +65,37 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 ## 🔨 기술 스택
 
 ### Backend
-- **언어**:   `Java 21`  
-- **프레임워크**:   `Spring Boot 3.5.3`, `Spring MVC`, `Spring Security`, `Spring Data JPA`  
-- **데이터베이스**:   `MySQL`, `MongoDB`  
-- **캐시**:   `Caffeine Cache`  
-- **서버**:   `AWS EC2`, `AWS RDS`, `NginX`
-- **모니터링**:   `Prometheus`, `Grafana`
-- **테스트 도구**:   `JUnit5`, `Mockito`  
-- **API 테스트**:   `Postman`
+
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.3-%236DB33F)
+![Spring MVC](https://img.shields.io/badge/Spring%20MVC-%236DB33F)
+![Spring Security](https://img.shields.io/badge/Spring%20Security-%236DB33F)
+![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-%236DB33F)
+
+![MySQL](https://img.shields.io/badge/MySQL-005C84?logo=mysql&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?logo=mongodb&logoColor=white)
+
+![Caffeine Cache](https://img.shields.io/badge/Caffeine%20Cache-%23F7DF1E)
+
+![AWS EC2](https://img.shields.io/badge/AWS%20EC2-%23FF9900?logo=amazon-aws&logoColor=white)
+![AWS RDS](https://img.shields.io/badge/AWS%20RDS-%23232F3E?logo=amazon-aws&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white)
+
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?logo=grafana&logoColor=white)
+
+![JUnit5](https://img.shields.io/badge/JUnit5-25A162?logo=java&logoColor=white)
+![Mockito](https://img.shields.io/badge/Mockito-FFDE57?logo=java&logoColor=white)
+![Postman](https://img.shields.io/badge/Postman-FF6C37?logo=postman&logoColor=white)
+
+
 ### Collaboration & Tools
-- **협업 도구**: `Slack`, `Notion`  
-- **IDE**: `IntelliJ`  
-- **버전 관리**: `Git`, `GitHub Projects`
 
-
+![Slack](https://img.shields.io/badge/Slack-4A154B?logo=slack&logoColor=white)
+![Notion](https://img.shields.io/badge/Notion-000000?logo=notion&logoColor=white)
+![IntelliJ](https://img.shields.io/badge/IntelliJ%20IDEA-000000?logo=intellij-idea&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?logo=git&logoColor=white)
+![GitHub Projects](https://img.shields.io/badge/GitHub%20Projects-181717?logo=github&logoColor=white)
 ## <img width="30" height="30" alt="image" src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Swagger-logo.png" /> Swagger API spec
 
 🔗 [swagger 배포 주소](https://docsa.kro.kr/swagger-ui/index.html#/)
@@ -91,7 +107,7 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 ## 📲 애플리케이션 UI
 🔗 [서비스 배포 주소](https://app.docsa.kro.kr/)
 ### [UI 스크린샷 및 상세 설명](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%92%BB-UI-%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7-%EB%B0%8F-%EC%83%81%EC%84%B8-%EC%84%A4%EB%AA%85) 
-*프론트 이슈 해결 후 정상화되면 내용 추가 예정, 대표사진 한두개는 걸지도
+*내용 추가 예정
 
 ## 📄 ERD
 ### [데이터 모델 도출 과정](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%93%84-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EB%AA%A8%EB%8D%B8-%EB%8F%84%EC%B6%9C-%EA%B3%BC%EC%A0%95) 
@@ -114,14 +130,13 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 - 이슈2
 - 이슈3
 
-## ❓QnA
+## ❓ QnA
 ### [답변 정리 링크](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%E2%9D%93-QnA) 
 *멘토링때 받은 질문, 예상질문 등 정리 예정, 실제 발표때 받은 질문도 괜찮은거 았으면 추가 예정
 1. 질문 1
 2. 질문 2
 3. 질문 3
 
-## 🔭 회고
-간략하게 적고 링크 달까 고민중
+
 
 
