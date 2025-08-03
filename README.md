@@ -110,6 +110,8 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 [시연 영상](https://www.youtube.com/watch?v=-1J7JvvATXw&t=2s)
 
 ### [UI 스크린샷 및 상세 설명](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%92%BB-UI-%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7-%EB%B0%8F-%EC%83%81%EC%84%B8-%EC%84%A4%EB%AA%85) 
+*지금 위 링크로 연결된 wiki에 아무것도 없는데, 승훈님이 찍은 시연영상 캡처하고 정리할 것 같습니다 ㅋㅋㅋ 약간의 날먹 .. 감사합니다
+
 [대표 사진]
 <img width="1658" height="891" alt="image" src="https://github.com/user-attachments/assets/2873f6bb-33c2-4d79-91e8-80cbf6e3b54f" />
 <img width="1646" height="927" alt="image" src="https://github.com/user-attachments/assets/12121c14-ccb3-4167-b633-11cfbb134fa8" />
@@ -139,8 +141,9 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 
 ## ❓ QnA
 ### [답변 정리 링크](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%E2%9D%93-QnA) 
-*멘토링때 받은 질문, 예상질문 등 정리 예정, 실제 발표때 받은 질문도 괜찮은거 았으면 추가 예정
-1. 왜 RDB와 MongoDB 2개를 사용하게 되었는지?
+*위 링크로 연결된 wiki도 아직 비어있습니다
+멘토링때 받은 질문, 예상질문 등 정리 예정, 실제 발표때 받은 질문도 괜찮은거 았으면 추가 예정
+1. 질문 1
 2. 질문 2
 3. 질문 3
 
