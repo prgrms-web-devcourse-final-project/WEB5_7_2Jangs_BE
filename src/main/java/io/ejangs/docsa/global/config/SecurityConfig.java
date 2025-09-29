@@ -41,17 +41,20 @@ public class SecurityConfig {
                                 .maximumSessions(1)
                                 .maxSessionsPreventsLogin(false))
                 .authorizeHttpRequests((authorize) -> authorize
-                        // Swagger UI 및 OpenAPI 문서 접근 허용
                         .requestMatchers(
+                                // Swagger UI 및 OpenAPI 문서
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml",
                                 "/swagger-resources/**",
-                                "/webjars/**"
+                                "/webjars/**",
+
+                                // actuator, session
+                                "/actuator/prometheus",
+                                "/actuator/health",
+                                "api/auth/session/check"
                         ).permitAll()
-                        .requestMatchers("/actuator/prometheus").permitAll()
-                        .requestMatchers("/api/auth/session/check").permitAll()
                         .requestMatchers(
                                 "/api/auth/code/signup-email",
                                 "/api/user/signup",
