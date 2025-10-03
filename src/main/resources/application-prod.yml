@@ -40,6 +40,8 @@ springdoc:
         description: Production Server
 
 management:
+  server:
+    port: 9091
   endpoints:
     web:
       exposure:
