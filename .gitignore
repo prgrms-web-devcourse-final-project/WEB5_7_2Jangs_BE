@@ -35,3 +35,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Secrets & Runtime
+infra/.env
+infra/**/*.env
+infra/certbot
+infra/mysql/exporter.cnf
+infra/mysql/logs/
+*.log
+*.pid
+.*.swp
