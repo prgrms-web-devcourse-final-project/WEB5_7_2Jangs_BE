@@ -128,7 +128,7 @@ services:
                    --method=POST \
                    --body-data="" \
                    --unix-socket /var/run/docker.sock \
-                   http://localhost/v1.41/containers/docsa_nginx/kill?signal=HUP >/dev/null 2>&1 || true
+                   http://localhost/v1.41/containers/docsa-nginx/kill?signal=HUP >/dev/null 2>&1 || true
                fi
                sleep 24h;
              done'
