@@ -1,0 +1,68 @@
+name: CI - Build & Push Backend
+
+on:
+  push:
+    branches: [ release ]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Detect project dir
+        id: detect
+        shell: bash
+        run: |
+          if [ -f "./gradlew" ] || [ -f "./build.gradle" ] || [ -f "./build.gradle.kts" ]; then
+            echo "dir=." >> $GITHUB_OUTPUT
+          elif [ -d "./backend" ]; then
+            echo "dir=backend" >> $GITHUB_OUTPUT
+          else
+            echo "No Gradle project found"; exit 1
+          fi
+
+      - name: Build & Test
+        run: |
+          cd "${{ steps.detect.outputs.dir }}"
+          chmod +x ./gradlew || true
+          ./gradlew clean test bootJar
+
+      - name: Find Dockerfile
+        id: df
+        run: |
+          if [ -f "infra/backend/Dockerfile" ]; then
+            echo "path=infra/backend/Dockerfile" >> $GITHUB_OUTPUT
+            echo "ctx=." >> $GITHUB_OUTPUT
+          else
+            echo "No Dockerfile found"; exit 1
+          fi
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push image
+        run: |
+          GIT_SHA=${{ github.sha }}
+          docker build -f "${{ steps.df.outputs.path }}" -t $IMAGE:release -t $IMAGE:$GIT_SHA "${{ steps.df.outputs.ctx }}"
+          docker push $IMAGE:release
+          docker push $IMAGE:$GIT_SHA

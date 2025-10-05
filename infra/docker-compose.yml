@@ -2,10 +2,7 @@ name: docsa
 
 services:
   app:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: docsa-backend:latest
+    image: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend:release
     container_name: docsa-app
     restart: unless-stopped
     env_file: .env
@@ -26,9 +23,9 @@ services:
       - docsa_net
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   mysql:
     image: mysql:9.4.0
@@ -45,7 +42,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "docsa", "-p${SPRING_DATASOURCE_PASSWORD}"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 3
 
   mysqld-exporter:
     image: prom/mysqld-exporter:latest
