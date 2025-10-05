@@ -38,6 +38,10 @@ jobs:
           fi
 
       - name: Build & Test
+        env:
+          MAIL_PASSWORD: ${{ secrets.CI_MAIL_PASSWORD }}
+          MAIL_USERNAME: ${{ secrets.CI_MAIL_USERNAME }}
+          MONGO_URI: ${{ secrets.CI_MONGO_URI }}
         run: |
           cd "${{ steps.detect.outputs.dir }}"
           chmod +x ./gradlew || true
