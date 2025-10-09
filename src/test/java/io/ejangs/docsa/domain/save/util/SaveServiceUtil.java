@@ -60,8 +60,4 @@ public class SaveServiceUtil {
                 .build();
     }
 
-    public static LocalDateTime trimToMillis(LocalDateTime t) {
-        return t.truncatedTo(ChronoUnit.MILLIS);
-    }
-
 }

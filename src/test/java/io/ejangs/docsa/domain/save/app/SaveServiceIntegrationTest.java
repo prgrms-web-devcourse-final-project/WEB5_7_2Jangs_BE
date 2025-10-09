@@ -136,7 +136,7 @@ class SaveServiceIntegrationTest {
 
             Save after = saveRepository.findById(save.getId()).orElse(null);
             assertThat(after).isNotNull();
-            assertThat(SaveServiceUtil.trimToMillis(after.getUpdatedAt())).isEqualTo(SaveServiceUtil.trimToMillis(beforeUpdatedAt));
+            assertThat(after.getUpdatedAt()).isEqualTo(beforeUpdatedAt);
         }
     }
 
