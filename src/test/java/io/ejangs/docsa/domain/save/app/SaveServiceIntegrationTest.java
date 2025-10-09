@@ -65,6 +65,9 @@ class SaveServiceIntegrationTest {
     @Autowired
     private CommitRepository commitRepository;
 
+    @Autowired
+    private EntityManager em;
+
     @MockitoBean
     private SaveContentRepository saveContentRepository;
 
@@ -128,6 +131,8 @@ class SaveServiceIntegrationTest {
             assertThatThrownBy(() -> saveService.updateSave(dto, request))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
+
+            em.clear();
 
             Save after = saveRepository.findById(save.getId()).orElse(null);
             assertThat(after).isNotNull();
