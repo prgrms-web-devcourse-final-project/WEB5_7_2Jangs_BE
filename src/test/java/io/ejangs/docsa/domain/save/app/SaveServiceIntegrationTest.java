@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.mongodb.DuplicateKeyException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
@@ -34,6 +35,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
@@ -61,9 +64,6 @@ class SaveServiceIntegrationTest {
 
     @Autowired
     private CommitRepository commitRepository;
-
-    @Autowired
-    private EntityManager em;
 
     @MockitoBean
     private SaveContentRepository saveContentRepository;
@@ -123,14 +123,11 @@ class SaveServiceIntegrationTest {
                     Optional.of(saveContent));
 
             when(saveContentRepository.save(any()))
-                    .thenThrow(new CustomException(DatabaseErrorCode.DATABASE_ERROR));
+                    .thenThrow(new RecoverableDataAccessException("mongo write failed"));
 
             assertThatThrownBy(() -> saveService.updateSave(dto, request))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
-
-            // then
-            em.clear();
 
             Save after = saveRepository.findById(save.getId()).orElse(null);
             assertThat(after).isNotNull();
