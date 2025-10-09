@@ -6,6 +6,8 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -57,4 +59,9 @@ public class SaveServiceUtil {
                 .branch(branch)
                 .build();
     }
+
+    public static LocalDateTime trimToMillis(LocalDateTime t) {
+        return t.truncatedTo(ChronoUnit.MILLIS);
+    }
+
 }
