@@ -6,11 +6,6 @@ spring:
     mongodb:
       uri: ${MONGO_URI}
 
-  jpa:
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
 
   mail:
     host: smtp.gmail.com
