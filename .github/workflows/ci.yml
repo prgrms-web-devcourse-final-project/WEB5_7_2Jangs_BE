@@ -37,7 +37,7 @@ jobs:
             echo "No Gradle project found"; exit 1
           fi
 
-      - name: Build & Test
+      - name: Test
         env:
           MAIL_PASSWORD: ${{ secrets.CI_MAIL_PASSWORD }}
           MAIL_USERNAME: ${{ secrets.CI_MAIL_USERNAME }}
@@ -45,7 +45,7 @@ jobs:
         run: |
           cd "${{ steps.detect.outputs.dir }}"
           chmod +x ./gradlew || true
-          ./gradlew clean test bootJar
+          ./gradlew clean test --no-daemon
 
       - name: Find Dockerfile
         id: df
