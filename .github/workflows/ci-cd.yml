@@ -70,3 +70,19 @@ jobs:
           docker build -f "${{ steps.df.outputs.path }}" -t $IMAGE:release -t $IMAGE:$GIT_SHA "${{ steps.df.outputs.ctx }}"
           docker push $IMAGE:release
           docker push $IMAGE:$GIT_SHA
+
+  deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/release' && needs.build-and-push.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.CD_HOST }}
+          username: ${{ secrets.CD_USER }}
+          key: ${{ secrets.CD_SSH_KEY }}
+          port: ${{ secrets.CD_PORT }}
+          script: |
+            export DEPLOY_TAG=release
+            bash -lc '/srv/docsa/infra/deploy.sh'
