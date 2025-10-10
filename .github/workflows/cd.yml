@@ -1,0 +1,47 @@
+name: CD - Deploy Backend
+
+on:
+  workflow_run:
+    workflows: ["CI - Build & Push Backend"]
+    types: [completed]
+    branches: [release]
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Deploy image tag (default: release)"
+        required: false
+        default: "release"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-docsa
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Decide tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=release" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.CD_HOST }}
+          username: ${{ secrets.CD_USER }}
+          key: ${{ secrets.CD_SSH_KEY }}
+          port: ${{ secrets.CD_PORT }}
+          script: |
+            export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
+            bash -lc '/srv/docsa/infra/deploy.sh'
