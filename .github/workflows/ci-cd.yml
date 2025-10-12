@@ -6,7 +6,12 @@ on:
     branches: [ release, dev ]
   pull_request:
     branches: [ dev ]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "배포할 이미지 태그 (ex. release or <GIT_SHA>)"
+        required: false
+        default: "release"
 
 jobs:
   build-and-push:
