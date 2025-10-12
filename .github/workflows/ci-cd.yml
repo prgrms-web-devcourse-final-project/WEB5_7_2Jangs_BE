@@ -93,9 +93,21 @@ jobs:
   deploy:
     needs: build-and-push
     # dev에 머지 전 cd 대상 브랜치 중첩 적용 (release, dev)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/release' || github.ref == 'refs/heads/dev') && needs.build-and-push.result == 'success'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/release' || github.ref == 'refs/heads/dev') &&
+      (needs.build-and-push.result == 'success')
+      || (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+
     steps:
+      - name: Decide tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "value=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=release" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -104,5 +116,5 @@ jobs:
           key: ${{ secrets.CD_SSH_KEY }}
           port: ${{ secrets.CD_PORT }}
           script: |
-            export DEPLOY_TAG=release
+            export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
             bash -lc '/srv/docsa/infra/deploy.sh'
