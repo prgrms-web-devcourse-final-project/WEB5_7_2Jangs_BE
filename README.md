@@ -55,7 +55,7 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 </div>
 
 ## 🌐 시스템 아키텍처
-<img width="2000" height="1000" alt="이장님들-System-arch (1)" src="https://github.com/user-attachments/assets/fa59f678-fd4e-4e1e-af54-a61d502a206f" />
+<img width="2000" height="1000" alt="이장님들-System-arch" src="https://github.com/user-attachments/assets/4ea1be39-6fea-479c-a9cb-03e717522fff" />
 
 
 
@@ -106,7 +106,7 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
 </p>
 
 <div align="center">
-  🔗 <a href="https://docsa.kro.kr/swagger-ui/index.html#/"><strong>배포 서버 Swagger 문서 보기</strong></a><br/>
+  🔗 <a href="https://api.docsa.o-r.kr/swagger-ui.html"><strong>배포 서버 Swagger 문서 보기</strong></a><br/>
   🔗 <a href="https://ky1nonly.github.io/docsa_swagger/"><strong>(서버 중단시 조회용) GitHub Pages Swagger 문서 보기</strong></a>
 </div>
 
@@ -114,7 +114,7 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 버�
   
 ## 📲 애플리케이션 UI
 
-🔗 [서비스 배포 주소](https://app.docsa.kro.kr/)<br>
+🔗 [서비스 배포 주소](https://docsa.o-r.kr/)<br>
 🎥 [시연 영상](https://www.youtube.com/watch?v=-1J7JvvATXw&t=2s)
 
 ### [UI 스크린샷 및 상세 설명](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%92%BB-UI-%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7-%EB%B0%8F-%EC%83%81%EC%84%B8-%EC%84%A4%EB%AA%85) 
