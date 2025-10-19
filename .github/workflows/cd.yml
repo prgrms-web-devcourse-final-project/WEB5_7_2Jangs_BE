@@ -1,4 +1,4 @@
-# 추후 dev에 머지 되면 cd.yml로 배포 워크플로우 분리
+# 추후 프로젝트 ci/cd규모 커지면 cd.yml로 배포 워크플로우 분리
 
 name: CD - Deploy Backend
 
