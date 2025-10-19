@@ -4,6 +4,7 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+infra/backend/*.jar
 
 ### STS ###
 .apt_generated
@@ -35,3 +36,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Secrets & Runtime
+infra/.env
+infra/**/*.env
+infra/certbot
+infra/mysql/exporter.cnf
+infra/mysql/logs/
+*.log
+*.pid
+.*.swp

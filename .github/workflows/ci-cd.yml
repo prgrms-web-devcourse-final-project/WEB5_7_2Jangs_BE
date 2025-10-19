@@ -1,0 +1,120 @@
+name: CI/CD — Backend (Build → Push → Deploy)
+
+on:
+  # dev에 머지 전 ci push 대상 브랜치 중첩 적용 (release, dev)
+  push:
+    branches: [ release, dev ]
+  pull_request:
+    branches: [ dev ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "배포할 이미지 태그 (ex. release or <GIT_SHA>)"
+        required: false
+        default: "release"
+
+concurrency:
+  group: cicd-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Detect project dir
+        id: detect
+        shell: bash
+        run: |
+          if [ -f "./gradlew" ] || [ -f "./build.gradle" ] || [ -f "./build.gradle.kts" ]; then
+            echo "dir=." >> $GITHUB_OUTPUT
+          elif [ -d "./backend" ]; then
+            echo "dir=backend" >> $GITHUB_OUTPUT
+          else
+            echo "No Gradle project found"; exit 1
+          fi
+
+      - name: Test
+        env:
+          MAIL_PASSWORD: ${{ secrets.CI_MAIL_PASSWORD }}
+          MAIL_USERNAME: ${{ secrets.CI_MAIL_USERNAME }}
+          MONGO_URI: ${{ secrets.CI_MONGO_URI }}
+        run: |
+          cd "${{ steps.detect.outputs.dir }}"
+          chmod +x ./gradlew || true
+          ./gradlew clean test --no-daemon
+
+      - name: Find Dockerfile
+        id: df
+        run: |
+          if [ -f "infra/backend/Dockerfile" ]; then
+            echo "path=infra/backend/Dockerfile" >> $GITHUB_OUTPUT
+            echo "ctx=." >> $GITHUB_OUTPUT
+          else
+            echo "No Dockerfile found"; exit 1
+          fi
+
+      - name: Build image (PR only)
+        if: github.event_name == 'pull_request'
+        run:  |
+          docker build -f "${{ steps.df.outputs.path }}" -t sanity-check:pr "${{ steps.df.outputs.ctx }}"
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push image
+        if: github.event_name == 'push'
+        run: |
+          GIT_SHA=${{ github.sha }}
+          docker build -f "${{ steps.df.outputs.path }}" -t $IMAGE:release -t $IMAGE:$GIT_SHA "${{ steps.df.outputs.ctx }}"
+          docker push $IMAGE:release
+          docker push $IMAGE:$GIT_SHA
+
+  deploy:
+    needs: build-and-push
+    # dev에 머지 전 cd 대상 브랜치 중첩 적용 (release, dev)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/release' || github.ref == 'refs/heads/dev') &&
+      (needs.build-and-push.result == 'success')
+      || (github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "value=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=release" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.CD_HOST }}
+          username: ${{ secrets.CD_USER }}
+          key: ${{ secrets.CD_SSH_KEY }}
+          port: ${{ secrets.CD_PORT }}
+          script: |
+            export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
+            bash -lc '/srv/docsa/infra/deploy.sh'

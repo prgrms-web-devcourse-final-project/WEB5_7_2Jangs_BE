@@ -1,0 +1,219 @@
+name: docsa
+
+services:
+  app:
+    image: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend:release
+    container_name: docsa-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_DATA_MONGODB_URI: ${SPRING_DATA_MONGODB_URI}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SERVER_SERVLET_SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME}
+      SERVER_SERVLET_SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN}
+      SPRINGDOC_SWAGGER-UI_SERVERS_URL: ${SWAGGER_SERVER_URL}
+    depends_on:
+       mysql:
+          condition: service_healthy
+    networks:
+      - docsa_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9091/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mysql:
+    image: mysql:9.4.0
+    container_name: docsa-mysql
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./mysql/logs:/var/log/mysql
+    networks:
+      - docsa_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "docsa", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysqld-exporter
+    restart: unless-stopped
+    volumes:
+      - ./mysql/exporter.cnf:/etc/.mysqld_exporter.cnf:ro
+    command:
+      - '--web.listen-address=:9104'
+      - '--config.my-cnf=/etc/.mysqld_exporter.cnf'
+      - '--mysqld.address=docsa-mysql:3306'
+      - '--collect.global_status'
+      - '--collect.global_variables'
+      - '--collect.engine_innodb_status'
+      - '--collect.info_schema.tablestats'
+      - '--collect.info_schema.processlist'
+      # - '--collect.perf_schema.eventsstatements'
+      # - '--collect.perf_schema.eventswaits'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - docsa_net
+
+  nginx:
+    image: nginx:stable-alpine-slim
+    container_name: docsa-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/etc:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - docsa_net
+
+  # 최초 발급용(수동실행)
+  certbot_init:
+    image: certbot/certbot:latest
+    container_name: docsa-certbot-init
+    profiles:
+      - "init"
+    depends_on:
+      - nginx
+    volumes:
+      - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/etc:/etc/letsencrypt:rw
+      - ./certbot/logs:/var/log/letsencrypt:rw
+    command: >
+      certonly --webroot
+      --webroot-path /var/www/certbot
+      -d api.docsa.o-r.kr
+      --email qoanstjdsla@gmail.com
+      --agree-tos --non-interactive
+      --no-eff-email
+
+  # 자동 갱신 데몬(하루마다 확인, 갱신되면 nginx 리로드)
+  certbot_renew:
+    image: certbot/certbot:latest
+    container_name: docsa-certbot-renew
+    depends_on:
+      - nginx
+    volumes:
+      - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/etc:/etc/letsencrypt:rw
+      - ./certbot/logs:/var/log/letsencrypt:rw
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    entrypoint: >
+      sh -c 'while :; do
+               certbot renew --webroot -w /var/www/certbot --quiet
+               if [ $$? -eq 0 ]; then
+                 # Docker Engine HTTP API로 nginx에 HUP 보내기 (무중단 리로드)
+                 wget -qO- \
+                   --header="Content-Type: application/json" \
+                   --method=POST \
+                   --body-data="" \
+                   --unix-socket /var/run/docker.sock \
+                   http://localhost/v1.41/containers/docsa-nginx/kill?signal=HUP >/dev/null 2>&1 || true
+               fi
+               sleep 24h;
+             done'
+
+ # ===== METRICS =====
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - docsa_net
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    pid: host
+    command: ['--path.rootfs=/host']
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - docsa_net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    depends_on:
+      - cadvisor
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    networks:
+      - docsa_net
+
+# ===== LOGS =====
+  loki:
+    image: grafana/loki:3.5.5
+    container_name: loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    networks:
+      - docsa_net
+
+  promtail:
+    image: grafana/promtail:3.5
+    container_name: promtail
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./mysql/logs:/mnt/mysql-logs:ro
+    networks: [docsa_net]
+
+# ===== DASHBOARD =====
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: unless-stopped
+    depends_on: [prometheus, loki]
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_SERVER_ROOT_URL: 'https://api.docsa.o-r.kr/grafana/'
+      GF_SERVER_SERVE_FROM_SUB_PATH: 'true'
+    networks: [docsa_net]
+
+
+volumes:
+  mysql_data:
+  prom_data:
+  loki_data:
+  grafana_data:
+
+networks:
+  docsa_net:

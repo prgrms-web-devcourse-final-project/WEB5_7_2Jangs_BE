@@ -41,17 +41,20 @@ public class SecurityConfig {
                                 .maximumSessions(1)
                                 .maxSessionsPreventsLogin(false))
                 .authorizeHttpRequests((authorize) -> authorize
-                        // Swagger UI 및 OpenAPI 문서 접근 허용
                         .requestMatchers(
+                                // Swagger UI 및 OpenAPI 문서
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml",
                                 "/swagger-resources/**",
-                                "/webjars/**"
+                                "/webjars/**",
+
+                                // actuator, session
+                                "/actuator/prometheus",
+                                "/actuator/health",
+                                "api/auth/session/check"
                         ).permitAll()
-                        .requestMatchers("/actuator/prometheus").permitAll()
-                        .requestMatchers("/api/auth/session/check").permitAll()
                         .requestMatchers(
                                 "/api/auth/code/signup-email",
                                 "/api/user/signup",
@@ -98,10 +101,8 @@ public class SecurityConfig {
                 List.of(
                         "http://localhost:3000",
                         "http://localhost:5173",
-                        "https://app.docsa.kro.kr",
-                        "https://web5-7-2jangs-fe.pages.dev",
-                        "http://ec2-3-34-159-207.ap-northeast-2.compute.amazonaws.com:8080",
-                        "https://docsa.kro.kr"
+                        "https://docsa-4hh.pages.dev/",
+                        "https://docsa.o-r.kr/"
                 ));
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")

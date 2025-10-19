@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Spring Actuator
+  - job_name: 'spring-app'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['docsa-app:9091']
+        labels: { app: docsa }
+
+  # 컨테이너 리소스
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # 호스트 리소스
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node_exporter:9100']  # node_exporter(host 네트워크)
+
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysqld-exporter:9104']

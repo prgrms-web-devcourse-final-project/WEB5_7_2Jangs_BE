@@ -9,11 +9,11 @@ spring:
     hibernate:
       ddl-auto: validate
     database-platform: org.hibernate.dialect.MySQL8Dialect
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-        use_sql_comments: true
+        format_sql: false
+        use_sql_comments: false
 
 server:
   port: 8080
@@ -40,10 +40,18 @@ springdoc:
         description: Production Server
 
 management:
+  server:
+    port: 9091
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
-  endpoint:
-    prometheus:
-      access: unrestricted
+
+  metrics:
+    distribution:
+      percentiles:
+        all: 0.5, 0.9, 0.99
+      percentiles-histogram:
+        http.server.requests: true
+        hikaricp.connections.acquire: true
+        method.timed: true
