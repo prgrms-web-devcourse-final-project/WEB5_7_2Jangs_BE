@@ -37,7 +37,7 @@ TAG="${DEPLOY_TAG:-$TARGET}"               # ← 기본은 채널 태그(dev|sta
 # 임시 override 파일로 이미지 태그만 덮어쓰기
 OVR=""
 if [[ -n "$TAG" ]]; then
-  OVR="$ROOT/infra/docker-compose.override.deploy.yml"
+  OVR="$ROOT/docker-compose.override.deploy.yml"
   cat > "$OVR" <<EOF
 services:
   ${SERVICE}:
