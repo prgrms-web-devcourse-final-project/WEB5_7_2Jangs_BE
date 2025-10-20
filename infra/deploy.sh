@@ -25,10 +25,10 @@ ROOT="$(pwd)"
 
 # 타깃에 따라 compose/env 자동 선택
 if [[ "$TARGET" == "dev" ]]; then
-  COMPOSE_FILE="$ROOT/compose.dev.yml"
+  COMPOSE_FILE="$ROOT/docker-compose.yml"
   ENV_FILE="$ROOT/.env"
 else
-  COMPOSE_FILE="$ROOT/compose.stg.yml"
+  COMPOSE_FILE="$ROOT/docker-compose.stg.yml"
   ENV_FILE="$ROOT/.stg.env"
 fi
 
