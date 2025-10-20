@@ -129,11 +129,10 @@ jobs:
           key: ${{ secrets.CD_SSH_KEY }}
           port: ${{ secrets.CD_PORT }}
           script: |
-            export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
             if [ "${{ github.ref_name }}" = "staging" ]; then
-              bash -lc '/srv/docsa-stg/infra/deploy.sh'
+              export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
+              bash -lc '/srv/docsa/infra/deploy.sh staging'
             else
-              bash -lc '/srv/docsa/infra/deploy.sh'
+              export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
+              bash -lc '/srv/docsa/infra/deploy.sh dev'
             fi
-
-
