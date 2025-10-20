@@ -20,7 +20,8 @@ IMAGE_BASE="${IMAGE_BASE:-ghcr.io/prgrms-web-devcourse-final-project/docsa-backe
 SERVICE="${SERVICE:-app}"
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-120}"
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$(dirname "$0")"
+ROOT="$(pwd)"
 
 # 타깃에 따라 compose/env 자동 선택
 if [[ "$TARGET" == "dev" ]]; then
