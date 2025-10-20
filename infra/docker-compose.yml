@@ -1,9 +1,9 @@
-name: docsa
+name: docsa-stg
 
 services:
   app:
     image: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend:release
-    container_name: docsa-app
+    container_name: docsa-app-stg
     restart: unless-stopped
     env_file: .env
     environment:
@@ -20,7 +20,7 @@ services:
        mysql:
           condition: service_healthy
     networks:
-      - docsa_net
+      - docsa_stg_net
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:9091/actuator/health"]
       interval: 30s
@@ -29,31 +29,31 @@ services:
 
   mysql:
     image: mysql:9.4.0
-    container_name: docsa-mysql
+    container_name: docsa-mysql-stg
     restart: unless-stopped
     env_file: .env
     volumes:
-      - mysql_data:/var/lib/mysql
+      - stg_mysql_data:/var/lib/mysql
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
       - ./mysql/logs:/var/log/mysql
     networks:
-      - docsa_net
+      - docsa_stg_net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "docsa", "-p${SPRING_DATASOURCE_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "docsa-stg", "-p${SPRING_DATASOURCE_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 3
 
   mysqld-exporter:
     image: prom/mysqld-exporter:latest
-    container_name: mysqld-exporter
+    container_name: mysqld-exporter-stg
     restart: unless-stopped
     volumes:
       - ./mysql/exporter.cnf:/etc/.mysqld_exporter.cnf:ro
     command:
       - '--web.listen-address=:9104'
       - '--config.my-cnf=/etc/.mysqld_exporter.cnf'
-      - '--mysqld.address=docsa-mysql:3306'
+      - '--mysqld.address=docsa-mysql-stg:3306'
       - '--collect.global_status'
       - '--collect.global_variables'
       - '--collect.engine_innodb_status'
@@ -65,11 +65,11 @@ services:
       mysql:
         condition: service_healthy
     networks:
-      - docsa_net
+      - docsa_stg_net
 
   nginx:
     image: nginx:stable-alpine-slim
-    container_name: docsa-nginx
+    container_name: docsa-nginx-stg
     restart: unless-stopped
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -82,12 +82,12 @@ services:
       app:
         condition: service_started
     networks:
-      - docsa_net
+      - docsa_stg_net
 
   # 최초 발급용(수동실행)
   certbot_init:
     image: certbot/certbot:latest
-    container_name: docsa-certbot-init
+    container_name: docsa-certbot-init-stg
     profiles:
       - "init"
     depends_on:
@@ -99,7 +99,7 @@ services:
     command: >
       certonly --webroot
       --webroot-path /var/www/certbot
-      -d api.docsa.o-r.kr
+      -d stg.api.docsa.o-r.kr
       --email qoanstjdsla@gmail.com
       --agree-tos --non-interactive
       --no-eff-email
@@ -107,7 +107,7 @@ services:
   # 자동 갱신 데몬(하루마다 확인, 갱신되면 nginx 리로드)
   certbot_renew:
     image: certbot/certbot:latest
-    container_name: docsa-certbot-renew
+    container_name: docsa-certbot-renew-stg
     depends_on:
       - nginx
     volumes:
@@ -125,7 +125,7 @@ services:
                    --method=POST \
                    --body-data="" \
                    --unix-socket /var/run/docker.sock \
-                   http://localhost/v1.41/containers/docsa-nginx/kill?signal=HUP >/dev/null 2>&1 || true
+                   http://localhost/v1.41/containers/docsa-nginx-stg/kill?signal=HUP >/dev/null 2>&1 || true
                fi
                sleep 24h;
              done'
@@ -133,7 +133,7 @@ services:
  # ===== METRICS =====
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
+    container_name: cadvisor-stg
     restart: unless-stopped
     privileged: true
     volumes:
@@ -142,46 +142,46 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     networks:
-      - docsa_net
+      - docsa_stg_net
 
   node_exporter:
     image: prom/node-exporter:latest
-    container_name: node-exporter
+    container_name: node-exporter-stg
     restart: unless-stopped
     pid: host
     command: ['--path.rootfs=/host']
     volumes:
       - /:/host:ro,rslave
     networks:
-      - docsa_net
+      - docsa_stg_net
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: prometheus-stg
     restart: unless-stopped
     depends_on:
       - cadvisor
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prom_data:/prometheus
+      - stg_prom_data:/prometheus
     networks:
-      - docsa_net
+      - docsa_stg_net
 
 # ===== LOGS =====
   loki:
     image: grafana/loki:3.5.5
-    container_name: loki
+    container_name: loki-stg
     restart: unless-stopped
     command: ["-config.file=/etc/loki/config.yml"]
     volumes:
       - ./loki/config.yml:/etc/loki/config.yml:ro
-      - loki_data:/loki
+      - stg_loki_data:/loki
     networks:
-      - docsa_net
+      - docsa_stg_net
 
   promtail:
     image: grafana/promtail:3.5
-    container_name: promtail
+    container_name: promtail-stg
     restart: unless-stopped
     command: ["-config.file=/etc/promtail/config.yml"]
     volumes:
@@ -190,30 +190,30 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./mysql/logs:/mnt/mysql-logs:ro
-    networks: [docsa_net]
+    networks: [docsa_stg_net]
 
 # ===== DASHBOARD =====
   grafana:
     image: grafana/grafana-oss:latest
-    container_name: grafana
+    container_name: grafana-stg
     restart: unless-stopped
     depends_on: [prometheus, loki]
     volumes:
-      - grafana_data:/var/lib/grafana
+      - stg_grafana_data:/var/lib/grafana
       - ./grafana/provisioning/datasources/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      GF_SERVER_ROOT_URL: 'https://api.docsa.o-r.kr/grafana/'
+      GF_SERVER_ROOT_URL: 'https://stg.api.docsa.o-r.kr/grafana/'
       GF_SERVER_SERVE_FROM_SUB_PATH: 'true'
-    networks: [docsa_net]
+    networks: [docsa_stg_net]
 
 
 volumes:
-  mysql_data:
-  prom_data:
-  loki_data:
-  grafana_data:
+  stg_mysql_data:
+  stg_prom_data:
+  stg_loki_data:
+  stg_grafana_data:
 
 networks:
-  docsa_net:
+  docsa_stg_net:
