@@ -2,7 +2,7 @@ name: docsa-stg
 
 services:
   app:
-    image: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend:release
+    image: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend:dev
     container_name: docsa-app-stg
     restart: unless-stopped
     env_file: .env
