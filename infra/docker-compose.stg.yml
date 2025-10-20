@@ -2,10 +2,10 @@ name: docsa-stg
 
 services:
   app:
-    image: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend:dev
+    image: ghcr.io/prgrms-web-devcourse-final-project/docsa-backend:staging
     container_name: docsa-app-stg
     restart: unless-stopped
-    env_file: .env
+    env_file: .stg.env
     environment:
       SPRING_DATA_MONGODB_URI: ${SPRING_DATA_MONGODB_URI}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
@@ -31,7 +31,7 @@ services:
     image: mysql:9.4.0
     container_name: docsa-mysql-stg
     restart: unless-stopped
-    env_file: .env
+    env_file: .stg.env
     volumes:
       - stg_mysql_data:/var/lib/mysql
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
