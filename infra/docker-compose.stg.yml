@@ -30,11 +30,14 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    container_name: mailpit-stg
-    ports:
-      - "8025:8025"   # 웹 UI
-      - "1025:1025"   # SMTP
-    restart: unless-stopped
+    command: ["--webroot", "/mailpit/"]
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: "5000"
+    volumes:
+      - mailpit_data:/data
     networks:
       - docsa_stg_net
 
@@ -225,6 +228,7 @@ volumes:
   stg_prom_data:
   stg_loki_data:
   stg_grafana_data:
+  mailpit_data:
 
 networks:
   docsa_stg_net:
