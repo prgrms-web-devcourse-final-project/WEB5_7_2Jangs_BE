@@ -28,6 +28,14 @@ services:
       timeout: 5s
       retries: 3
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit-stg
+    ports:
+      - "8025:8025"   # 웹 UI
+      - "1025:1025"   # SMTP
+    restart: unless-stopped
+
   mysql:
     image: mysql:9.4.0
     container_name: docsa-mysql-stg
