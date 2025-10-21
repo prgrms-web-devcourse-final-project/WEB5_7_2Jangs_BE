@@ -35,6 +35,8 @@ services:
       - "8025:8025"   # 웹 UI
       - "1025:1025"   # SMTP
     restart: unless-stopped
+    networks:
+      - docsa_stg_net
 
   mysql:
     image: mysql:9.4.0
