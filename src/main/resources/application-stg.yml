@@ -1,0 +1,69 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_PROD_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+
+  mail:
+    host: mailpit
+    port: 1025
+    username:
+    password:
+    smtp-auth: false
+    starttls-enable: false
+    starttls-required: false
+    connection-timeout: 5000
+    timeout: 5000
+    write-timeout: 5000
+
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:validate}
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+
+server:
+  port: 8080
+  ssl:
+    enabled: false
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        name: ${SESSION_COOKIE_NAME}
+        domain: ${SESSION_COOKIE_DOMAIN}
+        secure: true
+        same-site: None
+      timeout: 24h # TODO: 테스트 완료 후 제거
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    servers:
+      - url: ${SWAGGER_SERVER_URL}
+        description: Production Server
+
+management:
+  server:
+    port: 9091
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  metrics:
+    distribution:
+      percentiles:
+        all: 0.5, 0.9, 0.99
+      percentiles-histogram:
+        http.server.requests: true
+        hikaricp.connections.acquire: true
+        method.timed: true
