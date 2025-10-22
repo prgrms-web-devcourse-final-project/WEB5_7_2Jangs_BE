@@ -8,7 +8,7 @@ spring:
   mail:
     host: mailpit
     port: 1025
-    username:
+    username: ${MAIL_USERNAME:test@docsa.com}
     password:
     smtp-auth: false
     starttls-enable: false
