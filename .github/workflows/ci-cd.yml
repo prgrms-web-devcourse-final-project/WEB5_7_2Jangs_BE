@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "배포할 이미지 태그 (ex. release or <GIT_SHA>)"
+        description: "배포할 이미지 태그 (ex. dev or dev-SHORT_SHA)"
         required: false
         default: "dev"
 
