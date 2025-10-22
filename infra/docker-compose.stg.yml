@@ -41,7 +41,7 @@ services:
     networks:
       - docsa_stg_net
     healthcheck:
-      test: ["CMD-SHELL", "wget"," -q", " --spider", " http://127.0.0.1:8025/mailpit/livez"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8025/mailpit/readyz || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 3
