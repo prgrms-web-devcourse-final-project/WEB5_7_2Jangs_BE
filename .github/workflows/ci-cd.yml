@@ -2,15 +2,15 @@ name: CI/CD — Backend (Build → Push → Deploy)
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, staging ]
   pull_request:
-    branches: [ dev ]
+    branches: [ dev, staging ]
   workflow_dispatch:
     inputs:
       tag:
-        description: "배포할 이미지 태그 (ex. release or <GIT_SHA>)"
+        description: "배포할 이미지 태그 (ex. dev or dev-SHORT_SHA)"
         required: false
-        default: "release"
+        default: "dev"
 
 concurrency:
   group: cicd-${{ github.ref_name }}
@@ -81,17 +81,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push image
+      - name: Decide tags by branch
+        if: github.event_name == 'push'
+        id: tags
+        shell: bash
+        run: |
+          REF="${{ github.ref_name }}"               # dev / staging
+          SHORT_SHA="${GITHUB_SHA::7}"
+          SAFE_REF=$(echo "$REF" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g')
+          echo "channel=$SAFE_REF" >> $GITHUB_OUTPUT          # ex) dev, staging
+          echo "version=${SAFE_REF}-${SHORT_SHA}" >> $GITHUB_OUTPUT  # ex) dev-abc1234
+
+      - name: Build & Push (branch-tagged)
         if: github.event_name == 'push'
         run: |
-          GIT_SHA=${{ github.sha }}
-          docker build -f "${{ steps.df.outputs.path }}" -t $IMAGE:release -t $IMAGE:$GIT_SHA "${{ steps.df.outputs.ctx }}"
-          docker push $IMAGE:release
-          docker push $IMAGE:$GIT_SHA
+          CHAN=${{ steps.tags.outputs.channel }}   # dev | staging
+          VER=${{ steps.tags.outputs.version }}    # dev-<sha> | staging-<sha>
+          docker build -f "${{ steps.df.outputs.path }}" \
+            -t $IMAGE:$CHAN \
+            -t $IMAGE:$VER \
+            "${{ steps.df.outputs.ctx }}"
+          docker push $IMAGE:$CHAN
+          docker push $IMAGE:$VER
 
   deploy:
     needs: build-and-push
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev') &&
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/staging') &&
       (needs.build-and-push.result == 'success')
       || (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -103,7 +118,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
             echo "value=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
           else
-            echo "value=release" >> $GITHUB_OUTPUT
+            echo "value=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy
@@ -114,5 +129,10 @@ jobs:
           key: ${{ secrets.CD_SSH_KEY }}
           port: ${{ secrets.CD_PORT }}
           script: |
-            export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
-            bash -lc '/srv/docsa/infra/deploy.sh'
+            if [ "${{ github.ref_name }}" = "staging" ]; then
+              export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
+              bash -lc '/srv/docsa/infra/deploy.sh staging'
+            else
+              export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
+              bash -lc '/srv/docsa/infra/deploy.sh dev'
+            fi

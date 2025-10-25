@@ -6,13 +6,13 @@ spring:
     password: ${MYSQL_PASSWORD}
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    smtp-auth: true
-    starttls-enable: true
-    starttls-required: true
+    host: mailpit
+    port: 1025
+    username: ${MAIL_USERNAME:test@docsa.com}
+    password:
+    smtp-auth: false
+    starttls-enable: false
+    starttls-required: false
 
 
   jpa:

@@ -39,6 +39,7 @@ out/
 
 ### Secrets & Runtime
 infra/.env
+infra/*.env
 infra/**/*.env
 infra/certbot
 infra/mysql/exporter.cnf
