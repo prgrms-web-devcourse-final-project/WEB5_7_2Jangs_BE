@@ -13,9 +13,7 @@ spring:
     smtp-auth: false
     starttls-enable: false
     starttls-required: false
-    connection-timeout: 5000
-    timeout: 5000
-    write-timeout: 5000
+
 
   jpa:
     hibernate:
@@ -50,20 +48,3 @@ springdoc:
     servers:
       - url: ${SWAGGER_SERVER_URL}
         description: Production Server
-
-management:
-  server:
-    port: 9091
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus
-
-  metrics:
-    distribution:
-      percentiles:
-        all: 0.5, 0.9, 0.99
-      percentiles-histogram:
-        http.server.requests: true
-        hikaricp.connections.acquire: true
-        method.timed: true

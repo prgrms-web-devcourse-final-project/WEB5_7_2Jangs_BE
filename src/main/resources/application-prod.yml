@@ -5,6 +5,16 @@ spring:
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    smtp-auth: true
+    starttls-enable: true
+    starttls-required: true
+
+
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:validate}
@@ -38,20 +48,3 @@ springdoc:
     servers:
       - url: ${SWAGGER_SERVER_URL}
         description: Production Server
-
-management:
-  server:
-    port: 9091
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus
-
-  metrics:
-    distribution:
-      percentiles:
-        all: 0.5, 0.9, 0.99
-      percentiles-histogram:
-        http.server.requests: true
-        hikaricp.connections.acquire: true
-        method.timed: true

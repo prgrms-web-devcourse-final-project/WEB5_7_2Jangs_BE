@@ -6,18 +6,27 @@ spring:
     mongodb:
       uri: ${MONGO_URI}
 
-
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    smtp-auth: true
-    starttls-enable: true
-    starttls-required: true
     connection-timeout: 5000
     timeout: 5000
     write-timeout: 5000
+
+management:
+  server:
+    port: 9091
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  metrics:
+    distribution:
+      percentiles:
+        all: 0.5, 0.9, 0.99
+      percentiles-histogram:
+        http.server.requests: true
+        hikaricp.connections.acquire: true
+        method.timed: true
 
 auth:
   signup-code-cache-name: signupCodeCache
