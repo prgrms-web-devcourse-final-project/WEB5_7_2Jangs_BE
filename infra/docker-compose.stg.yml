@@ -127,7 +127,7 @@ services:
   # 자동 갱신 데몬(하루마다 확인, 갱신되면 nginx 리로드)
   certbot_renew:
     image: certbot/certbot:latest
-    container_name: docsa-certbot-renew
+    container_name: docsa-certbot-renew-stg
     depends_on:
       - nginx
     volumes:
@@ -155,7 +155,7 @@ services:
       
           # nginx 무중단 reload (Docker Engine API)
           curl -sS --unix-socket /var/run/docker.sock \
-            -X POST "http://localhost/v1.41/containers/docsa-nginx/kill?signal=HUP" \
+            -X POST "http://localhost/v1.41/containers/docsa-nginx-stg/kill?signal=HUP" \
             >/dev/null 2>&1 || true
       
           sleep 24h
