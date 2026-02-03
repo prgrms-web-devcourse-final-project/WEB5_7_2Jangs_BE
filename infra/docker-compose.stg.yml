@@ -93,8 +93,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/nginx.stg.conf:/etc/nginx/nginx.conf:ro
-      - ./certbot/etc:/etc/letsencrypt:ro
-      - ./certbot/www:/var/www/certbot:ro
+      - /srv/docsa/infra/certbot/etc:/etc/letsencrypt:ro
+      - /srv/docsa/infra/certbot/www:/var/www/certbot:ro
     ports:
       - "8080:80"
       - "8443:443"
@@ -104,51 +104,6 @@ services:
     networks:
       - docsa_stg_net
 
-  # 최초 발급용(수동실행)
-  certbot_init:
-    image: certbot/certbot:latest
-    container_name: docsa-certbot-init-stg
-    profiles:
-      - "init"
-    depends_on:
-      - nginx
-    volumes:
-      - ./certbot/www:/var/www/certbot:rw
-      - ./certbot/etc:/etc/letsencrypt:rw
-      - ./certbot/logs:/var/log/letsencrypt:rw
-    command: >
-      certonly --webroot
-      --webroot-path /var/www/certbot
-      -d stg.api.docsa.o-r.kr
-      --email qoanstjdsla@gmail.com
-      --agree-tos --non-interactive
-      --no-eff-email
-
-  # 자동 갱신 데몬(하루마다 확인, 갱신되면 nginx 리로드)
-  certbot_renew:
-    image: certbot/certbot:latest
-    container_name: docsa-certbot-renew-stg
-    depends_on:
-      - nginx
-    volumes:
-      - ./certbot/www:/var/www/certbot:rw
-      - ./certbot/etc:/etc/letsencrypt:rw
-      - ./certbot/logs:/var/log/letsencrypt:rw
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-    entrypoint: >
-      sh -c 'while :; do
-               certbot renew --webroot -w /var/www/certbot --quiet
-               if [ $$? -eq 0 ]; then
-                 # Docker Engine HTTP API로 nginx에 HUP 보내기 (무중단 리로드)
-                 wget -qO- \
-                   --header="Content-Type: application/json" \
-                   --method=POST \
-                   --body-data="" \
-                   --unix-socket /var/run/docker.sock \
-                   http://localhost/v1.41/containers/docsa-nginx-stg/kill?signal=HUP >/dev/null 2>&1 || true
-               fi
-               sleep 24h;
-             done'
 
  # ===== METRICS =====
   cadvisor:
