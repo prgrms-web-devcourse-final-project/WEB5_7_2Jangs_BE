@@ -2,11 +2,13 @@ package io.ejangs.docsa.domain.doc.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
@@ -27,6 +29,7 @@ import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -50,6 +53,9 @@ public class DocServiceUnitTests {
 
     @Mock
     private DocRepository docRepository;
+
+    @Mock
+    private DocQueryService docQueryService;
 
     @Mock
     private DocListAssembler docListAssembler;
@@ -181,14 +187,13 @@ public class DocServiceUnitTests {
         DocTitleUpdateResponse response =
                 new DocTitleUpdateResponse(docId, newTitle, LocalDateTime.now());
 
-        when(docRepository.existsByUserIdAndTitle(userId, newTitle)).thenReturn(false);
         when(docRepository.getDocByIdAndUserId(docId, userId)).thenReturn(Optional.of(doc));
 
         //when
         DocTitleUpdateResponse result = docService.updateTitle(userId, docId, request);
 
         //then
-        verify(docRepository).existsByUserIdAndTitle(userId, newTitle);
+        verify(docQueryService).checkTitleDuplicate(userId, newTitle);
         verify(docRepository).getDocByIdAndUserId(docId, userId);
         assertEquals(newTitle, doc.getTitle());
         assertEquals(response.id(), doc.getId());
@@ -211,10 +216,14 @@ public class DocServiceUnitTests {
         ReflectionTestUtils.setField(doc, "id", docId);
 
         when(docRepository.getDocByIdAndUserId(docId, userId)).thenReturn(Optional.of(doc));
-        when(docRepository.existsByUserIdAndTitle(userId, duplicateTitle)).thenReturn(true);
+        doThrow(new CustomException(DocErrorCode.TITLE_DUPLICATION))
+                .when(docQueryService).checkTitleDuplicate(userId, duplicateTitle);
 
         // when & then
-        assertThrows(CustomException.class, () -> docService.updateTitle(userId, docId, request));
+        CustomException exception = assertThrows(CustomException.class,
+                () -> docService.updateTitle(userId, docId, request));
+
+        assertEquals(DocErrorCode.TITLE_DUPLICATION, exception.getErrorCode());
     }
 
     @Test
