@@ -56,8 +56,10 @@ public class DocService {
     private final ApplicationEventPublisher eventPublisher;
 
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
-
-        return docCreateSagaService.create(request, userId);
+        User user = docQueryService.getUserOrThrow(userId);
+        String title = request.title();
+        docQueryService.checkTitleDuplicate(userId, title);
+        return docCreateSagaService.create(title, user);
     }
 
     @Transactional(readOnly = true)

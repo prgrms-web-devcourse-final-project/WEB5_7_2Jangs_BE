@@ -26,13 +26,8 @@ public class DocCreateMySqlTxService {
     private String defaultBranchName;
 
     @Transactional(rollbackFor = Exception.class)
-    public DocCreateResponse createMySqlPart(DocTitleRequest request, Long userId,
+    public DocCreateResponse createMySqlPart(String title, User user,
             String saveContentId) {
-
-        User user = docQueryService.getUserOrThrow(userId);
-
-        String title = request.title();
-        docQueryService.checkTitleDuplicate(userId, title);
 
         Doc doc = docQueryService.createDoc(user, title);
         Branch defaultBranch = docQueryService.createDefaultBranch(doc, defaultBranchName);
