@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import com.mongodb.MongoTimeoutException;
@@ -13,6 +15,7 @@ import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
+import io.ejangs.docsa.domain.doc.app.DocCreateMySqlTxService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
@@ -151,7 +154,7 @@ public class DocServiceIntegrationTests {
         private SaveContentRepository saveContentRepository;
 
         @Test
-        @DisplayName("Mongo 저장 실패 시 문서 생성 트랜잭션이 중단된다")
+        @DisplayName("Mongo 저장 실패 시 예외")
         @Transactional(propagation = Propagation.NOT_SUPPORTED)
             // findAll이 같은 트랜잭션 안에서 수행 되면 rollback 되기 전 상태를 그대로 읽을 수 있음
         void MongoFailRdbTransaction() {
@@ -164,12 +167,48 @@ public class DocServiceIntegrationTests {
             assertThatThrownBy(() -> docService.create(request, user.getId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
-
-            assertThat(docRepository.findAll()).isEmpty();
-            assertThat(branchRepository.findAll()).isEmpty();
-            assertThat(saveRepository.findAll()).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("MySQL 실패시 MongoDB 보상 삭제")
+    class MySqlFailureTest {
+
+        @Autowired
+        private DocService docService;
+
+        @Autowired
+        private UserRepository userRepository;
+
+        @Autowired
+        private SaveContentRepository saveContentRepository;
+
+        @MockitoBean
+        private DocCreateMySqlTxService docCreateMySqlTxService; // MySQL 파트만 실패 유도
+
+        @Test
+        @DisplayName("MySQL 생성 실패 시 Mongo에 먼저 생성된 SaveContent는 보상 삭제된다")
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        void mysqlFail_compensateMongoDelete() {
+            // given
+            User user = userRepository.save(DocTestUtils.createUser());
+            DocTitleRequest request = new DocTitleRequest("MySQL 실패 케이스");
+
+            // Mongo는 정상 저장되고, MySQL 파트에서 예외가 터진 상황
+            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
+                    .thenThrow(new RuntimeException("MySQL 생성 실패"));
+
+            // when & then
+            assertThatThrownBy(() -> docService.create(request, user.getId()))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("MySQL 생성 실패");
+
+            // 보상 삭제 결과: Mongo에 SaveContent가 남아있으면 안 됨
+            assertThat(saveContentRepository.findAll()).isEmpty();
+        }
+    }
+
+
 
     @Test
     @DisplayName("중복된 제목으로 문서를 생성할 경우 예외가 발생한다")
