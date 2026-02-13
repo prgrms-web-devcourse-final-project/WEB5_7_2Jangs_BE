@@ -65,7 +65,7 @@ public class DocController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getSimpleList(userDetails.getId(), pageable));
+                .body(docService.getSimplePage(userDetails.getId(), pageable));
     }
 
     @GetMapping

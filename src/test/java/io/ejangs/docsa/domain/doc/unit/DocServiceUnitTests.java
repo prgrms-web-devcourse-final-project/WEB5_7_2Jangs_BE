@@ -100,11 +100,11 @@ public class DocServiceUnitTests {
         Page<DocListSimpleResponse> dummyPage = new PageImpl<>(expectedResponses, pageable,
                 expectedResponses.size());
 
-        when(docRepository.findAllByUserId(userId, pageable)).thenReturn(docs);
+        when(docQueryService.getAllDocPageByUserId(userId, pageable)).thenReturn(docs);
         when(docListAssembler.assembleDocListSimple(docs)).thenReturn(dummyPage);
 
         // when
-        Page<DocListSimpleResponse> page = docService.getSimpleList(userId, pageable);
+        Page<DocListSimpleResponse> page = docService.getSimplePage(userId, pageable);
         List<DocListSimpleResponse> result = page.getContent();
 
         // then
@@ -118,7 +118,7 @@ public class DocServiceUnitTests {
         assertEquals(RecentType.COMMIT, result.get(1).recent().recentType());
         assertEquals(200L, result.get(1).recent().recentTypeId());
 
-        verify(docRepository).findAllByUserId(userId, pageable);
+        verify(docQueryService).getAllDocPageByUserId(userId, pageable);
         verify(docListAssembler).assembleDocListSimple(docs);
     }
 

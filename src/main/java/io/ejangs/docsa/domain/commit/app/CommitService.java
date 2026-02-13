@@ -203,6 +203,7 @@ public class CommitService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteCommit(Long docId, Long commitId, Long userId) {
+        //TODO Doc doc = getDocByIdAndUserId() 대체 가능
         docService.checkDocByIdAndUserId(docId, userId);
 
         Commit commit = getById(commitId);

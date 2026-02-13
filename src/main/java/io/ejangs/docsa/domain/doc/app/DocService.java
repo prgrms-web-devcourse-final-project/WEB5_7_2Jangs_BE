@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -63,9 +62,8 @@ public class DocService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DocListSimpleResponse> getSimpleList(Long userId, Pageable pageable) {
-        Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
-
+    public Page<DocListSimpleResponse> getSimplePage(Long userId, Pageable pageable) {
+        Page<Doc> docs = docQueryService.getAllDocPageByUserId(userId, pageable);
         return docListAssembler.assembleDocListSimple(docs);
     }
 
@@ -111,6 +109,7 @@ public class DocService {
         }
     }
 
+    //getDocByIdAndUserId로 대체할수 있지 않을까
     @Transactional(readOnly = true)
     public Doc getById(Long id) {
         return docRepository.findById(id)
@@ -137,6 +136,7 @@ public class DocService {
         return GraphMapper.toCommitGraphResponse(docTitle, commits, edges, branches);
     }
 
+    // 끔찍한 메소드
     private String getTitleOnlyById(Long documentId) {
         Optional<DocTitleOnlyResponse> optionalTitle = docRepository.findTitleOnlyById(documentId);
 

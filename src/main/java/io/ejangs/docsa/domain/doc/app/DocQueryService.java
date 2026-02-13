@@ -4,6 +4,7 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.util.DocListAssembler;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
@@ -13,7 +14,10 @@ import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,8 @@ public class DocQueryService {
     private final DocRepository docRepository;
     private final BranchRepository branchRepository;
     private final SaveRepository saveRepository;
+
+    private final DocListAssembler docListAssembler;
 
     // 추후 User 도메인으로 이동 필요
     public User getUserOrThrow(Long userId) {
@@ -58,6 +64,11 @@ public class DocQueryService {
         if (alreadyExistsTitle) {
             throw new CustomException(DocErrorCode.TITLE_DUPLICATION);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Doc> getAllDocPageByUserId(Long userId, Pageable pageable) {
+        return docRepository.findAllByUserId(userId, pageable);
     }
 
 }

@@ -120,7 +120,7 @@ class DocControllerUnitTests {
                 content.size()
         );
 
-        when(docService.getSimpleList(anyLong(), any(Pageable.class))).thenReturn(responseList);
+        when(docService.getSimplePage(anyLong(), any(Pageable.class))).thenReturn(responseList);
 
         // when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar"))
