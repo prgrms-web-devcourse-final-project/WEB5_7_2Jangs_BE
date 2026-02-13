@@ -16,4 +16,12 @@ public record MongoIdsDto(
         blockIds = blockIds == null ? List.of() : blockIds;
     }
 
+    public static MongoIdsDto forSaveContent(String saveContentId) {
+        return new MongoIdsDto(
+                List.of(saveContentId),
+                List.of(),
+                List.of()
+        );
+    }
+
 }
