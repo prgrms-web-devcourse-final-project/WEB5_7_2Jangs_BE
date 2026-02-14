@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Profile("local")
+@Profile({"local", "stg"})
 @RequiredArgsConstructor
 public class TestUserInitializer {
 
