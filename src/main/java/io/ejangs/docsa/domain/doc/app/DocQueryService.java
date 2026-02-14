@@ -85,12 +85,12 @@ public class DocQueryService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Doc> getDocPageByUserId(Long userId, Pageable pageable) {
+    public Page<Doc> getPageByUserId(Long userId, Pageable pageable) {
         return docRepository.findAllByUserId(userId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<Doc> searchDoc(String keyword, Long userId, Pageable pageable) {
+    public Page<Doc> searchByTitle(String keyword, Long userId, Pageable pageable) {
         return docRepository.searchDocByTitle(keyword, userId, pageable);
     }
 

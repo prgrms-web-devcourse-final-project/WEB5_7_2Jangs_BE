@@ -3,7 +3,6 @@ package io.ejangs.docsa.domain.doc.app;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
@@ -13,7 +12,6 @@ import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
@@ -27,7 +25,6 @@ import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -62,19 +59,19 @@ public class DocService {
 
     @Transactional(readOnly = true)
     public Page<DocSimplePageResponse> getSimplePage(Long userId, Pageable pageable) {
-        Page<Doc> docs = docQueryService.getDocPageByUserId(userId, pageable);
+        Page<Doc> docs = docQueryService.getPageByUserId(userId, pageable);
         return docListAssembler.assembleDocListSimple(docs);
     }
 
     @Transactional(readOnly = true)
     public Page<DocPageResponse> getPage(Long userId, Pageable pageable) {
-        Page<Doc> docs = docQueryService.getDocPageByUserId(userId, pageable);
+        Page<Doc> docs = docQueryService.getPageByUserId(userId, pageable);
         return docListAssembler.assembleDocList(docs);
     }
 
     @Transactional(readOnly = true)
     public Page<DocPageResponse> searchList(Long userId, String keyword, Pageable pageable) {
-        Page<Doc> docs = docQueryService.searchDoc(keyword,userId,pageable);
+        Page<Doc> docs = docQueryService.searchByTitle(keyword,userId,pageable);
         return docListAssembler.assembleDocList(docs);
     }
 
