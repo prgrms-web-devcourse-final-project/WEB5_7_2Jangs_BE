@@ -19,6 +19,7 @@ import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
+import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -52,6 +53,7 @@ public class CommitService {
     private final CommitBlockSequenceRepository cbsRepository;
 
     private final DocService docService;
+    private final DocQueryService docQueryService;
     private final BranchService branchService;
     private final BlockService blockService;
     private final SaveService saveService;
@@ -68,7 +70,7 @@ public class CommitService {
 
         branchService.checkBranchInDocOwnedByUser(docId, commitRequest.branchId(), userId);
         // * 1. documentId로 문서가 존재하는지 검사(JPA)
-        Doc doc = docService.getById(docId);
+        Doc doc = docQueryService.getById(docId);
         // * 2. commitRequest의 branchId로 브랜치가 존재하는지 검사(JPA)
         Branch branch = branchService.getById(commitRequest.branchId());
 
@@ -131,7 +133,7 @@ public class CommitService {
     @Transactional(readOnly = true)
     public CommitResponse getCommit(Long docId, Long commitId, Long userId) {
 
-        docService.checkDocByIdAndUserId(docId, userId);
+        docQueryService.checkByIdAndUserId(docId, userId);
         List<Map<String, Object>> assemble = getWholeContent(commitId);
 
         return CommitMapper.toCommitResponse(assemble);
@@ -141,7 +143,7 @@ public class CommitService {
     public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId, Long targetId,
             Long userId) {
 
-        docService.checkDocByIdAndUserId(docId, userId);
+        docQueryService.checkByIdAndUserId(docId, userId);
         List<Map<String, Object>> baseContent = getWholeContent(baseId);
         List<Map<String, Object>> targetContent = getWholeContent(targetId);
 
@@ -174,7 +176,7 @@ public class CommitService {
             branchService.checkBranchInDocOwnedByUser(docId, baseBranchId, userId);
             branchService.checkBranchInDocOwnedByUser(docId, targetBranchId, userId);
 
-            Doc doc = docService.getById(docId);
+            Doc doc = docQueryService.getById(docId);
 
             // Block과 Cbs를 저장
             commitMongoIds = saveBlockAndSequence(mergeRequest.content());
@@ -203,11 +205,9 @@ public class CommitService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteCommit(Long docId, Long commitId, Long userId) {
-        //TODO Doc doc = getDocByIdAndUserId() 대체 가능
-        docService.checkDocByIdAndUserId(docId, userId);
+        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
 
         Commit commit = getById(commitId);
-        Doc doc = docService.getById(docId);
         // LeafCommit일 경우에만 삭제 가능
         checkLeafCommit(commit);
         // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능

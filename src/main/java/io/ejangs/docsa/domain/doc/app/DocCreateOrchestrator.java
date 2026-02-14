@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DocCreateSagaService {
+public class DocCreateOrchestrator {
 
     private final SaveContentRepository saveContentRepository;
     private final DocCreateMySqlTxService docCreateMySqlTxService;

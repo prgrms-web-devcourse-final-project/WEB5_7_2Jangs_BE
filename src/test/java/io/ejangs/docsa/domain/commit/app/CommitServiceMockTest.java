@@ -24,6 +24,7 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
+import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -57,7 +58,7 @@ class CommitServiceMockTest {
     private CommitBlockSequenceRepository cbsRepository;
 
     @Mock
-    private DocService docService;
+    private DocQueryService docQueryService;
 
     @Mock
     private BranchService branchService;
@@ -149,7 +150,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 성공 - 기본")
     void createCommit_Success() {
         // Given
-        when(docService.getById(docId)).thenReturn(doc);
+        when(docQueryService.getById(docId)).thenReturn(doc);
         when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
@@ -173,7 +174,7 @@ class CommitServiceMockTest {
             // Then
             assertThat(result).isEqualTo(expectedResponse);
 
-            verify(docService).getById(docId);
+            verify(docQueryService).getById(docId);
             verify(branchService).getById(branchId);
             verify(blockService).saveBlocks(createCommitRequest.blocks());
             verify(cbsRepository).save(savedCbs);
@@ -185,7 +186,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 성공 - 기존 Save 삭제")
     void createCommit_Success_DeleteExistingSave() {
         // Given
-        when(docService.getById(docId)).thenReturn(doc);
+        when(docQueryService.getById(docId)).thenReturn(doc);
         when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
@@ -219,7 +220,7 @@ class CommitServiceMockTest {
         Branch branchWithoutLeafCommit = CommitMockTestUtils.createBranch(doc, baseCommit);
         branchWithoutLeafCommit.updateLeafCommit(null); // leafCommit을 null로 설정
 
-        when(docService.getById(docId)).thenReturn(doc);
+        when(docQueryService.getById(docId)).thenReturn(doc);
         when(branchService.getById(branchId)).thenReturn(branchWithoutLeafCommit);
         when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
         when(cbsRepository.findById(
@@ -253,14 +254,14 @@ class CommitServiceMockTest {
     void createCommit_Fail_DocNotFound() {
         // Given
         doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
-                .when(docService).getById(docId);
+                .when(docQueryService).getById(docId);
 
         // When & Then
         assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docService).getById(docId);
+        verify(docQueryService).getById(docId);
         verify(branchService, never()).getById(any());
         verify(blockService, never()).saveBlocks(any());
     }
@@ -269,7 +270,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 실패 - 블록 저장 실패시")
     void createCommit_Fail_BlockSaveFails_ShouldRollback() {
         // Given
-        when(docService.getById(docId)).thenReturn(doc);
+        when(docQueryService.getById(docId)).thenReturn(doc);
         when(branchService.getById(branchId)).thenReturn(branch);
         when(blockService.saveBlocks(any())).thenThrow(new RuntimeException("Block save failed"));
 
@@ -287,7 +288,7 @@ class CommitServiceMockTest {
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage(DatabaseErrorCode.DATABASE_ERROR.getMessage());
 
-            verify(docService).getById(docId);
+            verify(docQueryService).getById(docId);
             verify(branchService).getById(branchId);
             verify(blockService).saveBlocks(createCommitRequest.blocks());
             verify(cbsRepository, never()).save(any());
@@ -298,7 +299,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 실패 - JPA 저장 실패시 MongoDB 호출 안함")
     void createCommit_Fail_JpaSaveFails_ShouldRollbackMongoDB() {
         // Given
-        when(docService.getById(docId)).thenReturn(doc);
+        when(docQueryService.getById(docId)).thenReturn(doc);
         lenient().when(branchService.getById(branchId)).thenReturn(branch);
         lenient().when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
 
@@ -338,7 +339,7 @@ class CommitServiceMockTest {
                 CommitBlockSequenceMapper.class);
                 MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-            when(docService.getById(docId)).thenReturn(doc);
+            when(docQueryService.getById(docId)).thenReturn(doc);
             when(branchService.getById(branchId)).thenReturn(branch);
             when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
             when(CommitMapper.toEntity(branch, invalidRequest)).thenReturn(

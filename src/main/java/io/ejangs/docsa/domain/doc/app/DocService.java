@@ -11,8 +11,8 @@ import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -42,13 +42,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DocService {
 
-    private final DocRepository docRepository;
     private final BranchRepository branchRepository;
     private final CommitRepository commitRepository;
     private final EdgeRepository edgeRepository;
 
     private final DocQueryService docQueryService;
-    private final DocCreateSagaService docCreateSagaService;
+    private final DocCreateOrchestrator docCreateOrchestrator;
 
     private final DocListAssembler docListAssembler;
     private final MongoIdsCollector mongoIdsCollector;
@@ -58,26 +57,24 @@ public class DocService {
         User user = docQueryService.getUserOrThrow(userId);
         String title = request.title();
         docQueryService.checkTitleDuplicate(userId, title);
-        return docCreateSagaService.create(title, user);
+        return docCreateOrchestrator.create(title, user);
     }
 
     @Transactional(readOnly = true)
-    public Page<DocListSimpleResponse> getSimplePage(Long userId, Pageable pageable) {
-        Page<Doc> docs = docQueryService.getAllDocPageByUserId(userId, pageable);
+    public Page<DocSimplePageResponse> getSimplePage(Long userId, Pageable pageable) {
+        Page<Doc> docs = docQueryService.getDocPageByUserId(userId, pageable);
         return docListAssembler.assembleDocListSimple(docs);
     }
 
     @Transactional(readOnly = true)
-    public Page<DocListResponse> getList(Long userId, Pageable pageable) {
-        Page<Doc> docs = docRepository.findAllByUserId(userId, pageable);
-
+    public Page<DocPageResponse> getPage(Long userId, Pageable pageable) {
+        Page<Doc> docs = docQueryService.getDocPageByUserId(userId, pageable);
         return docListAssembler.assembleDocList(docs);
     }
 
     @Transactional(readOnly = true)
-    public Page<DocListResponse> searchList(Long userId, String keyword, Pageable pageable) {
-        Page<Doc> docs = docRepository.searchDocByTitle(keyword, userId, pageable);
-
+    public Page<DocPageResponse> searchList(Long userId, String keyword, Pageable pageable) {
+        Page<Doc> docs = docQueryService.searchDoc(keyword,userId,pageable);
         return docListAssembler.assembleDocList(docs);
     }
 
@@ -85,7 +82,7 @@ public class DocService {
     public DocTitleUpdateResponse updateTitle(Long userId, Long docId, DocTitleRequest request) {
         String title = request.title();
 
-        Doc doc = getDocByIdAndUserId(docId, userId);
+        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
 
         if (title.equals(doc.getTitle())) {
             throw new CustomException(DocErrorCode.SAME_AS_CURRENT_TITLE);
@@ -97,33 +94,11 @@ public class DocService {
         return DocMapper.toUpdateResponse(doc);
     }
 
-
-    public Doc getDocByIdAndUserId(Long documentId, Long userId) {
-        return docRepository.getDocByIdAndUserId(documentId, userId)
-                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
-    }
-
-    public void checkDocByIdAndUserId(Long docId, Long userId) {
-        if (!docRepository.existsByIdAndUserId(docId, userId)) {
-            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
-        }
-    }
-
-    //getDocByIdAndUserId로 대체할수 있지 않을까
-    @Transactional(readOnly = true)
-    public Doc getById(Long id) {
-        return docRepository.findById(id)
-                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
-    }
-
     // 문서 조회시 그래프를 그리기 위한 응답 생성
     @Transactional(readOnly = true)
     public CommitGraphResponse getGraph(Long userId, Long documentId) {
 
-        checkDocByIdAndUserId(documentId, userId);
-
-        // 문서 제목 조회
-        String docTitle = getTitleOnlyById(documentId);
+        String docTitle = docQueryService.getByIdAndUserId(documentId, userId).getTitle();
 
         //  Branch, Commit, Edge 각각 별도 조회 (Projection 쿼리)
         List<GraphBranchDto> branches = branchRepository.findBranchesByDocId(documentId);
@@ -136,22 +111,11 @@ public class DocService {
         return GraphMapper.toCommitGraphResponse(docTitle, commits, edges, branches);
     }
 
-    // 끔찍한 메소드
-    private String getTitleOnlyById(Long documentId) {
-        Optional<DocTitleOnlyResponse> optionalTitle = docRepository.findTitleOnlyById(documentId);
-
-        if (optionalTitle.isEmpty()) {
-            log.error("문서 ID {}의 제목 찾지 못함 (DocErrorCode.DOCUMENT_NOT_FOUND)", documentId);
-            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
-        }
-
-        return optionalTitle.get().title();
-    }
 
     @Transactional
     public void delete(Long docId, Long userId) {
         User user = docQueryService.getUserOrThrow(userId);
-        Doc doc = getDocByIdAndUserId(docId, userId);
+        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
         List<Edge> edges = doc.getEdges();
         List<Branch> branches = doc.getBranches();
 

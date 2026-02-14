@@ -52,7 +52,7 @@ public class DocQueryService {
     }
 
 
-    public Doc createDoc(User user, String title) {
+    public Doc create(User user, String title) {
         Doc doc = docRepository.save(Doc.builder().title(title).user(user).build());
         docRepository.flush();
         user.addDocument(doc);
@@ -67,8 +67,31 @@ public class DocQueryService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Doc> getAllDocPageByUserId(Long userId, Pageable pageable) {
+    public Doc getById(Long id) {
+        return docRepository.findById(id)
+                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public Doc getByIdAndUserId(Long docId, Long userId) {
+        return docRepository.getDocByIdAndUserId(docId, userId)
+                .orElseThrow(() -> new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
+    }
+
+    public void checkByIdAndUserId(Long docId, Long userId) {
+        if (!docRepository.existsByIdAndUserId(docId, userId)) {
+            throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Doc> getDocPageByUserId(Long userId, Pageable pageable) {
         return docRepository.findAllByUserId(userId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Doc> searchDoc(String keyword, Long userId, Pageable pageable) {
+        return docRepository.searchDocByTitle(keyword, userId, pageable);
     }
 
 }

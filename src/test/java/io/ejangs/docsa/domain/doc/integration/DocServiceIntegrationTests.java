@@ -20,8 +20,8 @@ import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
@@ -251,14 +251,14 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageableFactory.create("updatedAt", "asc", 0, 10);
 
         // when
-        Page<DocListSimpleResponse> page = docService.getSimplePage(user.getId(), pageable);
-        List<DocListSimpleResponse> results = page.getContent();
+        Page<DocSimplePageResponse> page = docService.getSimplePage(user.getId(), pageable);
+        List<DocSimplePageResponse> results = page.getContent();
 
         // then
         assertEquals(2, results.size());
 
-        DocListSimpleResponse first = results.get(0);  // 최신 updatedAt 기준으로 정렬되었다고 가정
-        DocListSimpleResponse second = results.get(1);
+        DocSimplePageResponse first = results.get(0);  // 최신 updatedAt 기준으로 정렬되었다고 가정
+        DocSimplePageResponse second = results.get(1);
 
         // 저장이 없음 -> 최신 커밋
         assertEquals("문서 1", first.title());
@@ -282,13 +282,13 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
 
         // when
-        Page<DocListResponse> results = docService.getList(user.getId(), pageable);
+        Page<DocPageResponse> results = docService.getPage(user.getId(), pageable);
 
         // then
         assertEquals(2, results.getContent().size());
 
-        DocListResponse first = results.getContent().getFirst();  // updatedAt 기준 최신
-        DocListResponse second = results.getContent().get(1);
+        DocPageResponse first = results.getContent().getFirst();  // updatedAt 기준 최신
+        DocPageResponse second = results.getContent().get(1);
 
         assertEquals("문서 1", second.title());
         assertEquals(RecentType.COMMIT, second.recent().recentType());
@@ -310,15 +310,15 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
 
         //when
-        Page<DocListResponse> result = docService.getList(user.getId(), pageable);
+        Page<DocPageResponse> result = docService.getPage(user.getId(), pageable);
 
         //then
         assertEquals(10, result.getContent().size());
-        DocListResponse first = result.getContent().getFirst();
+        DocPageResponse first = result.getContent().getFirst();
         assertEquals("문서 keyword포함100", first.title());
         assertEquals(100L, first.id());
 
-        DocListResponse last = result.getContent().getLast();
+        DocPageResponse last = result.getContent().getLast();
         assertEquals("테스트 문서 91", last.title());
         assertEquals(91L, last.id());
     }
@@ -336,12 +336,12 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("updatedAt").descending());
 
         // when
-        Page<DocListResponse> result = docService.searchList(user.getId(), keyword, pageable);
+        Page<DocPageResponse> result = docService.searchList(user.getId(), keyword, pageable);
 
         // then
         assertThat(result.getContent()).hasSize(10);
         assertThat(result.getContent())
-                .extracting(DocListResponse::title)
+                .extracting(DocPageResponse::title)
                 .allMatch(title -> title.contains("keyword"));
         assertThat(result.getContent().getFirst().id()).isEqualTo(300);
     }

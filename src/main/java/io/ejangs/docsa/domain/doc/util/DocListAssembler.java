@@ -4,8 +4,8 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -28,7 +28,7 @@ public class DocListAssembler {
 
     private static final String DEFAULT_PREVIEW = "미리보기 없음";
 
-    public Page<DocListResponse> assembleDocList(Page<Doc> docs) {
+    public Page<DocPageResponse> assembleDocList(Page<Doc> docs) {
         return docs
                 .map(doc -> {
                     Branch recentBranch = getMostRecentBranch(doc);
@@ -38,7 +38,7 @@ public class DocListAssembler {
                 });
     }
 
-    public Page<DocListSimpleResponse> assembleDocListSimple(Page<Doc> docs) {
+    public Page<DocSimplePageResponse> assembleDocListSimple(Page<Doc> docs) {
         return docs
                 .map(doc -> {
                     Branch recentBranch = getMostRecentBranch(doc);

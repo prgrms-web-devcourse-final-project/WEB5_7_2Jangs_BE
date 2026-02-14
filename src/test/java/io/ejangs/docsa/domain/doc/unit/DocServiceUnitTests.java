@@ -19,8 +19,8 @@ import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -81,15 +81,15 @@ public class DocServiceUnitTests {
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
         Page<Doc> docs = new PageImpl<>(content, pageable, content.size());
 
-        List<DocListSimpleResponse> expectedResponses = List.of(
-                new DocListSimpleResponse(
+        List<DocSimplePageResponse> expectedResponses = List.of(
+                new DocSimplePageResponse(
                         1L,
                         "테스트 문서 1",
                         LocalDateTime.of(2025, 7, 16, 2, 0),
                         LocalDateTime.of(2025, 7, 16, 2, 0),
                         new RecentActivityDto(RecentType.SAVE, 10L)
                 ),
-                new DocListSimpleResponse(
+                new DocSimplePageResponse(
                         2L,
                         "테스트 문서 2",
                         LocalDateTime.of(2025, 7, 16, 3, 0),
@@ -97,15 +97,15 @@ public class DocServiceUnitTests {
                         new RecentActivityDto(RecentType.COMMIT, 200L)
                 )
         );
-        Page<DocListSimpleResponse> dummyPage = new PageImpl<>(expectedResponses, pageable,
+        Page<DocSimplePageResponse> dummyPage = new PageImpl<>(expectedResponses, pageable,
                 expectedResponses.size());
 
-        when(docQueryService.getAllDocPageByUserId(userId, pageable)).thenReturn(docs);
+        when(docQueryService.getDocPageByUserId(userId, pageable)).thenReturn(docs);
         when(docListAssembler.assembleDocListSimple(docs)).thenReturn(dummyPage);
 
         // when
-        Page<DocListSimpleResponse> page = docService.getSimplePage(userId, pageable);
-        List<DocListSimpleResponse> result = page.getContent();
+        Page<DocSimplePageResponse> page = docService.getSimplePage(userId, pageable);
+        List<DocSimplePageResponse> result = page.getContent();
 
         // then
         assertEquals(2, result.size());
@@ -118,7 +118,7 @@ public class DocServiceUnitTests {
         assertEquals(RecentType.COMMIT, result.get(1).recent().recentType());
         assertEquals(200L, result.get(1).recent().recentTypeId());
 
-        verify(docQueryService).getAllDocPageByUserId(userId, pageable);
+        verify(docQueryService).getDocPageByUserId(userId, pageable);
         verify(docListAssembler).assembleDocListSimple(docs);
     }
 
@@ -146,15 +146,15 @@ public class DocServiceUnitTests {
         List<Doc> pagedDocs = filtered.subList(start, end);
 
         Page<Doc> docsPage = new PageImpl<>(pagedDocs, pageable, filtered.size());
-        Page<DocListResponse> responsesPage = DocTestUtils.convertToDocListResponsePage(pagedDocs,
+        Page<DocPageResponse> responsesPage = DocTestUtils.convertToDocListResponsePage(pagedDocs,
                 pageable);
 
         when(docRepository.searchDocByTitle(keyword, userId, pageable)).thenReturn(docsPage);
         when(docListAssembler.assembleDocList(docsPage)).thenReturn(responsesPage);
 
         // when
-        Page<DocListResponse> page = docService.searchList(userId, keyword, pageable);
-        List<DocListResponse> result = page.getContent();
+        Page<DocPageResponse> page = docService.searchList(userId, keyword, pageable);
+        List<DocPageResponse> result = page.getContent();
 
         // then
         assertEquals(10, result.size());

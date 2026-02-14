@@ -19,7 +19,7 @@ import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -95,15 +95,15 @@ class DocControllerUnitTests {
     @DisplayName("문서 리스트 조회 컨트롤러 테스트 - 사이드바")
     void getSimpleDocList() throws Exception {
         // given
-        List<DocListSimpleResponse> content = List.of(
-                new DocListSimpleResponse(
+        List<DocSimplePageResponse> content = List.of(
+                new DocSimplePageResponse(
                         1L,
                         "마이크로소프트",
                         LocalDateTime.of(2025, 7, 6, 12, 0),
                         LocalDateTime.of(2025, 7, 7, 9, 0),
                         new RecentActivityDto(RecentType.SAVE, 10L)
                 ),
-                new DocListSimpleResponse(
+                new DocSimplePageResponse(
                         2L,
                         "구글",
                         LocalDateTime.of(2025, 6, 28, 15, 30),
@@ -114,7 +114,7 @@ class DocControllerUnitTests {
 
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
 
-        Page<DocListSimpleResponse> responseList = new PageImpl<>(
+        Page<DocSimplePageResponse> responseList = new PageImpl<>(
                 content,
                 PageRequest.of(0, 10),
                 content.size()
