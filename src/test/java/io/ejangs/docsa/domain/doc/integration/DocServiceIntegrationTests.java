@@ -2,11 +2,13 @@ package io.ejangs.docsa.domain.doc.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.mongodb.MongoTimeoutException;
@@ -35,6 +37,9 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
+import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -51,6 +56,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,13 +91,22 @@ public class DocServiceIntegrationTests {
     @Autowired
     private BlockRepository blockRepository;
 
+    @Autowired
+    private MongoDeleteFailureRepository mongoDeleteFailureRepository;
+
     @Value("${default.branch}")
     private String defaultBranchName;
 
     @AfterEach
     void cleanup() {
+        userRepository.deleteAll();
         docRepository.deleteAll();
+        branchRepository.deleteAll();
+        saveRepository.deleteAll();
+        commitBlockSequenceRepository.deleteAll();
+        blockRepository.deleteAll();
         saveContentRepository.deleteAll();
+        mongoDeleteFailureRepository.deleteAll();
     }
 
     @Test
@@ -206,7 +221,56 @@ public class DocServiceIntegrationTests {
             assertThat(saveContentRepository.findAll()).isEmpty();
         }
     }
+    @Nested
+    @DisplayName("MySQL 실패 + 보상 삭제 3회 실패")
+    class MySqlFailureWithCompensateFailureTest {
 
+        @Autowired
+        private DocService docService;
+
+        @Autowired
+        private UserRepository userRepository;
+
+        @Autowired
+        private MongoDeleteFailureRepository mongoDeleteFailureRepository;
+
+        @MockitoBean
+        private DocCreateMySqlTxService docCreateMySqlTxService;
+
+        @MockitoSpyBean
+        private MongoDeleteRetryService mongoDeleteRetryService;
+
+        @Test
+        @DisplayName("보상 삭제가 3회 모두 실패하면 MongoDeleteFailure가 저장된다")
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        void mysqlFail_and_compensateFail_storeFailure() {
+
+            // given
+            User user = userRepository.save(DocTestUtils.createUser());
+            DocTitleRequest request = new DocTitleRequest("보상 실패 케이스");
+
+            // MySQL 파트 실패
+            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
+                    .thenThrow(new RuntimeException("MySQL 생성 실패"));
+
+            // 보상 삭제도 실패
+            doThrow(new RuntimeException("보상 삭제 실패"))
+                    .when(mongoDeleteRetryService).deleteMongoData(any());
+
+            // when
+            assertThatThrownBy(() -> docService.create(request, user.getId()))
+                    .isInstanceOf(RuntimeException.class);
+
+            // then (비동기 or recover 고려)
+            await().untilAsserted(() -> {
+                List<MongoDeleteFailure> failures =
+                        mongoDeleteFailureRepository.findAll();
+
+                assertThat(failures).hasSize(1);
+                assertThat(failures.get(0).getResolved()).isFalse();
+            });
+        }
+    }
 
 
     @Test
