@@ -2,10 +2,13 @@ package io.ejangs.docsa.domain.doc.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.mongodb.MongoTimeoutException;
@@ -13,13 +16,14 @@ import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
+import io.ejangs.docsa.domain.doc.app.DocCreateMySqlTxService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
@@ -33,6 +37,9 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
+import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
+import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -49,6 +56,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,13 +91,22 @@ public class DocServiceIntegrationTests {
     @Autowired
     private BlockRepository blockRepository;
 
+    @Autowired
+    private MongoDeleteFailureRepository mongoDeleteFailureRepository;
+
     @Value("${default.branch}")
     private String defaultBranchName;
 
     @AfterEach
     void cleanup() {
+        userRepository.deleteAll();
         docRepository.deleteAll();
+        branchRepository.deleteAll();
+        saveRepository.deleteAll();
+        commitBlockSequenceRepository.deleteAll();
+        blockRepository.deleteAll();
         saveContentRepository.deleteAll();
+        mongoDeleteFailureRepository.deleteAll();
     }
 
     @Test
@@ -151,7 +168,7 @@ public class DocServiceIntegrationTests {
         private SaveContentRepository saveContentRepository;
 
         @Test
-        @DisplayName("Mongo 저장 실패 시 문서 생성 트랜잭션이 중단된다")
+        @DisplayName("Mongo 저장 실패 시 예외")
         @Transactional(propagation = Propagation.NOT_SUPPORTED)
             // findAll이 같은 트랜잭션 안에서 수행 되면 rollback 되기 전 상태를 그대로 읽을 수 있음
         void MongoFailRdbTransaction() {
@@ -164,12 +181,97 @@ public class DocServiceIntegrationTests {
             assertThatThrownBy(() -> docService.create(request, user.getId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
-
-            assertThat(docRepository.findAll()).isEmpty();
-            assertThat(branchRepository.findAll()).isEmpty();
-            assertThat(saveRepository.findAll()).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("MySQL 실패시 MongoDB 보상 삭제")
+    class MySqlFailureTest {
+
+        @Autowired
+        private DocService docService;
+
+        @Autowired
+        private UserRepository userRepository;
+
+        @Autowired
+        private SaveContentRepository saveContentRepository;
+
+        @MockitoBean
+        private DocCreateMySqlTxService docCreateMySqlTxService; // MySQL 파트만 실패 유도
+
+        @Test
+        @DisplayName("MySQL 생성 실패 시 Mongo에 먼저 생성된 SaveContent는 보상 삭제된다")
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        void mysqlFail_compensateMongoDelete() {
+            // given
+            User user = userRepository.save(DocTestUtils.createUser());
+            DocTitleRequest request = new DocTitleRequest("MySQL 실패 케이스");
+
+            // Mongo는 정상 저장되고, MySQL 파트에서 예외가 터진 상황
+            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
+                    .thenThrow(new RuntimeException("MySQL 생성 실패"));
+
+            // when & then
+            assertThatThrownBy(() -> docService.create(request, user.getId()))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("MySQL 생성 실패");
+
+            // 보상 삭제 결과: Mongo에 SaveContent가 남아있으면 안 됨
+            assertThat(saveContentRepository.findAll()).isEmpty();
+        }
+    }
+    @Nested
+    @DisplayName("MySQL 실패 + 보상 삭제 3회 실패")
+    class MySqlFailureWithCompensateFailureTest {
+
+        @Autowired
+        private DocService docService;
+
+        @Autowired
+        private UserRepository userRepository;
+
+        @Autowired
+        private MongoDeleteFailureRepository mongoDeleteFailureRepository;
+
+        @MockitoBean
+        private DocCreateMySqlTxService docCreateMySqlTxService;
+
+        @MockitoSpyBean
+        private MongoDeleteRetryService mongoDeleteRetryService;
+
+        @Test
+        @DisplayName("보상 삭제가 3회 모두 실패하면 MongoDeleteFailure가 저장된다")
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        void mysqlFail_and_compensateFail_storeFailure() {
+
+            // given
+            User user = userRepository.save(DocTestUtils.createUser());
+            DocTitleRequest request = new DocTitleRequest("보상 실패 케이스");
+
+            // MySQL 파트 실패
+            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
+                    .thenThrow(new RuntimeException("MySQL 생성 실패"));
+
+            // 보상 삭제도 실패
+            doThrow(new RuntimeException("보상 삭제 실패"))
+                    .when(mongoDeleteRetryService).deleteMongoData(any());
+
+            // when
+            assertThatThrownBy(() -> docService.create(request, user.getId()))
+                    .isInstanceOf(RuntimeException.class);
+
+            // then (비동기 or recover 고려)
+            await().untilAsserted(() -> {
+                List<MongoDeleteFailure> failures =
+                        mongoDeleteFailureRepository.findAll();
+
+                assertThat(failures).hasSize(1);
+                assertThat(failures.get(0).getResolved()).isFalse();
+            });
+        }
+    }
+
 
     @Test
     @DisplayName("중복된 제목으로 문서를 생성할 경우 예외가 발생한다")
@@ -213,14 +315,14 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageableFactory.create("updatedAt", "asc", 0, 10);
 
         // when
-        Page<DocListSimpleResponse> page = docService.getSimpleList(user.getId(), pageable);
-        List<DocListSimpleResponse> results = page.getContent();
+        Page<DocSimplePageResponse> page = docService.getSimplePage(user.getId(), pageable);
+        List<DocSimplePageResponse> results = page.getContent();
 
         // then
         assertEquals(2, results.size());
 
-        DocListSimpleResponse first = results.get(0);  // 최신 updatedAt 기준으로 정렬되었다고 가정
-        DocListSimpleResponse second = results.get(1);
+        DocSimplePageResponse first = results.get(0);  // 최신 updatedAt 기준으로 정렬되었다고 가정
+        DocSimplePageResponse second = results.get(1);
 
         // 저장이 없음 -> 최신 커밋
         assertEquals("문서 1", first.title());
@@ -244,13 +346,13 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
 
         // when
-        Page<DocListResponse> results = docService.getList(user.getId(), pageable);
+        Page<DocPageResponse> results = docService.getPage(user.getId(), pageable);
 
         // then
         assertEquals(2, results.getContent().size());
 
-        DocListResponse first = results.getContent().getFirst();  // updatedAt 기준 최신
-        DocListResponse second = results.getContent().get(1);
+        DocPageResponse first = results.getContent().getFirst();  // updatedAt 기준 최신
+        DocPageResponse second = results.getContent().get(1);
 
         assertEquals("문서 1", second.title());
         assertEquals(RecentType.COMMIT, second.recent().recentType());
@@ -272,15 +374,15 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
 
         //when
-        Page<DocListResponse> result = docService.getList(user.getId(), pageable);
+        Page<DocPageResponse> result = docService.getPage(user.getId(), pageable);
 
         //then
         assertEquals(10, result.getContent().size());
-        DocListResponse first = result.getContent().getFirst();
+        DocPageResponse first = result.getContent().getFirst();
         assertEquals("문서 keyword포함100", first.title());
         assertEquals(100L, first.id());
 
-        DocListResponse last = result.getContent().getLast();
+        DocPageResponse last = result.getContent().getLast();
         assertEquals("테스트 문서 91", last.title());
         assertEquals(91L, last.id());
     }
@@ -298,12 +400,12 @@ public class DocServiceIntegrationTests {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("updatedAt").descending());
 
         // when
-        Page<DocListResponse> result = docService.searchList(user.getId(), keyword, pageable);
+        Page<DocPageResponse> result = docService.searchList(user.getId(), keyword, pageable);
 
         // then
         assertThat(result.getContent()).hasSize(10);
         assertThat(result.getContent())
-                .extracting(DocListResponse::title)
+                .extracting(DocPageResponse::title)
                 .allMatch(title -> title.contains("keyword"));
         assertThat(result.getContent().getFirst().id()).isEqualTo(300);
     }

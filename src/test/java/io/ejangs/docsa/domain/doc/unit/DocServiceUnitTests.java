@@ -2,11 +2,13 @@ package io.ejangs.docsa.domain.doc.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
@@ -17,8 +19,8 @@ import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -27,6 +29,7 @@ import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -52,6 +55,9 @@ public class DocServiceUnitTests {
     private DocRepository docRepository;
 
     @Mock
+    private DocQueryService docQueryService;
+
+    @Mock
     private DocListAssembler docListAssembler;
 
     @Mock
@@ -75,15 +81,15 @@ public class DocServiceUnitTests {
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
         Page<Doc> docs = new PageImpl<>(content, pageable, content.size());
 
-        List<DocListSimpleResponse> expectedResponses = List.of(
-                new DocListSimpleResponse(
+        List<DocSimplePageResponse> expectedResponses = List.of(
+                new DocSimplePageResponse(
                         1L,
                         "테스트 문서 1",
                         LocalDateTime.of(2025, 7, 16, 2, 0),
                         LocalDateTime.of(2025, 7, 16, 2, 0),
                         new RecentActivityDto(RecentType.SAVE, 10L)
                 ),
-                new DocListSimpleResponse(
+                new DocSimplePageResponse(
                         2L,
                         "테스트 문서 2",
                         LocalDateTime.of(2025, 7, 16, 3, 0),
@@ -91,15 +97,15 @@ public class DocServiceUnitTests {
                         new RecentActivityDto(RecentType.COMMIT, 200L)
                 )
         );
-        Page<DocListSimpleResponse> dummyPage = new PageImpl<>(expectedResponses, pageable,
+        Page<DocSimplePageResponse> dummyPage = new PageImpl<>(expectedResponses, pageable,
                 expectedResponses.size());
 
-        when(docRepository.findAllByUserId(userId, pageable)).thenReturn(docs);
+        when(docQueryService.getPageByUserId(userId, pageable)).thenReturn(docs);
         when(docListAssembler.assembleDocListSimple(docs)).thenReturn(dummyPage);
 
         // when
-        Page<DocListSimpleResponse> page = docService.getSimpleList(userId, pageable);
-        List<DocListSimpleResponse> result = page.getContent();
+        Page<DocSimplePageResponse> page = docService.getSimplePage(userId, pageable);
+        List<DocSimplePageResponse> result = page.getContent();
 
         // then
         assertEquals(2, result.size());
@@ -112,7 +118,7 @@ public class DocServiceUnitTests {
         assertEquals(RecentType.COMMIT, result.get(1).recent().recentType());
         assertEquals(200L, result.get(1).recent().recentTypeId());
 
-        verify(docRepository).findAllByUserId(userId, pageable);
+        verify(docQueryService).getPageByUserId(userId, pageable);
         verify(docListAssembler).assembleDocListSimple(docs);
     }
 
@@ -140,15 +146,15 @@ public class DocServiceUnitTests {
         List<Doc> pagedDocs = filtered.subList(start, end);
 
         Page<Doc> docsPage = new PageImpl<>(pagedDocs, pageable, filtered.size());
-        Page<DocListResponse> responsesPage = DocTestUtils.convertToDocListResponsePage(pagedDocs,
+        Page<DocPageResponse> responsesPage = DocTestUtils.convertToDocListResponsePage(pagedDocs,
                 pageable);
 
-        when(docRepository.searchDocByTitle(keyword, userId, pageable)).thenReturn(docsPage);
+        when(docQueryService.searchByTitle(keyword, userId, pageable)).thenReturn(docsPage);
         when(docListAssembler.assembleDocList(docsPage)).thenReturn(responsesPage);
 
         // when
-        Page<DocListResponse> page = docService.searchList(userId, keyword, pageable);
-        List<DocListResponse> result = page.getContent();
+        Page<DocPageResponse> page = docService.searchList(userId, keyword, pageable);
+        List<DocPageResponse> result = page.getContent();
 
         // then
         assertEquals(10, result.size());
@@ -156,7 +162,7 @@ public class DocServiceUnitTests {
         assertEquals("테스트 문서 19", result.get(1).title());
         assertEquals("테스트 문서 11", result.getLast().title());
 
-        verify(docRepository).searchDocByTitle(keyword, userId, pageable);
+        verify(docQueryService).searchByTitle(keyword, userId, pageable);
         verify(docListAssembler).assembleDocList(docsPage);
     }
 
@@ -181,15 +187,14 @@ public class DocServiceUnitTests {
         DocTitleUpdateResponse response =
                 new DocTitleUpdateResponse(docId, newTitle, LocalDateTime.now());
 
-        when(docRepository.existsByUserIdAndTitle(userId, newTitle)).thenReturn(false);
-        when(docRepository.getDocByIdAndUserId(docId, userId)).thenReturn(Optional.of(doc));
+        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(doc);
 
         //when
         DocTitleUpdateResponse result = docService.updateTitle(userId, docId, request);
 
         //then
-        verify(docRepository).existsByUserIdAndTitle(userId, newTitle);
-        verify(docRepository).getDocByIdAndUserId(docId, userId);
+        verify(docQueryService).checkTitleDuplicate(userId, newTitle);
+        verify(docQueryService).getByIdAndUserId(docId, userId);
         assertEquals(newTitle, doc.getTitle());
         assertEquals(response.id(), doc.getId());
         assertEquals(response.title(), result.title());
@@ -210,11 +215,15 @@ public class DocServiceUnitTests {
         Doc doc = Doc.builder().title("기존 제목").user(user).build();
         ReflectionTestUtils.setField(doc, "id", docId);
 
-        when(docRepository.getDocByIdAndUserId(docId, userId)).thenReturn(Optional.of(doc));
-        when(docRepository.existsByUserIdAndTitle(userId, duplicateTitle)).thenReturn(true);
+        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(doc);
+        doThrow(new CustomException(DocErrorCode.TITLE_DUPLICATION))
+                .when(docQueryService).checkTitleDuplicate(userId, duplicateTitle);
 
         // when & then
-        assertThrows(CustomException.class, () -> docService.updateTitle(userId, docId, request));
+        CustomException exception = assertThrows(CustomException.class,
+                () -> docService.updateTitle(userId, docId, request));
+
+        assertEquals(DocErrorCode.TITLE_DUPLICATION, exception.getErrorCode());
     }
 
     @Test
@@ -222,12 +231,17 @@ public class DocServiceUnitTests {
     void getGraph_shouldReturnGraphResponse_whenDocExists() {
         Long userId = 1L;
         Long docId = 10L;
+        String docTitle = "Test Document";
 
-        when(docRepository.existsByIdAndUserId(docId, userId)).thenReturn(true);
+        User user = DocTestUtils.createUser();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        Doc doc = Doc.builder().title(docTitle).user(user).build();
+        ReflectionTestUtils.setField(doc, "id", docId);
 
         // Mock 문서 제목 조회
-        when(docRepository.findTitleOnlyById(docId))
-                .thenReturn(Optional.of(new DocTitleOnlyResponse("Test Document")));
+        when(docQueryService.getByIdAndUserId(docId, userId))
+                .thenReturn(doc);
 
         // Mock Branch, Commit, Edge 리스트
         LocalDateTime now = LocalDateTime.now();
@@ -247,7 +261,7 @@ public class DocServiceUnitTests {
 
         CommitGraphResponse response = docService.getGraph(userId, docId);
 
-        assertEquals("Test Document", response.title());
+        assertEquals(docTitle, response.title());
         assertEquals(branches, response.branches());
         assertEquals(commits, response.commits());
         assertEquals(edges, response.edges());

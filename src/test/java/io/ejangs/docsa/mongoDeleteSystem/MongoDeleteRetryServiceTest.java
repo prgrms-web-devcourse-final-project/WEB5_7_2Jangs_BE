@@ -21,6 +21,7 @@ import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureReposit
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
 import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,8 +67,13 @@ class MongoDeleteRetryServiceTest {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    @BeforeEach
-    void setUp() {
+    @AfterEach
+    void cleanup() {
+        userRepository.deleteAll();
+        docRepository.deleteAll();
+        commitBlockSequenceRepository.deleteAll();
+        blockRepository.deleteAll();
+        saveContentRepository.deleteAll();
         mongoDeleteFailureRepository.deleteAll();
     }
 

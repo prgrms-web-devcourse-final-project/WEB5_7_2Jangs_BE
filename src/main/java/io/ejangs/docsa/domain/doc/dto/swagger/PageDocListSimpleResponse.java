@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.dto.swagger;
 
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
@@ -8,7 +8,7 @@ import java.util.List;
 public class PageDocListSimpleResponse {
 
     @Schema(description = "문서 목록")
-    private List<DocListSimpleResponse> content;
+    private List<DocSimplePageResponse> content;
 
     @Schema(description = "페이지 정보")
     private PageableSchema pageable;

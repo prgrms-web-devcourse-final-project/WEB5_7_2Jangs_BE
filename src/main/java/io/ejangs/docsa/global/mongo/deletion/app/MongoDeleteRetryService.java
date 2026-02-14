@@ -37,19 +37,9 @@ public class MongoDeleteRetryService {
                 ? RetrySynchronizationManager.getContext().getRetryCount()
                 : 0;
         log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Retry count = {}", retryCount);
-
-        for (String saveContentId : dto.saveContentsIds()) {
-            saveContentRepository.deleteById(saveContentId);
-            log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Save Content id = {}", saveContentId);
-        }
-        for (String commitBlockSequenceId : dto.commitBlockSequenceIds()) {
-            commitBlockSequenceRepository.deleteById(commitBlockSequenceId);
-            log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Commit Block Sequence id = {}", commitBlockSequenceId);
-        }
-        for (String blockId : dto.blockIds()) {
-            blockRepository.deleteById(blockId);
-            log.warn("[MONGO] MongoDeleteRetryService 에서 호출, MongoDelete Block id = {}", blockId);
-        }
+        saveContentRepository.deleteAllById(dto.saveContentsIds());
+        commitBlockSequenceRepository.deleteAllById(dto.commitBlockSequenceIds());
+        blockRepository.deleteAllById(dto.blockIds());
     }
 
     @Recover

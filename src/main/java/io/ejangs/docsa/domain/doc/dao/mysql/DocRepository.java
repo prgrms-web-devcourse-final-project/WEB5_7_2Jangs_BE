@@ -11,14 +11,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface DocRepository extends JpaRepository<Doc, Long> {
 
-    @Query("""
-                SELECT new io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse(d.title)
-                FROM Doc d
-                WHERE d.id = :docId
-            """)
-    Optional<DocTitleOnlyResponse> findTitleOnlyById(@Param("docId") Long docId);
-
-
     Optional<Doc> getDocByIdAndUserId(Long id, Long userId);
 
     boolean existsByUserIdAndTitle(Long userId, String title);
