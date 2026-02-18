@@ -18,7 +18,6 @@ fi
 
 IMAGE_BASE="${IMAGE_BASE:-ghcr.io/prgrms-web-devcourse-final-project/docsa-backend}"
 SERVICE="${SERVICE:-app}"
-PROJECT="docsa-$TARGET"
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-120}"
 
 cd "$(dirname "$0")"
@@ -47,7 +46,7 @@ EOF
 fi
 
 # docker compose 인자 구성 (-p로 프로젝트 격리, --env-file로 env 명시)
-ARGS=(-f "$COMPOSE_FILE" -p "$PROJECT")
+ARGS=(-f "$COMPOSE_FILE")
 [[ -n "$OVR" ]] && ARGS+=(-f "$OVR")
 ARGS+=(--env-file "$ENV_FILE")
 

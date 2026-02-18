@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE="/srv/docsa/infra/.secrets/docsa-alert.env"
+ENV_FILE="/srv/docsa/infra/docsa-alert.env"
 TIMEOUT=5
 
 TARGETS=(

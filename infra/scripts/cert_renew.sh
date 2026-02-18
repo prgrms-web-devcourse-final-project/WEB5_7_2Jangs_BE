@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 out="$(docker compose run --rm --no-deps certbot_renew \
-  renew --webroot -w /var/www/certboXt)"
+  renew --webroot -w /var/www/certbot)"
 
 echo "$out"
 
