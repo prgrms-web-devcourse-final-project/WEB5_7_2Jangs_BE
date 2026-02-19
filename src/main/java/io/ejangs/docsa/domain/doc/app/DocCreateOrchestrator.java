@@ -8,6 +8,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -39,7 +40,7 @@ public class DocCreateOrchestrator {
 
     private void compensateMongo(String saveContentId) {
         // 기존 삭제 파이프라인 재사용: @Retryable + @Recover(+ Failure 저장)
-        MongoIdsDto dto = MongoIdsDto.forSaveContent(saveContentId);
+        MongoIdsDto dto = new MongoIdsDto(List.of(saveContentId),null,null);
         mongoDeleteRetryService.deleteMongoData(dto);
     }
 

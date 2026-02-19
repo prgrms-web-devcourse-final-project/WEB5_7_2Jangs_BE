@@ -52,7 +52,6 @@ public class CommitService {
     private final CommitRepository commitRepository;
     private final CommitBlockSequenceRepository cbsRepository;
 
-    private final DocService docService;
     private final DocQueryService docQueryService;
     private final BranchService branchService;
     private final BlockService blockService;
