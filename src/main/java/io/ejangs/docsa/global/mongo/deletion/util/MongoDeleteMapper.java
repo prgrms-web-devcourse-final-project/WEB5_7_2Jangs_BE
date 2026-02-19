@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public class MongoDeleteMapper {
 
+
+    // 제거 예정 or MongoIdsCollector로 이동
     public static MongoIdsDto toMongoIdsDto(Branch branch,
             List<String> commitBlockSequenceIds,
             List<String> blockIds) {
@@ -18,15 +20,6 @@ public class MongoDeleteMapper {
                 .map(List::of)
                 .orElse(List.of());
 
-        return new MongoIdsDto(saveContentsIds, commitBlockSequenceIds, blockIds);
-    }
-
-    public static MongoIdsDto toMongoIdsDto(
-            String saveContentsId,
-            List<String> commitBlockSequenceIds,
-            List<String> blockIds) {
-
-        List<String> saveContentsIds = saveContentsId == null ? List.of() : List.of(saveContentsId);
         return new MongoIdsDto(saveContentsIds, commitBlockSequenceIds, blockIds);
     }
 }

@@ -121,8 +121,7 @@ public class CommitService {
         }
 
         RenewUpdatedAtHelper.touch(branch);
-        MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
-                .toMongoIdsDto(saveMongoId, null, null);
+        MongoIdsDto commitDeleteMongoIds = new MongoIdsDto(List.of(saveMongoId),null, null);
 
         log.warn("[MONGO] createCommit");
         eventPublisher.publishEvent(commitDeleteMongoIds);
@@ -184,8 +183,8 @@ public class CommitService {
             MergeCommitDto mergeCommitDto = saveMergeCommit(doc, baseBranch, targetBranch,
                     mergeRequest, commitMongoIds.cbsId());
 
-            MongoIdsDto commitDeleteMongoIds = MongoDeleteMapper
-                    .toMongoIdsDto(mergeCommitDto.saveMongoIds(), null, null);
+            MongoIdsDto commitDeleteMongoIds = new MongoIdsDto(List.of(mergeCommitDto.saveMongoIds())
+                    , null, null);
 
             log.warn("[MONGO] mergeCommit");
             eventPublisher.publishEvent(commitDeleteMongoIds);
