@@ -51,7 +51,7 @@ public class DocCreateOrchestrator {
             return saveContentRepository.save(SaveContent.builder().build());
         } catch (Exception e) {
             log.error("[Mongo] DefaultSaveContent 생성 실패 - {}", e.getMessage(), e);
-            throw e;
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 }

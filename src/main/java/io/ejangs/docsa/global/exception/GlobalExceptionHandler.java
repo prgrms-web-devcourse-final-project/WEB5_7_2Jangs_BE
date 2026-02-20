@@ -1,11 +1,14 @@
 package io.ejangs.docsa.global.exception;
 
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.AuthErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -35,6 +38,21 @@ public class GlobalExceptionHandler {
         log.error("MethodArgumentNotValidException 발생 : {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.from(errorMessage));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
+        log.error("MethodArgumentTypeMismatchException 발생 : {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.from("요청 파라미터 타입이 올바르지 않습니다."));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException e) {
+        log.error("AuthenticationException 발생", e);
+        return ResponseEntity.status(AuthErrorCode.INVALID_CREDENTIALS.getStatus())
+                .body(ErrorResponse.from(AuthErrorCode.INVALID_CREDENTIALS));
     }
 
     @ExceptionHandler(DataAccessException.class)
