@@ -67,8 +67,15 @@ public class CommitService {
         Doc doc = docQueryService.getById(docId);
         Branch branch = branchService.getById(request.branchId());
 
-        Commit baseCommit = Optional.ofNullable(branch.getLeafCommit()).orElse(branch.getFromCommit());
-        String baseCommitCbsMongoId = (baseCommit == null) ? null : baseCommit.getCommitMongoId();
+        Long baseCommitId = Optional.ofNullable(branch.getLeafCommit())
+                .map(Commit::getId)
+                .orElseGet(() -> Optional.ofNullable(branch.getFromCommit())
+                        .map(Commit::getId)
+                        .orElse(null));
+        String baseCommitCbsMongoId = (baseCommitId == null) ? null
+                : commitRepository.findById(baseCommitId)
+                        .map(Commit::getCommitMongoId)
+                        .orElse(null);
 
         Commit newCommit = commitCreateOrchestrator.create(request, baseCommitCbsMongoId, doc, branch);
 
@@ -130,8 +137,10 @@ public class CommitService {
             MergeCommitDto mergeCommitDto = saveMergeCommit(doc, baseBranch, targetBranch,
                     mergeRequest, commitMongoIds.cbsId());
 
-            MongoIdsDto commitDeleteMongoIds = new MongoIdsDto(List.of(mergeCommitDto.saveMongoIds())
-                    , null, null);
+            List<String> saveIds = mergeCommitDto.saveMongoIds() == null
+                    ? List.of()
+                    : List.of(mergeCommitDto.saveMongoIds());
+            MongoIdsDto commitDeleteMongoIds = new MongoIdsDto(saveIds, null, null);
 
             log.warn("[MONGO] mergeCommit");
             eventPublisher.publishEvent(commitDeleteMongoIds);
