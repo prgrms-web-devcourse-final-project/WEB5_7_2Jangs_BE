@@ -39,8 +39,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException e) {
-        log.error("DataAccessException 발생 : {}", e.getMessage());
+        log.error("[DB] DataAccessException", e);
         return ResponseEntity.status(DatabaseErrorCode.DATABASE_ERROR.getStatus())
                 .body(ErrorResponse.from(DatabaseErrorCode.DATABASE_ERROR));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("Unhandled Exception", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.from("서버 내부 오류가 발생했습니다."));
     }
 }

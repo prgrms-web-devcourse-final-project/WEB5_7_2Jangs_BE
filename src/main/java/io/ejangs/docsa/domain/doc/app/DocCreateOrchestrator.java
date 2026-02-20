@@ -32,7 +32,7 @@ public class DocCreateOrchestrator {
         try {
             return docCreateMySqlTxService.createMySqlPart(title, user, saveContentId);
         } catch (Exception e) {
-            log.warn("[SAGA] MYSQL 생성 실패 -> Mongo 보상 삭제. saveContentId = {}", saveContentId, e);
+            log.warn("[SAGA] 문서 생성 실패 -> Mongo 보상 삭제.", e);
             compensateMongo(saveContentId);
             throw e;
         }
@@ -45,15 +45,13 @@ public class DocCreateOrchestrator {
     }
 
     // save로 이동?
+    // try 아예 제거 검토
     private SaveContent createDefaultSaveContent() {
         try {
             return saveContentRepository.save(SaveContent.builder().build());
-        } catch (DataAccessException e) {
-            log.error("DefaultSaveContent Mongo 저장 실패 - {}", e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         } catch (Exception e) {
-            log.error("DefaultSaveContent Mongo 알 수 없는 오류 - {}", e.getMessage(), e);
-            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
+            log.error("[Mongo] DefaultSaveContent 생성 실패 - {}", e.getMessage(), e);
+            throw e;
         }
     }
 }
