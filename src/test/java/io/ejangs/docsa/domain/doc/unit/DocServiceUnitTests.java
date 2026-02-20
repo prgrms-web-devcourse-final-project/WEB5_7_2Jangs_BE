@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.app.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
@@ -19,6 +21,7 @@ import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
@@ -30,6 +33,7 @@ import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -43,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,6 +63,9 @@ public class DocServiceUnitTests {
     private DocQueryService docQueryService;
 
     @Mock
+    private DocCreateOrchestrator docCreateOrchestrator;
+
+    @Mock
     private DocListAssembler docListAssembler;
 
     @Mock
@@ -68,6 +76,54 @@ public class DocServiceUnitTests {
 
     @Mock
     private EdgeRepository edgeRepository;
+
+    @Mock
+    private MongoIdsCollector mongoIdsCollector;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Test
+    @DisplayName("문서 생성 성공 - QueryService 검증 후 Orchestrator 호출(CQRS 분리)")
+    void createDoc_delegatesToQueryServiceAndOrchestrator() {
+        Long userId = 1L;
+        String title = "새 문서";
+        DocTitleRequest request = new DocTitleRequest(title);
+        User user = DocTestUtils.createUser();
+        ReflectionTestUtils.setField(user, "id", userId);
+        DocCreateResponse expected = new DocCreateResponse(10L, 100L);
+
+        when(docQueryService.getUserOrThrow(userId)).thenReturn(user);
+        when(docCreateOrchestrator.create(title, user)).thenReturn(expected);
+
+        DocCreateResponse result = docService.create(request, userId);
+
+        assertEquals(expected.id(), result.id());
+        assertEquals(expected.saveId(), result.saveId());
+        verify(docQueryService).getUserOrThrow(userId);
+        verify(docQueryService).checkTitleDuplicate(userId, title);
+        verify(docCreateOrchestrator).create(title, user);
+        verifyNoInteractions(docRepository, branchRepository, commitRepository, edgeRepository);
+    }
+
+    @Test
+    @DisplayName("문서 생성 실패 - 제목 중복이면 Orchestrator 호출 안함")
+    void createDoc_fail_duplicateTitle() {
+        Long userId = 1L;
+        String title = "중복 문서";
+        DocTitleRequest request = new DocTitleRequest(title);
+        User user = DocTestUtils.createUser();
+        ReflectionTestUtils.setField(user, "id", userId);
+
+        when(docQueryService.getUserOrThrow(userId)).thenReturn(user);
+        doThrow(new CustomException(DocErrorCode.TITLE_DUPLICATION))
+                .when(docQueryService).checkTitleDuplicate(userId, title);
+
+        CustomException exception = assertThrows(CustomException.class, () -> docService.create(request, userId));
+
+        assertEquals(DocErrorCode.TITLE_DUPLICATION, exception.getErrorCode());
+        verifyNoInteractions(docCreateOrchestrator);
+    }
 
     @Test
     @DisplayName("사이드바 문서 목록 조회 성공 테스트")

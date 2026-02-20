@@ -37,12 +37,10 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
-import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,7 +54,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,18 +93,6 @@ public class DocServiceIntegrationTests {
 
     @Value("${default.branch}")
     private String defaultBranchName;
-
-    @AfterEach
-    void cleanup() {
-        userRepository.deleteAll();
-        docRepository.deleteAll();
-        branchRepository.deleteAll();
-        saveRepository.deleteAll();
-        commitBlockSequenceRepository.deleteAll();
-        blockRepository.deleteAll();
-        saveContentRepository.deleteAll();
-        mongoDeleteFailureRepository.deleteAll();
-    }
 
     @Test
     @DisplayName("문서 생성 시 문서, 브랜치, 세이브, 세이브컨텐츠가 모두 정상 저장된다")
@@ -207,6 +192,7 @@ public class DocServiceIntegrationTests {
             // given
             User user = userRepository.save(DocTestUtils.createUser());
             DocTitleRequest request = new DocTitleRequest("MySQL 실패 케이스");
+            long beforeSaveContentCount = saveContentRepository.count();
 
             // Mongo는 정상 저장되고, MySQL 파트에서 예외가 터진 상황
             when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
@@ -217,8 +203,8 @@ public class DocServiceIntegrationTests {
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("MySQL 생성 실패");
 
-            // 보상 삭제 결과: Mongo에 SaveContent가 남아있으면 안 됨
-            assertThat(saveContentRepository.findAll()).isEmpty();
+            // 보상 삭제 결과: 이번 요청에서 생성된 SaveContent는 남지 않아야 함
+            assertThat(saveContentRepository.count()).isEqualTo(beforeSaveContentCount);
         }
     }
     @Nested
@@ -237,8 +223,8 @@ public class DocServiceIntegrationTests {
         @MockitoBean
         private DocCreateMySqlTxService docCreateMySqlTxService;
 
-        @MockitoSpyBean
-        private MongoDeleteRetryService mongoDeleteRetryService;
+        @MockitoBean
+        private CommitBlockSequenceRepository mockedCommitBlockSequenceRepository;
 
         @Test
         @DisplayName("보상 삭제가 3회 모두 실패하면 MongoDeleteFailure가 저장된다")
@@ -253,13 +239,14 @@ public class DocServiceIntegrationTests {
             when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
                     .thenThrow(new RuntimeException("MySQL 생성 실패"));
 
-            // 보상 삭제도 실패
+            // 보상 삭제 실패 유도 (Retry + Recover 경로를 실제로 타게 함)
             doThrow(new RuntimeException("보상 삭제 실패"))
-                    .when(mongoDeleteRetryService).deleteMongoData(any());
+                    .when(mockedCommitBlockSequenceRepository).deleteAllById(any());
 
             // when
             assertThatThrownBy(() -> docService.create(request, user.getId()))
-                    .isInstanceOf(RuntimeException.class);
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("MySQL 생성 실패");
 
             // then (비동기 or recover 고려)
             await().untilAsserted(() -> {
