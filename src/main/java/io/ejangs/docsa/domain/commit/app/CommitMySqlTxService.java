@@ -3,7 +3,6 @@ package io.ejangs.docsa.domain.commit.app;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
-import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
 import io.ejangs.docsa.domain.doc.app.EdgeService;
@@ -30,8 +29,11 @@ public class CommitMySqlTxService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public CreateCommitResponse createMySqlPart(Doc doc, Branch branch, CreateCommitRequest request) {
+    public Commit createMySqlPart(Doc doc, Branch branch, CreateCommitRequest request, String commitCbsMongoId) {
         Commit newCommit = saveCommit(branch, request);
+        newCommit.initializeCommitMongoId(commitCbsMongoId);
+        commitRepository.flush();
+
         branch.initializeRootCommitIfNull(newCommit);
 
         // 브랜치의 Save 삭제
@@ -55,7 +57,7 @@ public class CommitMySqlTxService {
         );
         eventPublisher.publishEvent(saveCleanupIds);
 
-        return CommitMapper.toCreateCommitResponse(newCommit);
+        return newCommit;
     }
 
     private Commit saveCommit(Branch branch, CreateCommitRequest commitRequest) {

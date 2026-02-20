@@ -13,27 +13,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommitMongoTxService {
 
     private final BlockService blockService;
-    private final CommitService commitService;
     private final CommitBlockSequenceRepository cbsRepository;
 
     @Transactional(transactionManager = "mongoTransactionManager")
     public MongoIdsDto createMongoPart(CreateCommitRequest request, String baseCommitCbsMongoId) {
-
-        // 1) 이번 커밋에서 "새로 저장된" 블록들 (Mongo insert)
+        // 이번 커밋에서 "새로 저장된" 블록들 (Mongo insert)
         List<Block> newBlocks = blockService.saveBlocks(request.blocks());
 
-        // 2) 이전 커밋(CBS)에 포함된 블록들 조회
+        // 이전 커밋(CBS)에 포함된 블록들 조회
         List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommitCbsMongoId);
 
-        // 3) 요청된 editor.js block order(editorId 배열)를 실제 Mongo _id 배열로 변환
+        // 요청된 editor.js block order(editorId 배열)를 실제 Mongo _id 배열로 변환
         List<String> orderedBlockMongoIds =
                 resolveOrderedBlockMongoIds(request.blockOrders(), newBlocks, baseCommitBlocks);
 
@@ -83,10 +83,10 @@ public class CommitMongoTxService {
             List<Block> newBlocks,
             List<Block> baseCommitBlocks
     ) {
-        // 1) 이번 커밋에서 새로 생성된 블록인지 확인
+        // 이번 커밋에서 새로 생성된 블록인지 확인
         Optional<Block> found = findByEditorId(editorBlockId, newBlocks);
 
-        // 2) 없다면 이전 커밋에서 그대로 유지된 블록인지 확인
+        // 없다면 이전 커밋에서 그대로 유지된 블록인지 확인
         if (found.isEmpty()) {
             found = findByEditorId(editorBlockId, baseCommitBlocks);
         }
