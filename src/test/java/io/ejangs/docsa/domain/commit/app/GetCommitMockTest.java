@@ -157,7 +157,7 @@ class GetCommitMockTest {
         given(assembler.assemble(targetCommitMongoId)).willReturn(targetContent);
 
         // when
-        CompareMergeCommitResponse response = commitService.compareCommitForMerge(docId, baseId,
+        CompareMergeCommitResponse response = commitService.getCommitsForMerge(docId, baseId,
                 targetId, userDetails.getId());
 
         // then
@@ -183,7 +183,7 @@ class GetCommitMockTest {
         given(commitRepository.findById(baseId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId,
+        assertThatThrownBy(() -> commitService.getCommitsForMerge(docId, baseId, targetId,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
@@ -209,7 +209,7 @@ class GetCommitMockTest {
         given(assembler.assemble(baseCommitMongoId)).willReturn(baseContent);
 
         // when & then
-        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId,
+        assertThatThrownBy(() -> commitService.getCommitsForMerge(docId, baseId, targetId,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
@@ -231,7 +231,7 @@ class GetCommitMockTest {
                 .when(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
 
         // when & then
-        assertThatThrownBy(() -> commitService.compareCommitForMerge(docId, baseId, targetId,
+        assertThatThrownBy(() -> commitService.getCommitsForMerge(docId, baseId, targetId,
                 userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 

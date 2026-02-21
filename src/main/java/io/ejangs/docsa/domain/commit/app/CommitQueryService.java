@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.commit.app;
 
+import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
@@ -31,6 +32,19 @@ public class CommitQueryService {
                 .filter(id -> !id.isBlank());
     }
 
+    @Transactional(readOnly = true)
+    public String resolveBaseCommitCbsMongoId(Branch branch) {
+        Long baseCommitId = Optional.ofNullable(branch.getLeafCommit())
+                .map(Commit::getId)
+                .orElseGet(() -> Optional.ofNullable(branch.getFromCommit())
+                        .map(Commit::getId)
+                        .orElse(null));
+        if (baseCommitId == null) {
+            return null;
+        }
+        return findCommitMongoIdById(baseCommitId).orElse(null);
+    }
+
     public Commit saveAndFlush(Commit commit) {
         return commitRepository.saveAndFlush(commit);
     }
@@ -41,10 +55,6 @@ public class CommitQueryService {
 
     public CommitBlockSequence saveCommitBlockSequence(CommitBlockSequence commitBlockSequence) {
         return commitBlockSequenceRepository.save(commitBlockSequence);
-    }
-
-    public void deleteCbsById(String cbsId) {
-        commitBlockSequenceRepository.deleteById(cbsId);
     }
 
 }

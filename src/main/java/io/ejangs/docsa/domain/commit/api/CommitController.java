@@ -64,7 +64,7 @@ public class CommitController {
             @RequestParam("target") Long targetId) {
 
         return ResponseEntity.status(HttpStatus.OK)
-                .body(commitService.compareCommitForMerge(docId, baseId, targetId,
+                .body(commitService.getCommitsForMerge(docId, baseId, targetId,
                         userDetails.getId()));
     }
 
