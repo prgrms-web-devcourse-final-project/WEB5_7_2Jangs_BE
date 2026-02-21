@@ -12,9 +12,11 @@ import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
+import io.ejangs.docsa.domain.commit.app.merge.MergeOrchestrator;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocQueryService;
@@ -24,7 +26,9 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +60,9 @@ class CommitServiceMockTest {
 
     @Mock
     private CommitCreateOrchestrator commitCreateOrchestrator;
+
+    @Mock
+    private MergeOrchestrator mergeOrchestrator;
 
     @Mock
     private BlockService blockService;
@@ -210,5 +217,87 @@ class CommitServiceMockTest {
         assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("orchestrator fail");
+    }
+
+    @Test
+    @DisplayName("merge 검증 실패 - 같은 브랜치 요청이면 COMMIT_BAD_REQUEST")
+    void mergeCommit_fail_whenBaseAndTargetAreSameBranch() {
+        Long baseCommitId = 11L;
+        Long targetCommitId = 22L;
+
+        Branch sameBranch = org.mockito.Mockito.mock(Branch.class);
+        Commit baseCommit = org.mockito.Mockito.mock(Commit.class);
+        Commit targetCommit = org.mockito.Mockito.mock(Commit.class);
+
+        when(baseCommit.getId()).thenReturn(baseCommitId);
+        when(targetCommit.getId()).thenReturn(targetCommitId);
+        when(baseCommit.getBranch()).thenReturn(sameBranch);
+        when(targetCommit.getBranch()).thenReturn(sameBranch);
+        when(sameBranch.getId()).thenReturn(100L);
+        when(sameBranch.getLeafCommit()).thenReturn(baseCommit, targetCommit);
+
+        when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
+        when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
+
+        MergeCommitRequest request = new MergeCommitRequest(
+                "merge",
+                "same branch",
+                baseCommitId,
+                targetCommitId,
+                Collections.emptyList()
+        );
+
+        assertThatThrownBy(() -> commitService.mergeCommit(docId, request, userDetails.getId()))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(CommitErrorCode.COMMIT_BAD_REQUEST));
+
+        verify(branchService, never()).checkBranchInDocOwnedByUser(docId, 100L, userDetails.getId());
+        verifyNoInteractions(mergeOrchestrator);
+    }
+
+    @Test
+    @DisplayName("merge 권한 검증 실패 - base/target 중 하나라도 권한이 없으면 예외")
+    void mergeCommit_fail_whenAnyBranchOwnershipCheckFails() {
+        Long baseCommitId = 31L;
+        Long targetCommitId = 32L;
+
+        Branch baseBranch = org.mockito.Mockito.mock(Branch.class);
+        Branch targetBranch = org.mockito.Mockito.mock(Branch.class);
+        Commit baseCommit = org.mockito.Mockito.mock(Commit.class);
+        Commit targetCommit = org.mockito.Mockito.mock(Commit.class);
+
+        when(baseCommit.getId()).thenReturn(baseCommitId);
+        when(targetCommit.getId()).thenReturn(targetCommitId);
+        when(baseCommit.getBranch()).thenReturn(baseBranch);
+        when(targetCommit.getBranch()).thenReturn(targetBranch);
+        when(baseBranch.getId()).thenReturn(201L);
+        when(targetBranch.getId()).thenReturn(202L);
+        when(baseBranch.getLeafCommit()).thenReturn(baseCommit);
+        when(targetBranch.getLeafCommit()).thenReturn(targetCommit);
+
+        when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
+        when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
+
+        // baseBranch 권한 체크는 통과
+        org.mockito.Mockito.doNothing()
+                .when(branchService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
+        // targetBranch 권한 체크에서 실패
+        doThrow(new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN))
+                .when(branchService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
+
+        MergeCommitRequest request = new MergeCommitRequest(
+                "merge",
+                "ownership fail",
+                baseCommitId,
+                targetCommitId,
+                Collections.emptyList()
+        );
+
+        assertThatThrownBy(() -> commitService.mergeCommit(docId, request, userDetails.getId()))
+                .isInstanceOf(CustomException.class);
+
+        verify(branchService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
+        verify(branchService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
+        verifyNoInteractions(mergeOrchestrator);
     }
 }
