@@ -102,7 +102,7 @@ public class CommitMongoTxService {
     }
 
     private CommitBlockSequence saveCommitBlockSequence(List<String> orderedBlockMongoIds) {
-        CommitBlockSequence cbs = CommitBlockSequenceMapper.toEntity(orderedBlockMongoIds);
+        CommitBlockSequence cbs = CommitBlockSequenceMapper.toDocument(orderedBlockMongoIds);
         return cbsRepository.save(cbs);
     }
 
