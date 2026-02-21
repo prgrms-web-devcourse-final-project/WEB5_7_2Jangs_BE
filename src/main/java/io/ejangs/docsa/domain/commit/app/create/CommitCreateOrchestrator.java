@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.commit.app;
+package io.ejangs.docsa.domain.commit.app.create;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;

@@ -5,7 +5,6 @@ import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.BlockErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

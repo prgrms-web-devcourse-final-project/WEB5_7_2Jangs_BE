@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.commit.app;
+package io.ejangs.docsa.domain.commit.app.create;
 
 import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.block.document.Block;

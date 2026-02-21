@@ -1,8 +1,9 @@
-package io.ejangs.docsa.domain.commit.app;
+package io.ejangs.docsa.domain.commit.app.merge;
 
 import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.block.dto.response.BlockDto;
+import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.global.mongo.deletion.dto.CommitMongoIdsDto;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
