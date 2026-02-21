@@ -29,6 +29,19 @@ public class SaveService {
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
 
+    public SaveContent createDefaultSaveContent() {
+        try {
+            return saveContentRepository.save(SaveContent.builder().build());
+        } catch (Exception e) {
+            log.error("[Mongo] DefaultSaveContent 생성 실패 - {}", e.getMessage(), e);
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
+        }
+    }
+
+    public Save createDefaultSave(Branch branch, String mongoID) {
+        return saveRepository.save(Save.builder().branch(branch).saveMongoId(mongoID).build());
+    }
+
     @Transactional(readOnly = true)
     public SaveGetResponse getSave(SaveIdentifierDto dto) {
         Save findSave = getValidSave(dto);

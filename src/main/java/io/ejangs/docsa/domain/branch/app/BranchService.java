@@ -118,6 +118,13 @@ public class BranchService {
         }
     }
 
+    public Branch createDefaultBranch(Doc doc, String branchName) {
+        Branch branch = branchRepository.save(Branch.builder().name(branchName).doc(doc).build());
+        doc.addBranch(branch);
+        RenewUpdatedAtHelper.touch(branch);
+        return branch;
+    }
+
     /**
      * 새로운 저장(Save)을 생성합니다.
      * <p>

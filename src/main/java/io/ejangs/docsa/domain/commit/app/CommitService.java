@@ -31,8 +31,6 @@ import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,13 +46,13 @@ public class CommitService {
     private final CommitBlockSequenceRepository cbsRepository;
 
     private final DocQueryService docQueryService;
+    private final CommitQueryService commitQueryService;
     private final BranchService branchService;
     private final CommitCreateOrchestrator commitCreateOrchestrator;
     private final BlockService blockService;
     private final SaveService saveService;
     private final EdgeService edgeService;
 
-    private final CommitContentAssembler assembler;
     private final MongoIdsCollector mongoIdsCollector;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -67,39 +65,20 @@ public class CommitService {
         Doc doc = docQueryService.getById(docId);
         Branch branch = branchService.getById(request.branchId());
 
-        Long baseCommitId = Optional.ofNullable(branch.getLeafCommit())
-                .map(Commit::getId)
-                .orElseGet(() -> Optional.ofNullable(branch.getFromCommit())
-                        .map(Commit::getId)
-                        .orElse(null));
-        String baseCommitCbsMongoId = (baseCommitId == null) ? null
-                : commitRepository.findById(baseCommitId)
-                        .map(Commit::getCommitMongoId)
-                        .orElse(null);
+        String baseCommitCbsMongoId = commitQueryService.resolveBaseCommitCbsMongoId(branch);
 
         Commit newCommit = commitCreateOrchestrator.create(request, baseCommitCbsMongoId, doc, branch);
 
         return CommitMapper.toCreateCommitResponse(newCommit);
     }
 
-    @Transactional(readOnly = true)
     public CommitResponse getCommit(Long docId, Long commitId, Long userId) {
-
-        docQueryService.checkByIdAndUserId(docId, userId);
-        List<Map<String, Object>> assemble = getWholeContent(commitId);
-
-        return CommitMapper.toCommitResponse(assemble);
+        return commitQueryService.getCommit(docId, commitId, userId);
     }
 
-    @Transactional(readOnly = true)
     public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId, Long targetId,
             Long userId) {
-
-        docQueryService.checkByIdAndUserId(docId, userId);
-        List<Map<String, Object>> baseContent = getWholeContent(baseId);
-        List<Map<String, Object>> targetContent = getWholeContent(targetId);
-
-        return CommitMapper.toCompareMergeCommitResponse(baseContent, targetContent);
+        return commitQueryService.compareCommitForMerge(docId, baseId, targetId, userId);
     }
 
     @Transactional
@@ -113,10 +92,10 @@ public class CommitService {
             Long baseCommitId = mergeRequest.baseCommitId();
             Long targetCommitId = mergeRequest.targetCommitId();
 
-            Commit baseCommit = getById(baseCommitId);
-            Commit targetCommit = getById(targetCommitId);
-            checkLeafCommit(baseCommit);
-            checkLeafCommit(targetCommit);
+            Commit baseCommit = commitQueryService.getById(baseCommitId);
+            Commit targetCommit = commitQueryService.getById(targetCommitId);
+            commitQueryService.checkLeafCommit(baseCommit);
+            commitQueryService.checkLeafCommit(targetCommit);
 
             Branch baseBranch = baseCommit.getBranch();
             Branch targetBranch = targetCommit.getBranch();
@@ -161,9 +140,9 @@ public class CommitService {
     public void deleteCommit(Long docId, Long commitId, Long userId) {
         Doc doc = docQueryService.getByIdAndUserId(docId, userId);
 
-        Commit commit = getById(commitId);
+        Commit commit = commitQueryService.getById(commitId);
         // LeafCommit일 경우에만 삭제 가능
-        checkLeafCommit(commit);
+        commitQueryService.checkLeafCommit(commit);
         // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능
         checkFromOrRootCommit(commit);
 
@@ -191,12 +170,6 @@ public class CommitService {
         }
     }
 
-    private void checkLeafCommit(Commit commit) {
-        if (!commit.getId().equals(commit.getBranch().getLeafCommit().getId())) {
-            throw new CustomException(CommitErrorCode.IS_NOT_LEAF_COMMIT);
-        }
-    }
-
     private void checkBranch(Long baseBranchId, Long targetBranchId) {
         if (baseBranchId.equals(targetBranchId)) {
             throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
@@ -213,8 +186,8 @@ public class CommitService {
 
         targetBranch.addCommit(savedCommit);
 
-        Commit baseCommit = getLeafCommit(baseBranch);
-        Commit targetCommit = getLeafCommit(targetBranch);
+        Commit baseCommit = commitQueryService.getLeafCommit(baseBranch);
+        Commit targetCommit = commitQueryService.getLeafCommit(targetBranch);
 
         Edge edge1 = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
         Edge edge2 = EdgeMapper.toEntity(doc, targetCommit, savedCommit);
@@ -261,21 +234,6 @@ public class CommitService {
             log.error("Failed to rollback MongoDB", e);
             // TODO 롤백 실패 로직 고민 필요
         }
-    }
-
-    private Commit getLeafCommit(Branch branch) {
-        return Optional.ofNullable(branch.getLeafCommit())
-                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
-    }
-
-    private List<Map<String, Object>> getWholeContent(Long commitId) {
-        Commit commit = getById(commitId);
-        return assembler.assemble(commit.getCommitMongoId());
-    }
-
-    public Commit getById(Long commitId) {
-        return commitRepository.findById(commitId)
-                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 
 }

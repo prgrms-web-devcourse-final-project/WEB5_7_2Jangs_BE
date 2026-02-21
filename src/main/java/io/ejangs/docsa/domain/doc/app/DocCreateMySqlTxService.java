@@ -4,6 +4,8 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
+import io.ejangs.docsa.domain.branch.app.BranchService;
+import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 public class DocCreateMySqlTxService {
 
     private final DocQueryService docQueryService;
+    private final BranchService branchService;
+    private final SaveService saveService;
 
     @Value("${default.branch}")
     private String defaultBranchName;
@@ -25,8 +29,8 @@ public class DocCreateMySqlTxService {
             String saveContentId) {
 
         Doc doc = docQueryService.create(user, title);
-        Branch defaultBranch = docQueryService.createDefaultBranch(doc, defaultBranchName);
-        Save defaultSave = docQueryService.createDefaultSave(defaultBranch, saveContentId);
+        Branch defaultBranch = branchService.createDefaultBranch(doc, defaultBranchName);
+        Save defaultSave = saveService.createDefaultSave(defaultBranch, saveContentId);
         return DocMapper.toCreateResponse(doc, defaultSave);
     }
 
