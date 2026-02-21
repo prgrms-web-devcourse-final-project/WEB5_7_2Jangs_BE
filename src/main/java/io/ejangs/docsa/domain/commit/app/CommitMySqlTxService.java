@@ -23,16 +23,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommitMySqlTxService {
 
-    private final CommitRepository commitRepository;
+    private final CommitQueryService commitQueryService;
     private final SaveService saveService;
     private final EdgeService edgeService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Commit createMySqlPart(Doc doc, Branch branch, CreateCommitRequest request, String commitCbsMongoId) {
-        Commit newCommit = saveCommit(branch, request);
+        Commit newCommit = CommitMapper.toEntity(branch, request);
         newCommit.initializeCommitMongoId(commitCbsMongoId);
-        commitRepository.flush();
+        newCommit = commitQueryService.saveAndFlush(newCommit);
 
         branch.initializeRootCommitIfNull(newCommit);
 
@@ -59,13 +59,4 @@ public class CommitMySqlTxService {
 
         return newCommit;
     }
-
-    private Commit saveCommit(Branch branch, CreateCommitRequest commitRequest) {
-        Commit commit = CommitMapper.toEntity(branch, commitRequest);
-        Commit savedCommit = commitRepository.save(commit);
-        commitRepository.flush();
-        branch.addCommit(savedCommit);
-        return savedCommit;
-    }
-
 }
