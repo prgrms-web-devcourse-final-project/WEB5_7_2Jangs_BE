@@ -24,7 +24,7 @@ public class MongoDeleteFailureScheduler {
     @Transactional(transactionManager = "mongoTransactionManager")
     public void run() {
         List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAllByResolvedIsFalse();
-        log.info("스케쥴러 작동 : {}", failures.size());
+        log.info("[스케쥴러] Failures size : {}", failures.size());
         for (MongoDeleteFailure failure : failures) {
             try {
                 MongoIdsDto dto = new MongoIdsDto(
