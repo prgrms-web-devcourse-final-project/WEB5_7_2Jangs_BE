@@ -31,6 +31,8 @@ import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -42,9 +44,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommitService {
 
-    private final CommitRepository commitRepository;
-    private final CommitBlockSequenceRepository cbsRepository;
-
     private final DocQueryService docQueryService;
     private final CommitQueryService commitQueryService;
     private final BranchService branchService;
@@ -53,6 +52,7 @@ public class CommitService {
     private final SaveService saveService;
     private final EdgeService edgeService;
 
+    private final CommitContentAssembler assembler;
     private final MongoIdsCollector mongoIdsCollector;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -65,7 +65,13 @@ public class CommitService {
         Doc doc = docQueryService.getById(docId);
         Branch branch = branchService.getById(request.branchId());
 
-        String baseCommitCbsMongoId = commitQueryService.resolveBaseCommitCbsMongoId(branch);
+        Long baseCommitId = Optional.ofNullable(branch.getLeafCommit())
+                .map(Commit::getId)
+                .orElseGet(() -> Optional.ofNullable(branch.getFromCommit())
+                        .map(Commit::getId)
+                        .orElse(null));
+        String baseCommitCbsMongoId = (baseCommitId == null) ? null
+                : commitQueryService.findCommitMongoIdById(baseCommitId).orElse(null);
 
         Commit newCommit = commitCreateOrchestrator.create(request, baseCommitCbsMongoId, doc, branch);
 
@@ -73,12 +79,23 @@ public class CommitService {
     }
 
     public CommitResponse getCommit(Long docId, Long commitId, Long userId) {
-        return commitQueryService.getCommit(docId, commitId, userId);
+        docQueryService.checkByIdAndUserId(docId, userId);
+        List<Map<String, Object>> content = getWholeContent(commitId);
+        return CommitMapper.toCommitResponse(content);
     }
 
+    @Transactional(readOnly = true)
     public CompareMergeCommitResponse compareCommitForMerge(Long docId, Long baseId, Long targetId,
             Long userId) {
-        return commitQueryService.compareCommitForMerge(docId, baseId, targetId, userId);
+        docQueryService.checkByIdAndUserId(docId, userId);
+        List<Map<String, Object>> baseContent = getWholeContent(baseId);
+        List<Map<String, Object>> targetContent = getWholeContent(targetId);
+        return CommitMapper.toCompareMergeCommitResponse(baseContent, targetContent);
+    }
+
+    private List<Map<String, Object>> getWholeContent(Long commitId) {
+        Commit commit = getById(commitId);
+        return assembler.assemble(commit.getCommitMongoId());
     }
 
     @Transactional
@@ -92,10 +109,10 @@ public class CommitService {
             Long baseCommitId = mergeRequest.baseCommitId();
             Long targetCommitId = mergeRequest.targetCommitId();
 
-            Commit baseCommit = commitQueryService.getById(baseCommitId);
-            Commit targetCommit = commitQueryService.getById(targetCommitId);
-            commitQueryService.checkLeafCommit(baseCommit);
-            commitQueryService.checkLeafCommit(targetCommit);
+            Commit baseCommit = getById(baseCommitId);
+            Commit targetCommit = getById(targetCommitId);
+            checkLeafCommit(baseCommit);
+            checkLeafCommit(targetCommit);
 
             Branch baseBranch = baseCommit.getBranch();
             Branch targetBranch = targetCommit.getBranch();
@@ -136,43 +153,23 @@ public class CommitService {
         }
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteCommit(Long docId, Long commitId, Long userId) {
-        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
+    private CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {
+        List<Block> savedBlocks = null;
+        try {
+            savedBlocks = blockService.saveBlocks(blocks);
+            List<String> blockSequence = savedBlocks.stream()
+                    .map(Block::getId)
+                    .toList();
 
-        Commit commit = commitQueryService.getById(commitId);
-        // LeafCommit일 경우에만 삭제 가능
-        commitQueryService.checkLeafCommit(commit);
-        // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능
-        checkFromOrRootCommit(commit);
+            CommitBlockSequence cbs = CommitBlockSequenceMapper.toEntity(blockSequence);
+            CommitBlockSequence savedCbs = commitQueryService.saveCommitBlockSequence(cbs);
 
-        // 간선을 삭제하면서 새로 LeafCommit이 될 Commit들을 수집
-        List<Commit> prevCommits = edgeService.cutEdge(doc, commitId);
-
-        for (Commit prevCommit : prevCommits) {
-            Branch branch = prevCommit.getBranch();
-            branch.updateLeafCommit(prevCommit);
-            branch.removeCommit(commit);
-            RenewUpdatedAtHelper.touch(branch);
-        }
-
-        MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
-
-        commitRepository.deleteById(commit.getId());
-
-        log.warn("[MONGO] deleteCommit");
-        eventPublisher.publishEvent(commitDeleteMongoIds);
-    }
-
-    private void checkFromOrRootCommit(Commit commit) {
-        if (branchService.checkFromOrRootCommitInBranch(commit)) {
-            throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
-        }
-    }
-
-    private void checkBranch(Long baseBranchId, Long targetBranchId) {
-        if (baseBranchId.equals(targetBranchId)) {
-            throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
+            return new CommitMongoIdsDto(savedCbs.getId(), blockSequence);
+        } catch (Exception e) {
+            if (savedBlocks != null) {
+                savedBlocks.forEach(block -> blockService.deleteBlock(block.getId()));
+            }
+            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }
 
@@ -181,13 +178,12 @@ public class CommitService {
 
         Commit commit = CommitMapper.toEntity(targetBranch, request);
         commit.initializeCommitMongoId(commitMongoId);
-        Commit savedCommit = commitRepository.save(commit);
-        commitRepository.flush();
+        Commit savedCommit = commitQueryService.saveAndFlush(commit);
 
         targetBranch.addCommit(savedCommit);
 
-        Commit baseCommit = commitQueryService.getLeafCommit(baseBranch);
-        Commit targetCommit = commitQueryService.getLeafCommit(targetBranch);
+        Commit baseCommit = getLeafCommit(baseBranch);
+        Commit targetCommit = getLeafCommit(targetBranch);
 
         Edge edge1 = EdgeMapper.toEntity(doc, baseCommit, savedCommit);
         Edge edge2 = EdgeMapper.toEntity(doc, targetCommit, savedCommit);
@@ -203,24 +199,32 @@ public class CommitService {
         return CommitMapper.toMergeCommitDto(savedCommit, saveMongoId);
     }
 
-    private CommitMongoIdsDto saveBlockAndSequence(List<BlockDto> blocks) {
-        List<Block> savedBlocks = null;
-        try {
-            savedBlocks = blockService.saveBlocks(blocks);
-            List<String> blockSequence = savedBlocks.stream()
-                    .map(Block::getId)
-                    .toList();
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCommit(Long docId, Long commitId, Long userId) {
+        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
 
-            CommitBlockSequence cbs = CommitBlockSequenceMapper.toEntity(blockSequence);
-            CommitBlockSequence savedCbs = cbsRepository.save(cbs);
+        Commit commit = getById(commitId);
+        // LeafCommit일 경우에만 삭제 가능
+        checkLeafCommit(commit);
+        // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능
+        checkFromOrRootCommit(commit);
 
-            return new CommitMongoIdsDto(savedCbs.getId(), blockSequence);
-        } catch (Exception e) {
-            if (savedBlocks != null) {
-                savedBlocks.forEach(block -> blockService.deleteBlock(block.getId()));
-            }
-            throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
+        // 간선을 삭제하면서 새로 LeafCommit이 될 Commit들을 수집
+        List<Commit> prevCommits = edgeService.cutEdge(doc, commitId);
+
+        for (Commit prevCommit : prevCommits) {
+            Branch branch = prevCommit.getBranch();
+            branch.updateLeafCommit(prevCommit);
+            branch.removeCommit(commit);
+            RenewUpdatedAtHelper.touch(branch);
         }
+
+        MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
+
+        commitQueryService.deleteById(commit.getId());
+
+        log.warn("[MONGO] deleteCommit");
+        eventPublisher.publishEvent(commitDeleteMongoIds);
     }
 
     private void rollbackMongoTransaction(CommitMongoIdsDto commitMongoIds) {
@@ -229,11 +233,39 @@ public class CommitService {
             commitMongoIds.blockIds().forEach(blockService::deleteBlock);
 
             // CommitBlockSequence 삭제
-            cbsRepository.deleteById(commitMongoIds.cbsId());
+            commitQueryService.deleteCbsById(commitMongoIds.cbsId());
         } catch (Exception e) {
             log.error("Failed to rollback MongoDB", e);
             // TODO 롤백 실패 로직 고민 필요
         }
     }
 
+
+
+    private Commit getById(Long commitId) {
+        return commitQueryService.getById(commitId);
+    }
+
+    private Commit getLeafCommit(Branch branch) {
+        return Optional.ofNullable(branch.getLeafCommit())
+                .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
+    }
+
+    private void checkFromOrRootCommit(Commit commit) {
+        if (branchService.checkFromOrRootCommitInBranch(commit)) {
+            throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
+        }
+    }
+
+    private void checkBranch(Long baseBranchId, Long targetBranchId) {
+        if (baseBranchId.equals(targetBranchId)) {
+            throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
+        }
+    }
+
+    public void checkLeafCommit(Commit commit) {
+        if (!commit.getId().equals(commit.getBranch().getLeafCommit().getId())) {
+            throw new CustomException(CommitErrorCode.IS_NOT_LEAF_COMMIT);
+        }
+    }
 }
