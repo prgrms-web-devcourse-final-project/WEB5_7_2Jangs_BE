@@ -29,7 +29,7 @@ public class DocCreateMySqlTxService {
             String saveContentId) {
 
         Doc doc = docQueryService.create(user, title);
-        Branch defaultBranch = branchService.createDefaultBranch(doc, defaultBranchName);
+        Branch defaultBranch = branchService.createBranch(doc, defaultBranchName);
         Save defaultSave = saveService.createSave(defaultBranch, saveContentId);
         return DocMapper.toCreateResponse(doc, defaultSave);
     }

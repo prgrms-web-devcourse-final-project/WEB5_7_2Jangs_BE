@@ -65,6 +65,7 @@ public class BranchService {
      * 이 경우는 doc 도메인에서 처리합니다.
      */
 
+    // WOW
     @Transactional
     public BranchCreateResponse createBranchOrSave(Long documentId, BranchCreateRequest request,
             Long userId) {
@@ -118,7 +119,8 @@ public class BranchService {
         }
     }
 
-    public Branch createDefaultBranch(Doc doc, String branchName) {
+    // 위에서 사용 가능
+    public Branch createBranch(Doc doc, String branchName) {
         Branch branch = branchRepository.save(Branch.builder().name(branchName).doc(doc).build());
         doc.addBranch(branch);
         RenewUpdatedAtHelper.touch(branch);
@@ -130,6 +132,7 @@ public class BranchService {
      * <p>
      * 먼저 RDB에 Save의 메타데이터 저장 후, MongoDB 저장이 성공하면 MongoId를 RDB Save 엔티티에 업데이트합니다.
      */
+    // SaveService에 있는것으로 교체
     private Save createSave(Branch branch, String commitMongoId) {
         Save save = saveToRDB(branch); // RDB에 먼저 저장
         saveContentToMongoAndUpdateRDB(save, commitMongoId); // Mongo 저장 + RDB에 mongoId 반영
