@@ -45,7 +45,7 @@ class DocCreateOrchestratorTest {
         ReflectionTestUtils.setField(saved, "id", "save-1");
         DocCreateResponse expected = new DocCreateResponse(10L, 20L);
 
-        when(saveService.createDefaultSaveContent()).thenReturn(saved);
+        when(saveService.createSaveContent()).thenReturn(saved);
         when(docCreateMySqlTxService.createMySqlPart("doc", user, "save-1")).thenReturn(expected);
 
         DocCreateResponse result = orchestrator.create("doc", user);
@@ -61,7 +61,7 @@ class DocCreateOrchestratorTest {
         SaveContent saved = SaveContent.builder().build();
         ReflectionTestUtils.setField(saved, "id", "save-1");
 
-        when(saveService.createDefaultSaveContent()).thenReturn(saved);
+        when(saveService.createSaveContent()).thenReturn(saved);
         when(docCreateMySqlTxService.createMySqlPart("doc", user, "save-1"))
                 .thenThrow(new RuntimeException("mysql fail"));
 

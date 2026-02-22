@@ -23,7 +23,7 @@ public class DocCreateOrchestrator {
     public DocCreateResponse create(String title, User user) {
         // 문서 생성에 경우 SaveContent 1개의 문서만 insert하여 단일 문서 트랜잭션은 보장되어 별도의 트랜잭션 처리 필요없음.
         // 다른 도메인에서는 다중 문서 트랜잭션을 위해 트랜잭션 설정 필요.
-        SaveContent defaultSaveContent = saveService.createDefaultSaveContent();
+        SaveContent defaultSaveContent = saveService.createSaveContent();
         String saveContentId = defaultSaveContent.getId();
 
         try {

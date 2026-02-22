@@ -29,7 +29,7 @@ public class SaveService {
     private final SaveRepository saveRepository;
     private final SaveContentRepository saveContentRepository;
 
-    public SaveContent createDefaultSaveContent() {
+    public SaveContent createSaveContent() {
         try {
             return saveContentRepository.save(SaveContent.builder().build());
         } catch (Exception e) {
@@ -38,7 +38,7 @@ public class SaveService {
         }
     }
 
-    public Save createDefaultSave(Branch branch, String mongoID) {
+    public Save createSave(Branch branch, String mongoID) {
         return saveRepository.save(Save.builder().branch(branch).saveMongoId(mongoID).build());
     }
 
