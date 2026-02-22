@@ -66,6 +66,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("Unhandled Exception", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ErrorResponse.from("서버 내부 오류가 발생했습니다."));
+                .body(ErrorResponse.from(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "서버 내부 오류가 발생했습니다.",
+                        "UNEXPECTED_ERROR"));
     }
 }
