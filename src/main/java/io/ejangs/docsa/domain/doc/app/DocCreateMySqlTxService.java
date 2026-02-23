@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.doc.app;
 
+import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
 public class DocCreateMySqlTxService {
 
     private final DocQueryService docQueryService;
-    private final BranchService branchService;
+    private final BranchQueryService branchQueryService;
     private final SaveService saveService;
 
     @Value("${default.branch}")
@@ -29,7 +30,7 @@ public class DocCreateMySqlTxService {
             String saveContentId) {
 
         Doc doc = docQueryService.create(user, title);
-        Branch defaultBranch = branchService.createBranch(doc, defaultBranchName);
+        Branch defaultBranch = branchQueryService.createBranch(doc, defaultBranchName);
         Save defaultSave = saveService.createSave(defaultBranch, saveContentId);
         return DocMapper.toCreateResponse(doc, defaultSave);
     }

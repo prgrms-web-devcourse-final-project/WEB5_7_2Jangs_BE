@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.commit.app;
 
+import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
@@ -33,8 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommitService {
 
     private final DocQueryService docQueryService;
+    private final BranchQueryService branchQueryService;
     private final CommitQueryService commitQueryService;
-    private final BranchService branchService;
     private final CommitCreateOrchestrator commitCreateOrchestrator;
     private final MergeOrchestrator mergeCommitOrchestrator;
     private final EdgeService edgeService;
@@ -47,10 +48,10 @@ public class CommitService {
             CreateCommitRequest request,
             Long userId) {
 
-        branchService.checkBranchInDocOwnedByUser(docId, request.branchId(), userId);
+        branchQueryService.checkBranchInDocOwnedByUser(docId, request.branchId(), userId);
 
         Doc doc = docQueryService.getById(docId);
-        Branch branch = branchService.getById(request.branchId());
+        Branch branch = branchQueryService.getById(request.branchId());
 
         String baseCommitCbsMongoId = commitQueryService.resolveBaseCommitCbsMongoId(branch);
 
@@ -120,8 +121,8 @@ public class CommitService {
     }
 
     private void validateMergePermission(Long docId, Long userId, Branch baseBranch, Branch targetBranch) {
-        branchService.checkBranchInDocOwnedByUser(docId, baseBranch.getId(), userId);
-        branchService.checkBranchInDocOwnedByUser(docId, targetBranch.getId(), userId);
+        branchQueryService.checkBranchInDocOwnedByUser(docId, baseBranch.getId(), userId);
+        branchQueryService.checkBranchInDocOwnedByUser(docId, targetBranch.getId(), userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -153,7 +154,7 @@ public class CommitService {
     }
 
     private void checkFromOrRootCommit(Commit commit) {
-        if (branchService.checkFromOrRootCommitInBranch(commit)) {
+        if (branchQueryService.checkFromOrRootCommitInBranch(commit)) {
             throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
         }
     }

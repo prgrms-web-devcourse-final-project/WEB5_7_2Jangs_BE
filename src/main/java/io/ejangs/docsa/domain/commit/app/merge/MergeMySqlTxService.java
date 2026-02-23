@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.commit.app.merge;
 
+import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
@@ -30,6 +31,7 @@ public class MergeMySqlTxService {
     private final SaveService saveService;
     private final EdgeService edgeService;
     private final BranchService branchService;
+    private final BranchQueryService branchQueryService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -52,7 +54,7 @@ public class MergeMySqlTxService {
         targetBranch.updateLeafCommit(savedCommit);
         String saveMongoId = saveService.deleteSaveIfExists(targetBranch);
         RenewUpdatedAtHelper.touch(targetBranch);
-        branchService.saveBranch(targetBranch);
+        branchQueryService.save(targetBranch);
 
         MongoIdsDto saveCleanupIds = new MongoIdsDto(
                 saveMongoId == null ? null : List.of(saveMongoId),
