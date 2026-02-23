@@ -66,10 +66,6 @@ public class BranchService {
 
         BranchCreateContext context = prepareBranchCreateContext(documentId, request, userId);
 
-        if (!context.createNewBranch() && context.fromBranch().getSave() != null) {
-            return BranchMapper.toBranchCreateResponse(context.fromBranch(), context.fromBranch().getSave());
-        }
-
         return branchCreateOrchestrator.createBranchOrSave(context);
     }
 
@@ -89,7 +85,12 @@ public class BranchService {
         boolean isLeaf = fromBranch.getLeafCommit() != null
                 && fromBranch.getLeafCommit().getId().equals(fromCommitId);
 
-        boolean createNewBranch = !isLeaf || !fromBranch.getName().equals(request.name());
+        boolean isRoot = fromBranch.getRootCommit() != null
+                && fromBranch.getRootCommit().getId().equals(fromCommitId);
+        boolean hasSave = fromBranch.getSave() != null;
+
+        boolean createNewBranch =
+                !isLeaf || !fromBranch.getName().equals(request.name()) || (isLeaf && isRoot && hasSave);
 
         if (createNewBranch) {
             branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
