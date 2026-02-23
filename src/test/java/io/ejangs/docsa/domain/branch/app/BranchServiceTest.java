@@ -61,7 +61,7 @@ class BranchServiceTest {
     private BranchCreateOrchestrator branchCreateOrchestrator;
 
     @Test
-    @DisplayName("사용자가 이미 fromCommit이 leaf인 브랜치에서 한 번 이어서 작업하기해서 save가 생김 -> 같은 브랜치 이름으로 다시 이어가기 요청을 또 보냄")
+    @DisplayName("leaf이면서 root이면서 save가 존재하는 상황에서 브랜치를 이미 있는 이름으로 생성 시 - BRANCH_NAME_DUPLICATED")
     void testAddSaveToExistingBranch() {
         // given
         Long documentId = 1L;
@@ -76,27 +76,23 @@ class BranchServiceTest {
 
         when(commit.getId()).thenReturn(commitId);
         when(commit.getBranch()).thenReturn(branch);
-        when(commit.getCommitMongoId()).thenReturn("mongo-1");
 
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
         when(branch.getLeafCommit()).thenReturn(commit);
+        when(branch.getRootCommit()).thenReturn(commit);
         when(branch.getName()).thenReturn("ignored");
         when(branch.getSave()).thenReturn(save);
-        when(branch.getId()).thenReturn(2L);
-        when(save.getId()).thenReturn(3L);
 
         when(commitQueryService.getById(commitId)).thenReturn(commit);
         doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+        doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
+                .when(branchQueryService).checkDuplicatedWithBranchName(documentId, "ignored");
 
-        // when
-        BranchCreateResponse response =
-                branchService.createBranchOrSave(documentId, request, userId);
-
-        // then
-        assertNotNull(response);
-        assertEquals(2L, response.branchId());
-        assertEquals(3L, response.saveId());
+        // when & then
+        CustomException ex = assertThrows(CustomException.class,
+                () -> branchService.createBranchOrSave(documentId, request, userId));
+        assertEquals(BranchErrorCode.BRANCH_NAME_DUPLICATED, ex.getErrorCode());
         verifyNoInteractions(branchCreateOrchestrator);
     }
 
