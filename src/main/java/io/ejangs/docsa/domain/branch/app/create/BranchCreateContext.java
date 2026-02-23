@@ -10,7 +10,8 @@ public record BranchCreateContext(
         Commit fromCommit,
         String branchName,
         String fromCommitMongoId,
-        boolean leafCommit
+        boolean leafCommit,
+        boolean createNewBranch
 ) {
 
 }

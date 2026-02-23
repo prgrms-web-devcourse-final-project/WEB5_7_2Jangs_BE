@@ -24,7 +24,7 @@ public class BranchCreateMySqlTxService {
     public BranchCreateResponse createBranchOrSave(BranchCreateContext context, String saveContentId) {
         Branch targetBranch = context.fromBranch();
 
-        if (!context.leafCommit()) {
+        if (context.createNewBranch()) {
             targetBranch = branchQueryService.createBranch(context.doc(), context.branchName(), context.fromCommit());
         }
 

@@ -65,6 +65,11 @@ public class BranchService {
             Long userId) {
 
         BranchCreateContext context = prepareBranchCreateContext(documentId, request, userId);
+
+        if (!context.createNewBranch() && context.fromBranch().getSave() != null) {
+            return BranchMapper.toBranchCreateResponse(context.fromBranch(), context.fromBranch().getSave());
+        }
+
         return branchCreateOrchestrator.createBranchOrSave(context);
     }
 
@@ -73,9 +78,6 @@ public class BranchService {
         docQueryService.checkByIdAndUserId(documentId, userId);
 
         Long fromCommitId = request.fromCommitId();
-        if (fromCommitId == null) {
-            throw new CustomException(CommitErrorCode.INVALID_FROM_COMMIT);
-        }
 
         Commit fromCommit = commitQueryService.getById(fromCommitId);
         Branch fromBranch = fromCommit.getBranch();
@@ -87,7 +89,9 @@ public class BranchService {
         boolean isLeaf = fromBranch.getLeafCommit() != null
                 && fromBranch.getLeafCommit().getId().equals(fromCommitId);
 
-        if (!isLeaf) {
+        boolean createNewBranch = !isLeaf || !fromBranch.getName().equals(request.name());
+
+        if (createNewBranch) {
             branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
         }
 
@@ -97,7 +101,8 @@ public class BranchService {
                 fromCommit,
                 request.name(),
                 fromCommit.getCommitMongoId(),
-                isLeaf
+                isLeaf,
+                createNewBranch
         );
     }
 
