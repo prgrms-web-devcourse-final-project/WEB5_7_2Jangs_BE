@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.block.app.BlockService;
+import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
@@ -57,6 +58,9 @@ class CommitServiceMockTest {
 
     @Mock
     private BranchService branchService;
+
+    @Mock
+    private BranchQueryService branchQueryService;
 
     @Mock
     private CommitCreateOrchestrator commitCreateOrchestrator;
@@ -116,7 +120,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 성공 - leafCommit 기반으로 오케스트레이터 호출")
     void createCommit_success_withLeafCommit() {
         when(docQueryService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("leaf-cbs-id");
         when(createdCommit.getId()).thenReturn(101L);
         when(commitCreateOrchestrator.create(createCommitRequest, "leaf-cbs-id", doc, branch))
@@ -125,7 +129,7 @@ class CommitServiceMockTest {
         var result = commitService.createCommit(docId, createCommitRequest, userDetails.getId());
 
         assertThat(result.id()).isEqualTo(101L);
-        verify(branchService).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
+        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
         verify(commitCreateOrchestrator).create(createCommitRequest, "leaf-cbs-id", doc, branch);
 
         verifyNoInteractions(cbsRepository, blockService, saveService, edgeService, commitRepository);
@@ -135,7 +139,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 성공 - leafCommit이 null이면 fromCommit을 base로 사용")
     void createCommit_success_useFromCommitWhenLeafCommitIsNull() {
         when(docQueryService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("from-cbs-id");
         when(createdCommit.getId()).thenReturn(101L);
         when(commitCreateOrchestrator.create(createCommitRequest, "from-cbs-id", doc, branch))
@@ -151,7 +155,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 성공 - 최초 커밋이면 baseCommitCbsMongoId는 null")
     void createCommit_success_initialCommit_baseIsNull() {
         when(docQueryService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn(null);
         when(createdCommit.getId()).thenReturn(101L);
         when(commitCreateOrchestrator.create(createCommitRequest, null, doc, branch))
@@ -167,13 +171,13 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 실패 - 브랜치 권한 검증 실패 시 오케스트레이터 미호출")
     void createCommit_fail_branchOwnershipCheck() {
         doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
-                .when(branchService).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
+                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
 
         assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
         verify(docQueryService, never()).getById(docId);
-        verify(branchService, never()).getById(branchId);
+        verify(branchQueryService, never()).getById(branchId);
         verifyNoInteractions(commitCreateOrchestrator);
     }
 
@@ -182,7 +186,7 @@ class CommitServiceMockTest {
     void createCommit_fail_whenBranchLookupFails() {
         when(docQueryService.getById(docId)).thenReturn(doc);
         doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
-                .when(branchService).getById(branchId);
+                .when(branchQueryService).getById(branchId);
 
         assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
@@ -194,7 +198,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 실패 - base commit 조회 중 repository 예외 전파")
     void createCommit_fail_whenBaseCommitLookupFails() {
         when(docQueryService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
         doThrow(new RuntimeException("repo fail"))
                 .when(commitQueryService).resolveBaseCommitCbsMongoId(branch);
 
@@ -209,7 +213,7 @@ class CommitServiceMockTest {
     @DisplayName("커밋 생성 실패 - 오케스트레이터 예외는 그대로 전파")
     void createCommit_fail_whenOrchestratorThrows() {
         when(docQueryService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("base-cbs-id");
         doThrow(new RuntimeException("orchestrator fail"))
                 .when(commitCreateOrchestrator).create(createCommitRequest, "base-cbs-id", doc, branch);
@@ -251,7 +255,7 @@ class CommitServiceMockTest {
                 .isInstanceOfSatisfying(CustomException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(CommitErrorCode.COMMIT_BAD_REQUEST));
 
-        verify(branchService, never()).checkBranchInDocOwnedByUser(docId, 100L, userDetails.getId());
+        verify(branchQueryService, never()).checkBranchInDocOwnedByUser(docId, 100L, userDetails.getId());
         verifyNoInteractions(mergeOrchestrator);
     }
 
@@ -280,10 +284,10 @@ class CommitServiceMockTest {
 
         // baseBranch 권한 체크는 통과
         org.mockito.Mockito.doNothing()
-                .when(branchService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
+                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
         // targetBranch 권한 체크에서 실패
         doThrow(new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN))
-                .when(branchService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
+                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
 
         MergeCommitRequest request = new MergeCommitRequest(
                 "merge",
@@ -296,8 +300,8 @@ class CommitServiceMockTest {
         assertThatThrownBy(() -> commitService.mergeCommit(docId, request, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(branchService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
-        verify(branchService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
+        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
+        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
         verifyNoInteractions(mergeOrchestrator);
     }
 }
