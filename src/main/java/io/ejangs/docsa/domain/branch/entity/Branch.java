@@ -42,7 +42,7 @@ public class Branch extends BaseEntity {
     @JoinColumn(name = "document_id")
     private Doc doc;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_commit_id")
     private Commit fromCommit;
 
