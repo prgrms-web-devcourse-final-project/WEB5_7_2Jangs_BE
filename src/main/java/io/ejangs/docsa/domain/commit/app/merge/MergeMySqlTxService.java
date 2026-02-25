@@ -30,7 +30,6 @@ public class MergeMySqlTxService {
     private final CommitQueryService commitQueryService;
     private final SaveService saveService;
     private final EdgeService edgeService;
-    private final BranchService branchService;
     private final BranchQueryService branchQueryService;
     private final ApplicationEventPublisher eventPublisher;
 
