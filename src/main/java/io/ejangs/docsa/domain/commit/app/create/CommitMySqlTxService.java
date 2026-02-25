@@ -9,7 +9,7 @@ import io.ejangs.docsa.domain.doc.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.EdgeMapper;
-import io.ejangs.docsa.domain.save.app.SaveService;
+import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommitMySqlTxService {
 
     private final CommitQueryService commitQueryService;
-    private final SaveService saveService;
+    private final SaveQueryService saveQueryService;
     private final EdgeService edgeService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -37,7 +37,7 @@ public class CommitMySqlTxService {
         branch.initializeRootCommitIfNull(newCommit);
 
         // 브랜치의 Save 삭제
-        String saveMongoId = saveService.deleteSaveIfExists(branch);
+        String saveMongoId = saveQueryService.deleteSaveIfExists(branch);
 
         Commit baseCommit = Optional.ofNullable(branch.getLeafCommit()).orElse(branch.getFromCommit());
         branch.updateLeafCommit(newCommit);

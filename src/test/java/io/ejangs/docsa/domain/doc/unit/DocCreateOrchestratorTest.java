@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateMySqlTxService;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.save.app.SaveService;
+import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
@@ -26,7 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class DocCreateOrchestratorTest {
 
     @Mock
-    private SaveService saveService;
+    private SaveQueryService saveQueryService;
 
     @Mock
     private DocCreateMySqlTxService docCreateMySqlTxService;
@@ -45,7 +45,7 @@ class DocCreateOrchestratorTest {
         ReflectionTestUtils.setField(saved, "id", "save-1");
         DocCreateResponse expected = new DocCreateResponse(10L, 20L);
 
-        when(saveService.createSaveContent()).thenReturn(saved);
+        when(saveQueryService.createSaveContent()).thenReturn(saved);
         when(docCreateMySqlTxService.createMySqlPart("doc", user, "save-1")).thenReturn(expected);
 
         DocCreateResponse result = orchestrator.create("doc", user);
@@ -61,7 +61,7 @@ class DocCreateOrchestratorTest {
         SaveContent saved = SaveContent.builder().build();
         ReflectionTestUtils.setField(saved, "id", "save-1");
 
-        when(saveService.createSaveContent()).thenReturn(saved);
+        when(saveQueryService.createSaveContent()).thenReturn(saved);
         when(docCreateMySqlTxService.createMySqlPart("doc", user, "save-1"))
                 .thenThrow(new RuntimeException("mysql fail"));
 

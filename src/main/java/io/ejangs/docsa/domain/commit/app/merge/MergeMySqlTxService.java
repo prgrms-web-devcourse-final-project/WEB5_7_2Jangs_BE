@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.commit.app.merge;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
-import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
@@ -11,7 +10,7 @@ import io.ejangs.docsa.domain.doc.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.doc.util.EdgeMapper;
-import io.ejangs.docsa.domain.save.app.SaveService;
+import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
@@ -28,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MergeMySqlTxService {
 
     private final CommitQueryService commitQueryService;
-    private final SaveService saveService;
+    private final SaveQueryService saveQueryService;
     private final EdgeService edgeService;
     private final BranchQueryService branchQueryService;
     private final ApplicationEventPublisher eventPublisher;
@@ -51,7 +50,7 @@ public class MergeMySqlTxService {
         edgeService.saveEdge(edge2);
 
         targetBranch.updateLeafCommit(savedCommit);
-        String saveMongoId = saveService.deleteSaveIfExists(targetBranch);
+        String saveMongoId = saveQueryService.deleteSaveIfExists(targetBranch);
         RenewUpdatedAtHelper.touch(targetBranch);
         branchQueryService.save(targetBranch);
 
