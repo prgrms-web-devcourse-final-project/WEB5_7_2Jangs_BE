@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.app;
+package io.ejangs.docsa.domain.doc.app.create;
 
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.save.app.SaveService;

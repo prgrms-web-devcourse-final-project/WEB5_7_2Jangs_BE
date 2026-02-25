@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.app;
+package io.ejangs.docsa.domain.doc.app.create;
 
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;

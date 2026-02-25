@@ -7,8 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.doc.app.DocCreateMySqlTxService;
-import io.ejangs.docsa.domain.doc.app.DocCreateOrchestrator;
+import io.ejangs.docsa.domain.doc.app.create.DocCreateMySqlTxService;
+import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.save.document.SaveContent;
