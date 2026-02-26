@@ -5,8 +5,10 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,11 @@ public class CommitQueryService {
         return commitRepository.findById(commitId)
                 .map(Commit::getCommitMongoId)
                 .filter(id -> !id.isBlank());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommitGraphDto> getCommitGraphList(Long docId) {
+        return commitRepository.getCommitGraphList(docId);
     }
 
     @Transactional(readOnly = true)

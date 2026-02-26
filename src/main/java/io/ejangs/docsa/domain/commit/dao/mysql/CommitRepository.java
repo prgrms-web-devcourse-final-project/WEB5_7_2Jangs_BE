@@ -11,13 +11,13 @@ import java.util.List;
 public interface CommitRepository extends JpaRepository<Commit, Long> {
 
     @Query("""
-                SELECT new io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto(
+                SELECT new io.ejangs.docsa.domain.doc.dto.graph.CommitGraphDto(
                     c.id, c.branch.id, c.title, c.description, c.createdAt
                 )
                 FROM Commit c
                 WHERE c.branch.doc.id = :docId
             """)
-    List<CommitGraphDto> findCommitsByDocId(@Param("docId") Long docId);
+    List<CommitGraphDto> getCommitGraphList(@Param("docId") Long docId);
 
 }
 

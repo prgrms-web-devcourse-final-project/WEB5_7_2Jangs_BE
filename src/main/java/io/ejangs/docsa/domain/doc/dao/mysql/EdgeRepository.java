@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 public interface EdgeRepository extends JpaRepository<Edge, Long> {
 
     @Query("""
-                SELECT new io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto(
+                SELECT new io.ejangs.docsa.domain.doc.dto.graph.EdgeDto(
                     e.prevCommit.id, e.nextCommit.id
                 )
                 FROM Edge e
