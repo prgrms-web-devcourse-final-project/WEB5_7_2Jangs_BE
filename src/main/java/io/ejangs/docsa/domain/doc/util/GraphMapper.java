@@ -2,9 +2,9 @@ package io.ejangs.docsa.domain.doc.util;
 
 import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
+import io.ejangs.docsa.domain.doc.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 
@@ -12,8 +12,8 @@ import java.util.List;
 
 public class GraphMapper {
 
-    public static GraphCommitDto toCommitDto(Commit commit) {
-        return new GraphCommitDto(
+    public static CommitGraphDto toCommitDto(Commit commit) {
+        return new CommitGraphDto(
                 commit.getId(),
                 commit.getBranch().getId(),
                 commit.getTitle(),
@@ -22,8 +22,8 @@ public class GraphMapper {
         );
     }
 
-    public static GraphEdgeDto toEdgeDto(Edge edge) {
-        return new GraphEdgeDto(
+    public static EdgeDto toEdgeDto(Edge edge) {
+        return new EdgeDto(
                 edge.getPrevCommit().getId(),
                 edge.getNextCommit().getId()
         );
@@ -42,8 +42,8 @@ public class GraphMapper {
     }
 
     public static GraphResponse toCommitGraphResponse(String title,
-            List<GraphCommitDto> commits,
-            List<GraphEdgeDto> edges,
+            List<CommitGraphDto> commits,
+            List<EdgeDto> edges,
             List<BranchGraphDto> branches
     ) {
         return new GraphResponse(title, commits, edges, branches);

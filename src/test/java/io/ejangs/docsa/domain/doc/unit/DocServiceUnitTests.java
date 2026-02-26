@@ -18,8 +18,8 @@ import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.CommitGraphDto;
+import io.ejangs.docsa.domain.doc.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
@@ -306,11 +306,11 @@ public class DocServiceUnitTests {
         List<BranchGraphDto> branches = List.of(
                 new BranchGraphDto(1L, "main", now, null, null, null, null)
         );
-        List<GraphCommitDto> commits = List.of(
-                new GraphCommitDto(100L, 1L, "Initial Commit", "desc", now)
+        List<CommitGraphDto> commits = List.of(
+                new CommitGraphDto(100L, 1L, "Initial Commit", "desc", now)
         );
-        List<GraphEdgeDto> edges = List.of(
-                new GraphEdgeDto(100L, 101L)
+        List<EdgeDto> edges = List.of(
+                new EdgeDto(100L, 101L)
         );
 
         when(branchQueryService.getBranchGraphList(docId)).thenReturn(branches);

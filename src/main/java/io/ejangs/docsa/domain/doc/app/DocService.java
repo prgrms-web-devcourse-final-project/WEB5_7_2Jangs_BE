@@ -7,8 +7,8 @@ import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.CommitGraphDto;
+import io.ejangs.docsa.domain.doc.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
@@ -104,8 +104,8 @@ public class DocService {
         if (branches.isEmpty()) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
         }
-        List<GraphCommitDto> commits = commitRepository.findCommitsByDocId(documentId);
-        List<GraphEdgeDto> edges = edgeRepository.findEdgesByDocId(documentId);
+        List<CommitGraphDto> commits = commitRepository.findCommitsByDocId(documentId);
+        List<EdgeDto> edges = edgeRepository.findEdgesByDocId(documentId);
 
         return GraphMapper.toCommitGraphResponse(docTitle, commits, edges, branches);
     }

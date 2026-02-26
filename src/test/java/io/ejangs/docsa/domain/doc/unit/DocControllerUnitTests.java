@@ -10,10 +10,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
+import io.ejangs.docsa.domain.doc.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
@@ -205,8 +205,8 @@ class DocControllerUnitTests {
         Long docId = 1L;
         Long userId = 1L;
 
-        GraphCommitDto commit = new GraphCommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
-        GraphEdgeDto edge = new GraphEdgeDto(11L, 12L);
+        CommitGraphDto commit = new CommitGraphDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
+        EdgeDto edge = new EdgeDto(11L, 12L);
         BranchGraphDto
                 branch = new BranchGraphDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
 

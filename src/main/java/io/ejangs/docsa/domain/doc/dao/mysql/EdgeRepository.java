@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.dao.mysql;
 
-import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
+import io.ejangs.docsa.domain.doc.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,7 +16,7 @@ public interface EdgeRepository extends JpaRepository<Edge, Long> {
                 FROM Edge e
                 WHERE e.doc.id = :docId
             """)
-    List<GraphEdgeDto> findEdgesByDocId(@Param("docId") Long docId);
+    List<EdgeDto> findEdgesByDocId(@Param("docId") Long docId);
 
     List<Edge> findAllByPrevCommitIdInOrNextCommitIdIn(List<Long> commitIds, List<Long> commitIds1);
 
