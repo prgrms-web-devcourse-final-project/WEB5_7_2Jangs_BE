@@ -5,7 +5,7 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.entity.Edge;
 
 import java.util.List;
@@ -41,11 +41,11 @@ public class GraphMapper {
         );
     }
 
-    public static CommitGraphResponse toCommitGraphResponse(String title,
+    public static GraphResponse toCommitGraphResponse(String title,
             List<GraphCommitDto> commits,
             List<GraphEdgeDto> edges,
             List<BranchGraphDto> branches
     ) {
-        return new CommitGraphResponse(title, commits, edges, branches);
+        return new GraphResponse(title, commits, edges, branches);
     }
 }

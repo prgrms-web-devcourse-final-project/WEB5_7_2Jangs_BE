@@ -6,7 +6,7 @@ import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 
 import java.util.List;
 
-public record CommitGraphResponse(
+public record GraphResponse(
         String title,
         List<GraphCommitDto> commits,
         List<GraphEdgeDto> edges,

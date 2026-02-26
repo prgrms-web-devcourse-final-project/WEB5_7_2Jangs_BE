@@ -2,7 +2,7 @@ package io.ejangs.docsa.domain.doc.api;
 
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
@@ -112,7 +112,7 @@ public class DocController {
 
     @GetDocGraphDocs
     @GetMapping("/{docId}/graph")
-    public ResponseEntity<CommitGraphResponse> getGraph(
+    public ResponseEntity<GraphResponse> getGraph(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
         return ResponseEntity.status(HttpStatus.OK)

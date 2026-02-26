@@ -17,7 +17,7 @@ import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
@@ -210,7 +210,7 @@ class DocControllerUnitTests {
         BranchGraphDto
                 branch = new BranchGraphDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
 
-        CommitGraphResponse response = new CommitGraphResponse(
+        GraphResponse response = new GraphResponse(
                 "문서 제목",
                 List.of(commit),
                 List.of(edge),

@@ -21,7 +21,7 @@ import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
@@ -317,7 +317,7 @@ public class DocServiceUnitTests {
         when(commitRepository.findCommitsByDocId(docId)).thenReturn(commits);
         when(edgeRepository.findEdgesByDocId(docId)).thenReturn(edges);
 
-        CommitGraphResponse response = docService.getGraph(userId, docId);
+        GraphResponse response = docService.getGraph(userId, docId);
 
         assertEquals(docTitle, response.title());
         assertEquals(branches, response.branches());

@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
-import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
@@ -11,7 +10,7 @@ import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
@@ -96,7 +95,7 @@ public class DocService {
 
     // 문서 조회시 그래프를 그리기 위한 응답 생성
     @Transactional(readOnly = true)
-    public CommitGraphResponse getGraph(Long userId, Long documentId) {
+    public GraphResponse getGraph(Long userId, Long documentId) {
 
         String docTitle = docQueryService.getByIdAndUserId(documentId, userId).getTitle();
 
