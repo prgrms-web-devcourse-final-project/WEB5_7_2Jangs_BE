@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.branch.dao.mysql;
 
-import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
+import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +11,7 @@ import java.util.List;
 public interface BranchRepository extends JpaRepository<Branch, Long> {
 
     @Query("""
-    SELECT new io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto(
+    SELECT new io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto(
         b.id,
         b.name,
         b.createdAt,

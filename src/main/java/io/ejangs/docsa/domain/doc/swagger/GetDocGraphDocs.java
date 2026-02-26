@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.swagger;
 
-import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
+import io.ejangs.docsa.domain.edge.dto.GraphResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

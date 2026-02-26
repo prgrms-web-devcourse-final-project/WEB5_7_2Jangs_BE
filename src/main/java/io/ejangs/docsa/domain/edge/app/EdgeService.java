@@ -1,9 +1,9 @@
-package io.ejangs.docsa.domain.doc.app;
+package io.ejangs.docsa.domain.edge.app;
 
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.edge.entity.Edge;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

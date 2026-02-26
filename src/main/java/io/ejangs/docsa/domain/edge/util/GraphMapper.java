@@ -1,12 +1,12 @@
-package io.ejangs.docsa.domain.doc.util;
+package io.ejangs.docsa.domain.edge.util;
 
-import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
+import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.doc.dto.graph.CommitGraphDto;
+import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dto.graph.EdgeDto;
-import io.ejangs.docsa.domain.doc.dto.response.GraphResponse;
-import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
+import io.ejangs.docsa.domain.edge.dto.GraphResponse;
+import io.ejangs.docsa.domain.edge.entity.Edge;
 
 import java.util.List;
 

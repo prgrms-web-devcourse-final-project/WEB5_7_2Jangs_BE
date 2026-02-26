@@ -1,8 +1,8 @@
-package io.ejangs.docsa.domain.doc.util;
+package io.ejangs.docsa.domain.edge.util;
 
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.edge.entity.Edge;
 
 public class EdgeMapper {
 

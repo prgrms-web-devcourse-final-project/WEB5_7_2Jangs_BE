@@ -24,7 +24,7 @@ import io.ejangs.docsa.domain.commit.util.TestCreateCommitRequestDto;
 import io.ejangs.docsa.domain.commit.util.TestDocIntegrationDto;
 import io.ejangs.docsa.domain.commit.util.TestInitDocIntegrationDto;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;

@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.dto.graph;
+package io.ejangs.docsa.domain.edge.dto.graph;
 
 import java.time.LocalDateTime;
 

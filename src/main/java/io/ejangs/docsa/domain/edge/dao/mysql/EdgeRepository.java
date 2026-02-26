@@ -1,7 +1,7 @@
-package io.ejangs.docsa.domain.doc.dao.mysql;
+package io.ejangs.docsa.domain.edge.dao.mysql;
 
-import io.ejangs.docsa.domain.doc.dto.graph.EdgeDto;
-import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
+import io.ejangs.docsa.domain.edge.entity.Edge;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 public interface EdgeRepository extends JpaRepository<Edge, Long> {
 
     @Query("""
-                SELECT new io.ejangs.docsa.domain.doc.dto.graph.EdgeDto(
+                SELECT new io.ejangs.docsa.domain.edge.dto.graph.EdgeDto(
                     e.prevCommit.id, e.nextCommit.id
                 )
                 FROM Edge e
