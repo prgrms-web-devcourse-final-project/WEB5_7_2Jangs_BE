@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocService;
@@ -75,6 +76,9 @@ public class DocServiceUnitTests {
 
     @Mock
     private CommitRepository commitRepository;
+
+    @Mock
+    private CommitQueryService commitQueryService;
 
     @Mock
     private EdgeRepository edgeRepository;
@@ -314,7 +318,7 @@ public class DocServiceUnitTests {
         );
 
         when(branchQueryService.getBranchGraphList(docId)).thenReturn(branches);
-        when(commitRepository.findCommitsByDocId(docId)).thenReturn(commits);
+        when(commitQueryService.getCommitGraphList(docId)).thenReturn(commits);
         when(edgeRepository.findEdgesByDocId(docId)).thenReturn(edges);
 
         GraphResponse response = docService.getGraph(userId, docId);
