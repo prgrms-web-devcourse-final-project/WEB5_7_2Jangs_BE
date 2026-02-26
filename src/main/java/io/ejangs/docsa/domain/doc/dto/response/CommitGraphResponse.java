@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.dto.response;
 
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 
@@ -10,5 +10,5 @@ public record CommitGraphResponse(
         String title,
         List<GraphCommitDto> commits,
         List<GraphEdgeDto> edges,
-        List<GraphBranchDto> branches
+        List<BranchGraphDto> branches
 ) {}

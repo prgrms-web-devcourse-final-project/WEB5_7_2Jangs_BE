@@ -1,12 +1,13 @@
 package io.ejangs.docsa.domain.doc.app;
 
+import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
@@ -41,11 +42,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DocService {
 
-    private final BranchRepository branchRepository;
+    private final DocQueryService docQueryService;
+    private final BranchQueryService branchQueryService;
     private final CommitRepository commitRepository;
     private final EdgeRepository edgeRepository;
 
-    private final DocQueryService docQueryService;
     private final DocCreateOrchestrator docCreateOrchestrator;
 
     private final DocListAssembler docListAssembler;
@@ -100,7 +101,7 @@ public class DocService {
         String docTitle = docQueryService.getByIdAndUserId(documentId, userId).getTitle();
 
         //  Branch, Commit, Edge 각각 별도 조회 (Projection 쿼리)
-        List<GraphBranchDto> branches = branchRepository.findBranchesByDocId(documentId);
+        List<BranchGraphDto> branches = branchQueryService.getBranchGraphList(documentId);
         if (branches.isEmpty()) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
         }

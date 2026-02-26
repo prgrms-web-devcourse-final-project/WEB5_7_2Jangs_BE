@@ -3,6 +3,7 @@ package io.ejangs.docsa.domain.branch.app;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
@@ -19,6 +20,10 @@ public class BranchQueryService {
 
     public Branch getById(Long id) {
         return branchRepository.findById(id).orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
+    }
+
+    public List<BranchGraphDto> getBranchGraphList(Long docId) {
+        return branchRepository.findBranchGraphDtoList(docId);
     }
 
     public Branch save(Branch branch) {

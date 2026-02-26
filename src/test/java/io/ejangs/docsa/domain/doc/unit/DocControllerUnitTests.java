@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
@@ -207,8 +207,8 @@ class DocControllerUnitTests {
 
         GraphCommitDto commit = new GraphCommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
         GraphEdgeDto edge = new GraphEdgeDto(11L, 12L);
-        GraphBranchDto
-                branch = new GraphBranchDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
+        BranchGraphDto
+                branch = new BranchGraphDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
 
         CommitGraphResponse response = new CommitGraphResponse(
                 "문서 제목",

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
@@ -16,7 +17,7 @@ import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
@@ -68,6 +69,9 @@ public class DocServiceUnitTests {
 
     @Mock
     private BranchRepository branchRepository;
+
+    @Mock
+    private BranchQueryService branchQueryService;
 
     @Mock
     private CommitRepository commitRepository;
@@ -299,8 +303,8 @@ public class DocServiceUnitTests {
 
         // Mock Branch, Commit, Edge 리스트
         LocalDateTime now = LocalDateTime.now();
-        List<GraphBranchDto> branches = List.of(
-                new GraphBranchDto(1L, "main", now, null, null, null, null)
+        List<BranchGraphDto> branches = List.of(
+                new BranchGraphDto(1L, "main", now, null, null, null, null)
         );
         List<GraphCommitDto> commits = List.of(
                 new GraphCommitDto(100L, 1L, "Initial Commit", "desc", now)
@@ -309,7 +313,7 @@ public class DocServiceUnitTests {
                 new GraphEdgeDto(100L, 101L)
         );
 
-        when(branchRepository.findBranchesByDocId(docId)).thenReturn(branches);
+        when(branchQueryService.getBranchGraphList(docId)).thenReturn(branches);
         when(commitRepository.findCommitsByDocId(docId)).thenReturn(commits);
         when(edgeRepository.findEdgesByDocId(docId)).thenReturn(edges);
 

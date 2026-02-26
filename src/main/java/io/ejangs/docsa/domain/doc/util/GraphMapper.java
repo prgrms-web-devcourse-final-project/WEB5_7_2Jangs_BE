@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.util;
 
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.doc.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
@@ -29,8 +29,8 @@ public class GraphMapper {
         );
     }
 
-    public static GraphBranchDto toBranchDto(Branch branch) {
-        return new GraphBranchDto(
+    public static BranchGraphDto toBranchDto(Branch branch) {
+        return new BranchGraphDto(
                 branch.getId(),
                 branch.getName(),
                 branch.getCreatedAt(),
@@ -44,7 +44,7 @@ public class GraphMapper {
     public static CommitGraphResponse toCommitGraphResponse(String title,
             List<GraphCommitDto> commits,
             List<GraphEdgeDto> edges,
-            List<GraphBranchDto> branches
+            List<BranchGraphDto> branches
     ) {
         return new CommitGraphResponse(title, commits, edges, branches);
     }
