@@ -11,6 +11,7 @@ import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,10 +19,12 @@ public class BranchQueryService {
 
     private final BranchRepository branchRepository;
 
+    @Transactional(readOnly = true)
     public Branch getById(Long id) {
         return branchRepository.findById(id).orElseThrow(() -> new CustomException(BranchErrorCode.BRANCH_NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
     public List<BranchGraphDto> getBranchGraphList(Long docId) {
         return branchRepository.findBranchGraphDtoList(docId);
     }
@@ -41,6 +44,7 @@ public class BranchQueryService {
         return branchRepository.save(branch);
     }
 
+    @Transactional(readOnly = true)
     public boolean existsSubBranchByFromCommitIds(List<Long> commitIds) {
         return branchRepository.existsByFromCommitIdIn(commitIds);
     }
