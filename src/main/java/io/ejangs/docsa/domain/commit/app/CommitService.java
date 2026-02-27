@@ -35,9 +35,10 @@ public class CommitService {
     private final DocQueryService docQueryService;
     private final BranchQueryService branchQueryService;
     private final CommitQueryService commitQueryService;
+    private final EdgeService edgeService;
+
     private final CommitCreateOrchestrator commitCreateOrchestrator;
     private final MergeOrchestrator mergeCommitOrchestrator;
-    private final EdgeService edgeService;
 
     private final CommitContentAssembler assembler;
     private final MongoIdsCollector mongoIdsCollector;

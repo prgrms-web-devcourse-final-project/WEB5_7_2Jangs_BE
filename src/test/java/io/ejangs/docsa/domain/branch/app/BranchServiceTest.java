@@ -10,6 +10,7 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -46,7 +47,7 @@ class BranchServiceTest {
     private DocQueryService docQueryService;
 
     @Mock
-    private EdgeRepository edgeRepository;
+    private EdgeService edgeService;
 
     @Mock
     private CommitBlockSequenceRepository commitBlockSequenceRepository;
@@ -261,8 +262,7 @@ class BranchServiceTest {
                 .checkBranchInDocOwnedByUser(documentId, branchId, userId);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(branchQueryService.existsSubBranchByFromCommitIds(any())).thenReturn(false);
-        when(edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(any(), any())).thenReturn(
-                List.of()); // 빈 리스트로 가정
+        doNothing().when(edgeService).deleteEdgesConnectedToCommits(any());
 
         when(commitBlockSequenceRepository.findById("seq1")).thenReturn(Optional.of(seq1));
         when(commitBlockSequenceRepository.findById("seq2")).thenReturn(Optional.of(seq2));

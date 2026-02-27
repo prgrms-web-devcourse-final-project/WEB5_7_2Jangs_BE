@@ -15,6 +15,7 @@ import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
+import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
@@ -82,6 +83,9 @@ public class DocServiceUnitTests {
 
     @Mock
     private EdgeRepository edgeRepository;
+
+    @Mock
+    private EdgeService edgeService;
 
     @Mock
     private MongoIdsCollector mongoIdsCollector;
@@ -319,7 +323,7 @@ public class DocServiceUnitTests {
 
         when(branchQueryService.getBranchGraphList(docId)).thenReturn(branches);
         when(commitQueryService.getCommitGraphList(docId)).thenReturn(commits);
-        when(edgeRepository.findEdgesByDocId(docId)).thenReturn(edges);
+        when(edgeService.getEdgeDtoByDocId(docId)).thenReturn(edges);
 
         GraphResponse response = docService.getGraph(userId, docId);
 

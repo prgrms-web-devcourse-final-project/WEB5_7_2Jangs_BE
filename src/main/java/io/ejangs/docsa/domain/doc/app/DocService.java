@@ -5,7 +5,7 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
-import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
@@ -44,7 +44,7 @@ public class DocService {
     private final DocQueryService docQueryService;
     private final BranchQueryService branchQueryService;
     private final CommitQueryService commitQueryService;
-    private final EdgeRepository edgeRepository;
+    private final EdgeService edgeService;
 
     private final DocCreateOrchestrator docCreateOrchestrator;
 
@@ -105,7 +105,7 @@ public class DocService {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
         }
         List<CommitGraphDto> commits = commitQueryService.getCommitGraphList(documentId);
-        List<EdgeDto> edges = edgeRepository.findEdgesByDocId(documentId);
+        List<EdgeDto> edges = edgeService.getEdgeDtoByDocId(documentId);
 
         return GraphMapper.toCommitGraphResponse(docTitle, commits, edges, branches);
     }
@@ -119,7 +119,7 @@ public class DocService {
         List<Branch> branches = doc.getBranches();
 
         MongoIdsDto docDeleteMongoIds = mongoIdsCollector.collectFrom(branches);
-        edgeRepository.deleteAll(edges);
+        edgeService.deleteAll(edges);
 
         user.removeDocument(doc);
 

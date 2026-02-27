@@ -3,6 +3,7 @@ package io.ejangs.docsa.domain.edge.app;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.edge.entity.Edge;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,21 @@ public class EdgeService {
 
     public Edge saveEdge(Edge edge) {
         return edgeRepository.save(edge);
+    }
+
+    public List<EdgeDto> getEdgeDtoByDocId(Long docId) {
+        return edgeRepository.findEdgesByDocId(docId);
+    }
+
+    public void deleteEdgesConnectedToCommits(List<Long> commitIds) {
+        List<Edge> deleteTarget = edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(
+                commitIds, commitIds);
+
+        deleteAll(deleteTarget);
+    }
+
+    public void deleteAll(List<Edge> edges) {
+        edgeRepository.deleteAll(edges);
     }
 
     public List<Commit> cutEdge(Doc doc, Long commitId) {

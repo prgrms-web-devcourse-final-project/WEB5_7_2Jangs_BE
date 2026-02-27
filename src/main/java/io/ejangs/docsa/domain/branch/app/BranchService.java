@@ -11,9 +11,8 @@ import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
-import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
@@ -39,7 +38,7 @@ public class BranchService {
     private final BranchQueryService branchQueryService;
     private final CommitQueryService commitQueryService;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
-    private final EdgeRepository edgeRepository;
+    private final EdgeService edgeService;
     private final ApplicationEventPublisher eventPublisher;
     private final BranchCreateOrchestrator branchCreateOrchestrator;
 
@@ -137,9 +136,7 @@ public class BranchService {
         }
 
         // 4. Edge 삭제
-        List<Edge> edgesToDelete =
-                edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(commitsIds, commitsIds);
-        edgeRepository.deleteAll(edgesToDelete);
+        edgeService.deleteEdgesConnectedToCommits(commitsIds);
 
         // 5. 브랜치에서 삭제 가능한 블록과 시퀀스, SaveContent 삭제 이벤트 발행
         MongoIdsDto deletableMongoIds = collectDeletableMongoDataForBranch(branch, branchCommits);
