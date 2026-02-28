@@ -1,13 +1,13 @@
-package io.ejangs.docsa.domain.doc.dto.graph;
+package io.ejangs.docsa.domain.edge.dto.graph;
 
 import java.time.LocalDateTime;
 
-public record GraphBranchDto(Long id, String name, LocalDateTime createdAt, Long fromCommitId,
+public record BranchGraphDto(Long id, String name, LocalDateTime createdAt, Long fromCommitId,
                              Long rootCommitId, Long leafCommitId, Long saveId
 
 ) {
 
-    public GraphBranchDto(Long id, String name, LocalDateTime createdAt, Long fromCommitId,
+    public BranchGraphDto(Long id, String name, LocalDateTime createdAt, Long fromCommitId,
             Long rootCommitId, Long leafCommitId, Long saveId) {
         this.id = id;
         this.name = name;

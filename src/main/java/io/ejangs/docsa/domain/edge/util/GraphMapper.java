@@ -1,19 +1,19 @@
-package io.ejangs.docsa.domain.doc.util;
+package io.ejangs.docsa.domain.edge.util;
 
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
+import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
+import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
-import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
+import io.ejangs.docsa.domain.edge.dto.GraphResponse;
+import io.ejangs.docsa.domain.edge.entity.Edge;
 
 import java.util.List;
 
 public class GraphMapper {
 
-    public static GraphCommitDto toCommitDto(Commit commit) {
-        return new GraphCommitDto(
+    public static CommitGraphDto toCommitDto(Commit commit) {
+        return new CommitGraphDto(
                 commit.getId(),
                 commit.getBranch().getId(),
                 commit.getTitle(),
@@ -22,15 +22,15 @@ public class GraphMapper {
         );
     }
 
-    public static GraphEdgeDto toEdgeDto(Edge edge) {
-        return new GraphEdgeDto(
+    public static EdgeDto toEdgeDto(Edge edge) {
+        return new EdgeDto(
                 edge.getPrevCommit().getId(),
                 edge.getNextCommit().getId()
         );
     }
 
-    public static GraphBranchDto toBranchDto(Branch branch) {
-        return new GraphBranchDto(
+    public static BranchGraphDto toBranchDto(Branch branch) {
+        return new BranchGraphDto(
                 branch.getId(),
                 branch.getName(),
                 branch.getCreatedAt(),
@@ -41,11 +41,11 @@ public class GraphMapper {
         );
     }
 
-    public static CommitGraphResponse toCommitGraphResponse(String title,
-            List<GraphCommitDto> commits,
-            List<GraphEdgeDto> edges,
-            List<GraphBranchDto> branches
+    public static GraphResponse toCommitGraphResponse(String title,
+            List<CommitGraphDto> commits,
+            List<EdgeDto> edges,
+            List<BranchGraphDto> branches
     ) {
-        return new CommitGraphResponse(title, commits, edges, branches);
+        return new GraphResponse(title, commits, edges, branches);
     }
 }

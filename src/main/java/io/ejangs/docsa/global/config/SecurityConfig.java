@@ -5,6 +5,7 @@ import io.ejangs.docsa.domain.user.security.CustomAuthenticationEntryPoint;
 import io.ejangs.docsa.domain.user.security.CustomUserDetailsService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,6 +29,7 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CorsProps corsProps;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -97,13 +99,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(
-                List.of(
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "https://docsa-4hh.pages.dev/",
-                        "https://docsa.o-r.kr/"
-                ));
+        configuration.setAllowedOrigins(corsProps.getAllowedOrigin());
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         );

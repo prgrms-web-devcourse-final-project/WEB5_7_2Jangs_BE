@@ -14,7 +14,7 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitIntegrationTestUtils;
 import io.ejangs.docsa.domain.commit.util.TestDocIntegrationDto;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -121,13 +121,16 @@ public class DeleteCommitIntegrationTest {
         assertEquals(targetBranch.getLeafCommit().getId(), commit22.getId());
 
         assertEquals(2, edgeRepository.findAllByCommitIdInPrevOrNext(commit30.getId()).size());
-        assertEquals(5, edgeRepository.findAll().size());
+        assertEquals(edgeRepository.count(), edgeRepository.findAll().size());
     }
 
     @Test
     @DisplayName("정상적인 삭제 테스트")
     void delete_Commit_Success() {
         // given
+        long beforeEdgeCount = edgeRepository.count();
+        long beforeCommitCount = commitRepository.count();
+        long beforeBranchCount = branchRepository.count();
 
         // when
         commitService.deleteCommit(testDoc.getId(), commit22.getId(), testUser.getId());
@@ -135,24 +138,27 @@ public class DeleteCommitIntegrationTest {
         // then
         assertEquals(baseBranch.getLeafCommit().getId(), commit30.getId());
         assertEquals(targetBranch.getLeafCommit().getId(), commit21.getId());
-        assertEquals(3, edgeRepository.count());
-        assertEquals(4, commitRepository.count());
-        assertEquals(2, branchRepository.count());
+        assertEquals(beforeEdgeCount - 2, edgeRepository.count());
+        assertEquals(beforeCommitCount - 1, commitRepository.count());
+        assertEquals(beforeBranchCount, branchRepository.count());
     }
 
     @Test
     @DisplayName("Merge된 기록 삭제 테스트")
     void delete_Merge_Commit_Success() {
         // given
+        long beforeEdgeCount = edgeRepository.count();
+        long beforeCommitCount = commitRepository.count();
+        long beforeBranchCount = branchRepository.count();
 
         // when
         commitService.deleteCommit(testDoc.getId(), commit30.getId(), testUser.getId());
 
         // then
         assertEquals(baseBranch.getLeafCommit().getId(), commit20.getId());
-        assertEquals(3, edgeRepository.count());
-        assertEquals(4, commitRepository.count());
-        assertEquals(2, branchRepository.count());
+        assertEquals(beforeEdgeCount - 2, edgeRepository.count());
+        assertEquals(beforeCommitCount - 1, commitRepository.count());
+        assertEquals(beforeBranchCount, branchRepository.count());
     }
 
     @Test

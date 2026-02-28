@@ -22,7 +22,6 @@ import io.ejangs.docsa.domain.save.util.SaveServiceUtil;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
@@ -130,7 +129,7 @@ class SaveServiceIntegrationTest {
 
             assertThatThrownBy(() -> saveService.updateSave(dto, request))
                     .isInstanceOf(CustomException.class)
-                    .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
+                    .hasMessageContaining(SaveErrorCode.FAIL_TO_SAVE.getMessage());
 
             em.clear();
 
@@ -200,4 +199,3 @@ class SaveServiceIntegrationTest {
                 .hasMessageContaining(SaveErrorCode.SAVE_NOT_OWNER.getMessage());
     }
 }
-

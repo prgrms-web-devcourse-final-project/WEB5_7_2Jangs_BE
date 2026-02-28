@@ -2,10 +2,10 @@ package io.ejangs.docsa.domain.doc.api;
 
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.edge.dto.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.swagger.CreateDocDocs;
 import io.ejangs.docsa.domain.doc.swagger.DeleteDocDocs;
@@ -54,7 +54,7 @@ public class DocController {
 
     @GetMapping("/sidebar")
     @GetDocSidebarListDocs
-    public ResponseEntity<Page<DocListSimpleResponse>> readListSidebar(
+    public ResponseEntity<Page<DocSimplePageResponse>> readListSidebar(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "updatedAt") String sort,
             @RequestParam(defaultValue = "desc") String order,
@@ -65,12 +65,12 @@ public class DocController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getSimpleList(userDetails.getId(), pageable));
+                .body(docService.getSimplePage(userDetails.getId(), pageable));
     }
 
     @GetMapping
     @GetDocListDocs
-    public ResponseEntity<Page<DocListResponse>> readList(
+    public ResponseEntity<Page<DocPageResponse>> readList(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "updatedAt") String sort,
             @RequestParam(defaultValue = "desc") String order,
@@ -81,12 +81,12 @@ public class DocController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getList(userDetails.getId(), pageable));
+                .body(docService.getPage(userDetails.getId(), pageable));
     }
 
     @SearchDocDocs
     @GetMapping("/search")
-    public ResponseEntity<Page<DocListResponse>> search(
+    public ResponseEntity<Page<DocPageResponse>> search(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "updatedAt") String sort,
@@ -112,7 +112,7 @@ public class DocController {
 
     @GetDocGraphDocs
     @GetMapping("/{docId}/graph")
-    public ResponseEntity<CommitGraphResponse> getGraph(
+    public ResponseEntity<GraphResponse> getGraph(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
         return ResponseEntity.status(HttpStatus.OK)

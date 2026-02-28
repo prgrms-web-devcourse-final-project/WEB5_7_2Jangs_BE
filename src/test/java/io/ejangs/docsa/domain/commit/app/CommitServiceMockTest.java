@@ -2,48 +2,42 @@ package io.ejangs.docsa.domain.commit.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.block.app.BlockService;
-import io.ejangs.docsa.domain.block.document.Block;
+import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
+import io.ejangs.docsa.domain.commit.app.merge.MergeOrchestrator;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
-import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
-import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
+import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
-import io.ejangs.docsa.domain.commit.util.CommitMapper;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
-import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.app.EdgeService;
+import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.entity.Edge;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
-import java.util.List;
-import java.util.Optional;
+import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -57,10 +51,22 @@ class CommitServiceMockTest {
     private CommitBlockSequenceRepository cbsRepository;
 
     @Mock
-    private DocService docService;
+    private DocQueryService docQueryService;
+
+    @Mock
+    private CommitQueryService commitQueryService;
 
     @Mock
     private BranchService branchService;
+
+    @Mock
+    private BranchQueryService branchQueryService;
+
+    @Mock
+    private CommitCreateOrchestrator commitCreateOrchestrator;
+
+    @Mock
+    private MergeOrchestrator mergeOrchestrator;
 
     @Mock
     private BlockService blockService;
@@ -70,6 +76,9 @@ class CommitServiceMockTest {
 
     @Mock
     private EdgeService edgeService;
+
+    @Mock
+    private MongoIdsCollector mongoIdsCollector;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -83,13 +92,7 @@ class CommitServiceMockTest {
     private User user;
     private Doc doc;
     private Branch branch;
-    private Commit baseCommit;
-    private List<Block> savedBlocks;
-    private List<Block> baseCommitBlocks;
-    private CommitBlockSequence savedCbs;
-    private Commit savedCommit;
-    private CreateCommitResponse expectedResponse;
-    private Edge edge;
+    private Commit createdCommit;
     private CustomUserDetails userDetails;
 
     @BeforeEach
@@ -97,263 +100,208 @@ class CommitServiceMockTest {
         docId = 1L;
         branchId = 1L;
 
-        // CreateCommitRequest 생성
         createCommitRequest = new CreateCommitRequest(
-                "Test commit message",
+                "Test commit",
                 "",
-                1L,
-                List.of(CommitMockTestUtils.createBlockRequest("block1"),
-                        CommitMockTestUtils.createBlockRequest("block2")),
-                List.of("block1", "block2")
+                branchId,
+                Collections.emptyList(),
+                Collections.emptyList()
         );
 
-        // User 생성
         user = CommitMockTestUtils.createUser();
         userDetails = CustomUserDetails.from(user);
-
-        // Doc 생성
         doc = CommitMockTestUtils.createDoc(user);
 
-        // Branch 생성
-        branch = CommitMockTestUtils.createBranch(doc, baseCommit);
-
-        // Base commit 생성
-        baseCommit = CommitMockTestUtils.createBaseCommit(branch);
-        baseCommit.setBranch(branch);
-
-        // Blocks 생성
-        savedBlocks = List.of(
-                CommitMockTestUtils.createBlock("block1"),
-                CommitMockTestUtils.createBlock("block2")
-        );
-
-        baseCommitBlocks = List.of(
-                CommitMockTestUtils.createBlock("baseBlock1")
-        );
-
-        // CommitBlockSequence 생성
-        savedCbs = CommitMockTestUtils.createCommitBlockSequence();
-
-        // Commit 생성
-        savedCommit = CommitMockTestUtils.createMockCommit(branch, 2L);
-
-        // Expected response 생성
-        expectedResponse = new CreateCommitResponse(1L);
-
-        // edge 생성
-        edge = CommitMockTestUtils.createEdge(doc, baseCommit, savedCommit);
-    }
-
-
-    @Test
-    @DisplayName("커밋 생성 성공 - 기본")
-    void createCommit_Success() {
-        // Given
-        when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
-        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
-        lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
-                Optional.of(CommitMockTestUtils.createCommitBlockSequence()));
-
-        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
-                CommitBlockSequenceMapper.class);
-                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
-
-            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
-            when(cbsRepository.save(savedCbs)).thenReturn(savedCbs);
-            when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
-                    savedCommit);
-            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
-            when(CommitMapper.toCreateCommitResponse(savedCommit)).thenReturn(expectedResponse);
-
-            // When
-            CreateCommitResponse result = commitService.createCommit(docId,
-                    createCommitRequest, userDetails.getId());
-
-            // Then
-            assertThat(result).isEqualTo(expectedResponse);
-
-            verify(docService).getById(docId);
-            verify(branchService).getById(branchId);
-            verify(blockService).saveBlocks(createCommitRequest.blocks());
-            verify(cbsRepository).save(savedCbs);
-            verify(commitRepository).save(savedCommit);
-        }
+        branch = org.mockito.Mockito.mock(Branch.class);
+        createdCommit = org.mockito.Mockito.mock(Commit.class);
     }
 
     @Test
-    @DisplayName("커밋 생성 성공 - 기존 Save 삭제")
-    void createCommit_Success_DeleteExistingSave() {
-        // Given
-        when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
-        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
-        lenient().when(cbsRepository.findById(baseCommit.getCommitMongoId())).thenReturn(
-                Optional.of(CommitMockTestUtils.createCommitBlockSequence()));
+    @DisplayName("커밋 생성 성공 - leafCommit 기반으로 오케스트레이터 호출")
+    void createCommit_success_withLeafCommit() {
+        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("leaf-cbs-id");
+        when(createdCommit.getId()).thenReturn(101L);
+        when(commitCreateOrchestrator.create(createCommitRequest, "leaf-cbs-id", doc, branch))
+                .thenReturn(createdCommit);
 
-        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
-                CommitBlockSequenceMapper.class);
-                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
+        var result = commitService.createCommit(docId, createCommitRequest, userDetails.getId());
 
-            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
-            when(cbsRepository.save(savedCbs)).thenReturn(savedCbs);
-            when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
-                    savedCommit);
-            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
-            when(CommitMapper.toCreateCommitResponse(savedCommit)).thenReturn(expectedResponse);
+        assertThat(result.id()).isEqualTo(101L);
+        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
+        verify(commitCreateOrchestrator).create(createCommitRequest, "leaf-cbs-id", doc, branch);
 
-            // When
-            CreateCommitResponse result = commitService.createCommit(docId,
-                    createCommitRequest, userDetails.getId());
-
-            // Then
-            assertThat(result).isEqualTo(expectedResponse);
-            verify(saveService).deleteSaveIfExists(branch);
-        }
+        verifyNoInteractions(cbsRepository, blockService, saveService, edgeService, commitRepository);
     }
 
     @Test
-    @DisplayName("커밋 생성 성공 - leafCommit이 null인 경우 fromCommit 사용")
-    void createCommit_Success_UseFromCommitWhenLeafCommitIsNull() {
-        // Given
-        Branch branchWithoutLeafCommit = CommitMockTestUtils.createBranch(doc, baseCommit);
-        branchWithoutLeafCommit.updateLeafCommit(null); // leafCommit을 null로 설정
+    @DisplayName("커밋 생성 성공 - leafCommit이 null이면 fromCommit을 base로 사용")
+    void createCommit_success_useFromCommitWhenLeafCommitIsNull() {
+        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("from-cbs-id");
+        when(createdCommit.getId()).thenReturn(101L);
+        when(commitCreateOrchestrator.create(createCommitRequest, "from-cbs-id", doc, branch))
+                .thenReturn(createdCommit);
 
-        when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branchWithoutLeafCommit);
-        when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
-        when(cbsRepository.findById(
-                branchWithoutLeafCommit.getFromCommit().getCommitMongoId())).thenReturn(
-                Optional.of(CommitMockTestUtils.createCommitBlockSequence()));
+        var result = commitService.createCommit(docId, createCommitRequest, userDetails.getId());
 
-        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
-                CommitBlockSequenceMapper.class);
-                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
-
-            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
-            when(cbsRepository.save(savedCbs)).thenReturn(savedCbs);
-            when(CommitMapper.toEntity(branchWithoutLeafCommit, createCommitRequest)).thenReturn(
-                    savedCommit);
-            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
-            when(CommitMapper.toCreateCommitResponse(savedCommit)).thenReturn(expectedResponse);
-
-            // When
-            CreateCommitResponse result = commitService.createCommit(docId,
-                    createCommitRequest, userDetails.getId());
-
-            // Then
-            assertThat(result).isEqualTo(expectedResponse);
-            verify(cbsRepository).findById(
-                    branchWithoutLeafCommit.getFromCommit().getCommitMongoId());
-        }
+        assertThat(result.id()).isEqualTo(101L);
+        verify(commitCreateOrchestrator).create(createCommitRequest, "from-cbs-id", doc, branch);
     }
 
     @Test
-    @DisplayName("커밋 생성 실패 - 문서 검증 실패")
-    void createCommit_Fail_DocNotFound() {
-        // Given
+    @DisplayName("커밋 생성 성공 - 최초 커밋이면 baseCommitCbsMongoId는 null")
+    void createCommit_success_initialCommit_baseIsNull() {
+        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn(null);
+        when(createdCommit.getId()).thenReturn(101L);
+        when(commitCreateOrchestrator.create(createCommitRequest, null, doc, branch))
+                .thenReturn(createdCommit);
+
+        var result = commitService.createCommit(docId, createCommitRequest, userDetails.getId());
+
+        assertThat(result.id()).isEqualTo(101L);
+        verify(commitCreateOrchestrator).create(createCommitRequest, null, doc, branch);
+    }
+
+    @Test
+    @DisplayName("커밋 생성 실패 - 브랜치 권한 검증 실패 시 오케스트레이터 미호출")
+    void createCommit_fail_branchOwnershipCheck() {
         doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
-                .when(docService).getById(docId);
+                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
 
-        // When & Then
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
-                userDetails.getId()))
+        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docService).getById(docId);
-        verify(branchService, never()).getById(any());
-        verify(blockService, never()).saveBlocks(any());
+        verify(docQueryService, never()).getById(docId);
+        verify(branchQueryService, never()).getById(branchId);
+        verifyNoInteractions(commitCreateOrchestrator);
     }
 
     @Test
-    @DisplayName("커밋 생성 실패 - 블록 저장 실패시")
-    void createCommit_Fail_BlockSaveFails_ShouldRollback() {
-        // Given
-        when(docService.getById(docId)).thenReturn(doc);
-        when(branchService.getById(branchId)).thenReturn(branch);
-        when(blockService.saveBlocks(any())).thenThrow(new RuntimeException("Block save failed"));
+    @DisplayName("커밋 생성 실패 - 브랜치 조회 실패 시 오케스트레이터 미호출")
+    void createCommit_fail_whenBranchLookupFails() {
+        when(docQueryService.getById(docId)).thenReturn(doc);
+        doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
+                .when(branchQueryService).getById(branchId);
 
-        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
-                CommitBlockSequenceMapper.class);
-                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
+        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
+                .isInstanceOf(CustomException.class);
 
-            when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
-                    savedCommit);
-            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
-
-            // When & Then
-            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
-                    userDetails.getId()))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessage(DatabaseErrorCode.DATABASE_ERROR.getMessage());
-
-            verify(docService).getById(docId);
-            verify(branchService).getById(branchId);
-            verify(blockService).saveBlocks(createCommitRequest.blocks());
-            verify(cbsRepository, never()).save(any());
-        }
+        verifyNoInteractions(commitRepository, commitCreateOrchestrator);
     }
 
     @Test
-    @DisplayName("커밋 생성 실패 - JPA 저장 실패시 MongoDB 호출 안함")
-    void createCommit_Fail_JpaSaveFails_ShouldRollbackMongoDB() {
-        // Given
-        when(docService.getById(docId)).thenReturn(doc);
-        lenient().when(branchService.getById(branchId)).thenReturn(branch);
-        lenient().when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
+    @DisplayName("커밋 생성 실패 - base commit 조회 중 repository 예외 전파")
+    void createCommit_fail_whenBaseCommitLookupFails() {
+        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        doThrow(new RuntimeException("repo fail"))
+                .when(commitQueryService).resolveBaseCommitCbsMongoId(branch);
 
-        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
-                CommitBlockSequenceMapper.class);
-                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
+        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("repo fail");
 
-            when(CommitBlockSequenceMapper.toEntity(anyList())).thenReturn(savedCbs);
-            when(CommitMapper.toEntity(branch, createCommitRequest)).thenReturn(
-                    savedCommit);
-            when(commitRepository.save(savedCommit)).thenThrow(
-                    new RuntimeException("[Test message] Block save failed"));
-
-            // When & Then
-            assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest,
-                    userDetails.getId()))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessage("[Test message] Block save failed");
-
-            // MongoDB에 반영 안됨
-            verify(cbsRepository, never()).save(savedCbs);
-        }
+        verifyNoInteractions(commitCreateOrchestrator);
     }
 
     @Test
-    @DisplayName("커밋 생성 실패 - 잘못된 블록 순서")
-    void createCommit_Fail_InvalidBlockOrder() {
-        // Given
-        CreateCommitRequest invalidRequest = new CreateCommitRequest(
-                "Test commit message",
-                "",
-                1L,
-                List.of(CommitMockTestUtils.createBlockRequest("block1")),
-                List.of("block1", "invalidBlock") // 존재하지 않는 블록
+    @DisplayName("커밋 생성 실패 - 오케스트레이터 예외는 그대로 전파")
+    void createCommit_fail_whenOrchestratorThrows() {
+        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("base-cbs-id");
+        doThrow(new RuntimeException("orchestrator fail"))
+                .when(commitCreateOrchestrator).create(createCommitRequest, "base-cbs-id", doc, branch);
+
+        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("orchestrator fail");
+    }
+
+    @Test
+    @DisplayName("merge 검증 실패 - 같은 브랜치 요청이면 COMMIT_BAD_REQUEST")
+    void mergeCommit_fail_whenBaseAndTargetAreSameBranch() {
+        Long baseCommitId = 11L;
+        Long targetCommitId = 22L;
+
+        Branch sameBranch = org.mockito.Mockito.mock(Branch.class);
+        Commit baseCommit = org.mockito.Mockito.mock(Commit.class);
+        Commit targetCommit = org.mockito.Mockito.mock(Commit.class);
+
+        when(baseCommit.getId()).thenReturn(baseCommitId);
+        when(targetCommit.getId()).thenReturn(targetCommitId);
+        when(baseCommit.getBranch()).thenReturn(sameBranch);
+        when(targetCommit.getBranch()).thenReturn(sameBranch);
+        when(sameBranch.getId()).thenReturn(100L);
+        when(sameBranch.getLeafCommit()).thenReturn(baseCommit, targetCommit);
+
+        when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
+        when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
+
+        MergeCommitRequest request = new MergeCommitRequest(
+                "merge",
+                "same branch",
+                baseCommitId,
+                targetCommitId,
+                Collections.emptyList()
         );
-        try (MockedStatic<CommitBlockSequenceMapper> cbsMapperMock = mockStatic(
-                CommitBlockSequenceMapper.class);
-                MockedStatic<CommitMapper> commitMapperMock = mockStatic(CommitMapper.class)) {
 
-            when(docService.getById(docId)).thenReturn(doc);
-            when(branchService.getById(branchId)).thenReturn(branch);
-            when(blockService.saveBlocks(any())).thenReturn(savedBlocks);
-            when(CommitMapper.toEntity(branch, invalidRequest)).thenReturn(
-                    savedCommit);
-            when(commitRepository.save(savedCommit)).thenReturn(savedCommit);
+        assertThatThrownBy(() -> commitService.mergeCommit(docId, request, userDetails.getId()))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(CommitErrorCode.COMMIT_BAD_REQUEST));
 
-            // When & Then
-            assertThatThrownBy(() -> commitService.createCommit(docId, invalidRequest,
-                    userDetails.getId()))
-                    .isInstanceOf(CustomException.class)
-                    .hasMessageContaining(
-                            BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());
+        verify(branchQueryService, never()).checkBranchInDocOwnedByUser(docId, 100L, userDetails.getId());
+        verifyNoInteractions(mergeOrchestrator);
+    }
 
-            // MongoDB에 반영 안됨
-            verify(cbsRepository, never()).save(savedCbs);
-        }
+    @Test
+    @DisplayName("merge 권한 검증 실패 - base/target 중 하나라도 권한이 없으면 예외")
+    void mergeCommit_fail_whenAnyBranchOwnershipCheckFails() {
+        Long baseCommitId = 31L;
+        Long targetCommitId = 32L;
+
+        Branch baseBranch = org.mockito.Mockito.mock(Branch.class);
+        Branch targetBranch = org.mockito.Mockito.mock(Branch.class);
+        Commit baseCommit = org.mockito.Mockito.mock(Commit.class);
+        Commit targetCommit = org.mockito.Mockito.mock(Commit.class);
+
+        when(baseCommit.getId()).thenReturn(baseCommitId);
+        when(targetCommit.getId()).thenReturn(targetCommitId);
+        when(baseCommit.getBranch()).thenReturn(baseBranch);
+        when(targetCommit.getBranch()).thenReturn(targetBranch);
+        when(baseBranch.getId()).thenReturn(201L);
+        when(targetBranch.getId()).thenReturn(202L);
+        when(baseBranch.getLeafCommit()).thenReturn(baseCommit);
+        when(targetBranch.getLeafCommit()).thenReturn(targetCommit);
+
+        when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
+        when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
+
+        // baseBranch 권한 체크는 통과
+        org.mockito.Mockito.doNothing()
+                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
+        // targetBranch 권한 체크에서 실패
+        doThrow(new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN))
+                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
+
+        MergeCommitRequest request = new MergeCommitRequest(
+                "merge",
+                "ownership fail",
+                baseCommitId,
+                targetCommitId,
+                Collections.emptyList()
+        );
+
+        assertThatThrownBy(() -> commitService.mergeCommit(docId, request, userDetails.getId()))
+                .isInstanceOf(CustomException.class);
+
+        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
+        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
+        verifyNoInteractions(mergeOrchestrator);
     }
 }

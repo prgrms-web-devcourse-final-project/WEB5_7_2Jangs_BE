@@ -1,28 +1,23 @@
 package io.ejangs.docsa.domain.branch.app;
 
-import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
+import io.ejangs.docsa.domain.branch.app.create.BranchCreateOrchestrator;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
-import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dao.mysql.EdgeRepository;
+import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.edge.app.EdgeService;
+import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
-import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
-import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +29,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,25 +41,13 @@ class BranchServiceTest {
     private BranchService branchService;
 
     @Mock
-    private CommitRepository commitRepository;
+    private CommitQueryService commitQueryService;
 
     @Mock
-    private BranchRepository branchRepository;
+    private DocQueryService docQueryService;
 
     @Mock
-    private DocRepository docRepository;
-
-    @Mock
-    private SaveRepository saveRepository;
-
-    @Mock
-    private SaveContentRepository saveContentRepository;
-
-    @Mock
-    private CommitContentAssembler commitContentAssembler;
-
-    @Mock
-    private EdgeRepository edgeRepository;
+    private EdgeService edgeService;
 
     @Mock
     private CommitBlockSequenceRepository commitBlockSequenceRepository;
@@ -73,31 +55,88 @@ class BranchServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @Test
-    @DisplayName("fromCommitId가 null이면 예외 발생")
-    void testThrowWhenFromCommitIdIsNull() {
-        // given
-        Long docId = 1L;
-        Long userId = 1L;
-        BranchCreateRequest request = new BranchCreateRequest("test-branch", null);
+    @Mock
+    private BranchQueryService branchQueryService;
 
-        // 문서가 존재하는 것으로 가정해야 INVALID_FROM_COMMIT 예외를 검증 가능
-        when(docRepository.existsByIdAndUserId(docId, userId)).thenReturn(true);
-
-        // when & then
-        CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranchOrSave(docId, request, userId));
-        assertEquals(CommitErrorCode.INVALID_FROM_COMMIT, ex.getErrorCode());
-    }
+    @Mock
+    private BranchCreateOrchestrator branchCreateOrchestrator;
 
     @Test
-    @DisplayName("leaf 커밋이면 기존 브랜치에 저장 추가")
+    @DisplayName("leaf이면서 root이면서 save가 존재하는 상황에서 브랜치를 이미 있는 이름으로 생성 시 - BRANCH_NAME_DUPLICATED")
     void testAddSaveToExistingBranch() {
         // given
         Long documentId = 1L;
+        Long userId = 1L;
         Long commitId = 10L;
-        User mockUser = mock(User.class);
         BranchCreateRequest request = new BranchCreateRequest("ignored", commitId);
+
+        Doc doc = mock(Doc.class);
+        Branch branch = mock(Branch.class);
+        Commit commit = mock(Commit.class);
+        Save save = mock(Save.class);
+
+        when(commit.getId()).thenReturn(commitId);
+        when(commit.getBranch()).thenReturn(branch);
+
+        when(branch.getDoc()).thenReturn(doc);
+        when(doc.getId()).thenReturn(documentId);
+        when(branch.getLeafCommit()).thenReturn(commit);
+        when(branch.getRootCommit()).thenReturn(commit);
+        when(branch.getName()).thenReturn("ignored");
+        when(branch.getSave()).thenReturn(save);
+
+        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+        doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
+                .when(branchQueryService).checkDuplicatedWithBranchName(documentId, "ignored");
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class,
+                () -> branchService.createBranchOrSave(documentId, request, userId));
+        assertEquals(BranchErrorCode.BRANCH_NAME_DUPLICATED, ex.getErrorCode());
+        verifyNoInteractions(branchCreateOrchestrator);
+    }
+
+    @Test
+    @DisplayName("이어가기 - leaf + 다른 브랜치명인데 이름 중복이면 BRANCH_NAME_DUPLICATED")
+    void continueWork_fail_whenLeafAndDifferentNameButDuplicated() {
+        // given
+        Long documentId = 1L;
+        Long userId = 1L;
+        Long commitId = 10L;
+        BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
+
+        Doc doc = mock(Doc.class);
+        Branch branch = mock(Branch.class);
+        Commit commit = mock(Commit.class);
+
+        when(commit.getId()).thenReturn(commitId);
+        when(commit.getBranch()).thenReturn(branch);
+        when(branch.getDoc()).thenReturn(doc);
+        when(doc.getId()).thenReturn(documentId);
+        when(branch.getLeafCommit()).thenReturn(commit);
+        when(branch.getName()).thenReturn("main");
+
+        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+        doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
+                .when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class,
+                () -> branchService.createBranchOrSave(documentId, request, userId));
+        assertEquals(BranchErrorCode.BRANCH_NAME_DUPLICATED, ex.getErrorCode());
+        verifyNoInteractions(branchCreateOrchestrator);
+    }
+
+    @Test
+    @DisplayName("이어가기 - fromBranch에 save가 있어도 새 브랜치 생성 경로는 정상 동작")
+    void continueWork_success_whenFromBranchHasSaveAndCreateNewBranch() {
+        // given
+        Long documentId = 1L;
+        Long userId = 1L;
+        Long commitId = 10L;
+        BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
 
         Doc doc = mock(Doc.class);
         Branch branch = mock(Branch.class);
@@ -106,33 +145,25 @@ class BranchServiceTest {
         when(commit.getId()).thenReturn(commitId);
         when(commit.getBranch()).thenReturn(branch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
-
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
         when(branch.getLeafCommit()).thenReturn(commit);
+        when(branch.getName()).thenReturn("main");
 
-        when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
-
-        when(docRepository.existsByIdAndUserId(documentId, mockUser.getId())).thenReturn(true);
-
-        Save save = Save.builder().branch(branch).build();
-        when(saveRepository.save(any())).thenReturn(save);
-        when(commitContentAssembler.assemble("mongo-1")).thenReturn(
-                List.of(Map.of("block", "data")));
-
-        SaveContent saveContent =
-                SaveContent.builder().content(List.of(Map.of("key", "value"))).build();
-        when(saveContentRepository.save(any())).thenReturn(saveContent);
+        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+        doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+        when(branchCreateOrchestrator.createBranchOrSave(any()))
+                .thenReturn(new BranchCreateResponse(101L, 201L));
 
         // when
-        BranchCreateResponse response =
-                branchService.createBranchOrSave(documentId, request, mockUser.getId());
+        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, userId);
 
         // then
         assertNotNull(response);
-        verify(saveRepository).save(any());
-        verify(saveContentRepository).save(any());
-        verify(commitContentAssembler).assemble("mongo-1");
+        assertEquals(101L, response.branchId());
+        assertEquals(201L, response.saveId());
+        verify(branchCreateOrchestrator).createBranchOrSave(any());
     }
 
     @Test
@@ -140,6 +171,7 @@ class BranchServiceTest {
     void testCreateNewBranchAndSave() {
         // given
         Long documentId = 1L;
+        Long userId = 1L;
         Long commitId = 10L;
         User mockUser = mock(User.class);
         BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
@@ -152,29 +184,22 @@ class BranchServiceTest {
 
         when(commit.getBranch()).thenReturn(fromBranch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
-
-        when(commitRepository.findById(commitId)).thenReturn(Optional.of(commit));
-        when(branchRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-
-        when(docRepository.existsByIdAndUserId(documentId, mockUser.getId())).thenReturn(true);
-
-        Save save = Save.builder().branch(fromBranch).build();
-        when(saveRepository.save(any())).thenReturn(save);
-        when(commitContentAssembler.assemble("mongo-1")).thenReturn(
-                List.of(Map.of("block", "data")));
-
-        SaveContent saveContent =
-                SaveContent.builder().content(List.of(Map.of("block", "data"))).build();
-        when(saveContentRepository.save(any())).thenReturn(saveContent);
+        fromBranch.updateLeafCommit(commit);
+        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+        doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+        when(branchCreateOrchestrator.createBranchOrSave(any()))
+                .thenReturn(new BranchCreateResponse(100L, 200L));
 
         // when
         BranchCreateResponse response =
-                branchService.createBranchOrSave(documentId, request, mockUser.getId());
+                branchService.createBranchOrSave(documentId, request, userId);
 
         // then
         assertNotNull(response);
-        verify(branchRepository).save(any());
-        verify(saveRepository).save(any());
+        assertEquals(100L, response.branchId());
+        assertEquals(200L, response.saveId());
+        verify(branchCreateOrchestrator).createBranchOrSave(any());
     }
 
     @Test
@@ -188,9 +213,8 @@ class BranchServiceTest {
 
         Branch branch = Branch.builder().name("기존이름").doc(mock(Doc.class)).fromCommit(commit).build();
 
-        when(branchRepository.existsByIdAndDocIdAndDocUserId(branchId, docId, userId)).thenReturn(
-                true);
-        when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
+        doNothing().when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userId);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
 
         BranchRenameResponse response =
                 branchService.renameBranch(docId, branchId, newName, userId);
@@ -201,8 +225,9 @@ class BranchServiceTest {
     @Test
     @DisplayName("브랜치가 문서에 없거나 유저 소유가 아니면 예외 발생")
     void renameBranch_branchOwnershipCheckFailed() {
-        when(branchRepository.existsByIdAndDocIdAndDocUserId(anyLong(), anyLong(),
-                anyLong())).thenReturn(false);
+        doThrow(new CustomException(BranchErrorCode.BRANCH_NOT_FOUND))
+                .when(branchQueryService).checkBranchInDocOwnedByUser(anyLong(), anyLong(),
+                        anyLong());
 
         CustomException e = assertThrows(CustomException.class,
                 () -> branchService.renameBranch(1L, 2L, "new", 3L));
@@ -233,12 +258,11 @@ class BranchServiceTest {
         CommitBlockSequence seq2 =
                 CommitBlockSequence.builder().blockOrders(List.of("block3")).build();
 
-        when(branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId,
-                userId)).thenReturn(true);
-        when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
-        when(branchRepository.existsByFromCommitIdIn(any())).thenReturn(false);
-        when(edgeRepository.findAllByPrevCommitIdInOrNextCommitIdIn(any(), any())).thenReturn(
-                List.of()); // 빈 리스트로 가정
+        doNothing().when(branchQueryService)
+                .checkBranchInDocOwnedByUser(documentId, branchId, userId);
+        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        when(branchQueryService.existsSubBranchByFromCommitIds(any())).thenReturn(false);
+        doNothing().when(edgeService).deleteEdgesConnectedToCommits(any());
 
         when(commitBlockSequenceRepository.findById("seq1")).thenReturn(Optional.of(seq1));
         when(commitBlockSequenceRepository.findById("seq2")).thenReturn(Optional.of(seq2));
@@ -247,7 +271,7 @@ class BranchServiceTest {
         branchService.deleteBranch(documentId, branchId, userId);
 
         // then - 브랜치 실제 삭제
-        verify(branchRepository).delete(branch);
+        verify(branchQueryService).delete(branch);
 
         // 이벤트 발행 검증
         ArgumentCaptor<MongoIdsDto> captor = ArgumentCaptor.forClass(MongoIdsDto.class);
@@ -268,9 +292,8 @@ class BranchServiceTest {
         Long userId = 3L;
 
         Branch mainBranch = Branch.builder().name("main").doc(mock(Doc.class)).build();
-        when(branchRepository.existsByIdAndDocIdAndDocUserId(branchId, docId, userId)).thenReturn(
-                true);
-        when(branchRepository.findById(branchId)).thenReturn(Optional.of(mainBranch));
+        doNothing().when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userId);
+        when(branchQueryService.getById(branchId)).thenReturn(mainBranch);
 
         CustomException ex = assertThrows(CustomException.class,
                 () -> branchService.deleteBranch(docId, branchId, userId));

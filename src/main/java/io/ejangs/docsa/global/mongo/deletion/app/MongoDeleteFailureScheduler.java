@@ -17,12 +17,14 @@ public class MongoDeleteFailureScheduler {
 
     private final MongoDeleteFailureRepository mongoDeleteFailureRepository;
     private final MongoDeleteRetryService mongoDeleteRetryService;
-
+    //TODO
+    // 스케줄러 재시도 실패 시 동일 MongoIdsDto가 중복 저장되는 문제 개선 (중복 방지 키 또는 상태 업데이트 방식으로 전환)
+	// 스케줄러의 트랜잭션 매니저 분리 (RDB는 JPA, Mongo는 mongoTransactionManager로 역할 명확화)
     @Scheduled(fixedDelay = 1000 * 60 * 60 * 24 * 7)
     @Transactional(transactionManager = "mongoTransactionManager")
     public void run() {
         List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAllByResolvedIsFalse();
-        log.info("스케쥴러 작동 : {}", failures.size());
+        log.info("[스케쥴러] Failures size : {}", failures.size());
         for (MongoDeleteFailure failure : failures) {
             try {
                 MongoIdsDto dto = new MongoIdsDto(

@@ -2,7 +2,7 @@ package io.ejangs.docsa.domain.doc.integration;
 
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
-import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
@@ -43,7 +43,7 @@ public class DocGraphIntegrationTest {
     private BlockRepository blockRepository;
 
     @InjectMocks
-    private DocService docService;
+    private DocQueryService docQueryService;
 
     private User user;
 
@@ -65,7 +65,7 @@ public class DocGraphIntegrationTest {
 
         when(docRepository.findById(doc.getId())).thenReturn(Optional.of(doc));
 
-        Doc result = docService.getById(doc.getId());
+        Doc result = docQueryService.getById(doc.getId());
 
         assertThat(result).isNotNull();
         assertThat(result.getTitle()).isEqualTo("브랜치 2개 있는 문서임당");

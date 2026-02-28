@@ -1,6 +1,7 @@
-package io.ejangs.docsa.domain.doc.entity;
+package io.ejangs.docsa.domain.edge.entity;
 
 import io.ejangs.docsa.domain.commit.entity.Commit;
+import io.ejangs.docsa.domain.doc.entity.Doc;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;

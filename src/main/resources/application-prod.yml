@@ -39,6 +39,12 @@ server:
         same-site: None
       timeout: 24h # TODO: 테스트 완료 후 제거
 
+app:
+  cors:
+    allowed-origin:
+      - "https://docsa.o-r.kr",
+      - "https://docsa-4hh.pages.dev"
+
 springdoc:
   api-docs:
     path: /v3/api-docs

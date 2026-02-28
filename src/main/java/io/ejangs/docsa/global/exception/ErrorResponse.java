@@ -16,7 +16,11 @@ public record ErrorResponse(Integer status, String message, String error) {
                 "VALIDATION_FAILED");
     }
 
+    public static ErrorResponse from(HttpStatus status, String message, String error) {
+        return new ErrorResponse(status.value(), message, error);
+    }
+
     public static ErrorResponse from(String message) {
-        return new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message, "UNEXPECTED_ERROR");
+        return from(HttpStatus.BAD_REQUEST, message, "UNEXPECTED_ERROR");
     }
 }

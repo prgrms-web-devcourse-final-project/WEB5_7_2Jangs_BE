@@ -9,17 +9,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphBranchDto;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphCommitDto;
+import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
+import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
-import io.ejangs.docsa.domain.doc.dto.graph.GraphEdgeDto;
+import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.edge.dto.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -95,15 +95,15 @@ class DocControllerUnitTests {
     @DisplayName("문서 리스트 조회 컨트롤러 테스트 - 사이드바")
     void getSimpleDocList() throws Exception {
         // given
-        List<DocListSimpleResponse> content = List.of(
-                new DocListSimpleResponse(
+        List<DocSimplePageResponse> content = List.of(
+                new DocSimplePageResponse(
                         1L,
                         "마이크로소프트",
                         LocalDateTime.of(2025, 7, 6, 12, 0),
                         LocalDateTime.of(2025, 7, 7, 9, 0),
                         new RecentActivityDto(RecentType.SAVE, 10L)
                 ),
-                new DocListSimpleResponse(
+                new DocSimplePageResponse(
                         2L,
                         "구글",
                         LocalDateTime.of(2025, 6, 28, 15, 30),
@@ -114,13 +114,13 @@ class DocControllerUnitTests {
 
         Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
 
-        Page<DocListSimpleResponse> responseList = new PageImpl<>(
+        Page<DocSimplePageResponse> responseList = new PageImpl<>(
                 content,
                 PageRequest.of(0, 10),
                 content.size()
         );
 
-        when(docService.getSimpleList(anyLong(), any(Pageable.class))).thenReturn(responseList);
+        when(docService.getSimplePage(anyLong(), any(Pageable.class))).thenReturn(responseList);
 
         // when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar"))
@@ -205,12 +205,12 @@ class DocControllerUnitTests {
         Long docId = 1L;
         Long userId = 1L;
 
-        GraphCommitDto commit = new GraphCommitDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
-        GraphEdgeDto edge = new GraphEdgeDto(11L, 12L);
-        GraphBranchDto
-                branch = new GraphBranchDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
+        CommitGraphDto commit = new CommitGraphDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
+        EdgeDto edge = new EdgeDto(11L, 12L);
+        BranchGraphDto
+                branch = new BranchGraphDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
 
-        CommitGraphResponse response = new CommitGraphResponse(
+        GraphResponse response = new GraphResponse(
                 "문서 제목",
                 List.of(commit),
                 List.of(edge),

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class CommitBlockSequenceMapper {
 
-    public static CommitBlockSequence toEntity(List<String> blockOrders) {
+    public static CommitBlockSequence toDocument(List<String> blockOrders) {
         return CommitBlockSequence.builder()
                 .blockOrders(blockOrders)
                 .build();

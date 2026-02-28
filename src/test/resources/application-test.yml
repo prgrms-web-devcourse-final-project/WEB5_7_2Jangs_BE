@@ -49,3 +49,7 @@ auth:
 default:
   branch: main
 
+app:
+  cors:
+    allowed-origin:
+

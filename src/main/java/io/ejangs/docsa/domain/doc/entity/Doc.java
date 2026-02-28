@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.doc.entity;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;

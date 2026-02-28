@@ -11,9 +11,9 @@ import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.entity.Edge;
+import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -352,9 +352,9 @@ public class DocTestUtils {
         return uniqueIdCounter++;
     }
 
-    public static Page<DocListResponse> convertToDocListResponsePage(List<Doc> docs,
+    public static Page<DocPageResponse> convertToDocListResponsePage(List<Doc> docs,
             Pageable pageable) {
-        List<DocListResponse> responses = docs.stream()
+        List<DocPageResponse> responses = docs.stream()
                 .map(doc -> {
                     Long docId = doc.getId();
                     String title = doc.getTitle();
@@ -382,7 +382,7 @@ public class DocTestUtils {
                             .findFirst()
                             .orElse(null);
 
-                    return new DocListResponse(docId, title, createdAt, updatedAt, preview, recent);
+                    return new DocPageResponse(docId, title, createdAt, updatedAt, preview, recent);
                 })
                 .toList();
 

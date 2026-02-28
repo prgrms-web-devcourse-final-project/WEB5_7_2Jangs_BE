@@ -2,8 +2,8 @@ package io.ejangs.docsa.domain.doc.util;
 
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocListSimpleResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
+import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -22,8 +22,8 @@ public class DocMapper {
         );
     }
 
-    public static DocListSimpleResponse toListSimpleResponse(Doc doc, RecentActivityDto recent) {
-        return new DocListSimpleResponse(
+    public static DocSimplePageResponse toListSimpleResponse(Doc doc, RecentActivityDto recent) {
+        return new DocSimplePageResponse(
                 doc.getId(),
                 doc.getTitle(),
                 doc.getCreatedAt(),
@@ -32,9 +32,9 @@ public class DocMapper {
         );
     }
 
-    public static DocListResponse toListResponse(Doc doc, String preview,
+    public static DocPageResponse toListResponse(Doc doc, String preview,
             RecentActivityDto recent) {
-        return new DocListResponse(
+        return new DocPageResponse(
                 doc.getId(),
                 doc.getTitle(),
                 doc.getCreatedAt(),

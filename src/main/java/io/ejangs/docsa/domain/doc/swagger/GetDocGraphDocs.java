@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.swagger;
 
-import io.ejangs.docsa.domain.doc.dto.response.CommitGraphResponse;
+import io.ejangs.docsa.domain.edge.dto.GraphResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,7 +35,7 @@ import org.springframework.http.MediaType;
                         description = "그래프 조회 성공",
                         content = @Content(
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = CommitGraphResponse.class),
+                                schema = @Schema(implementation = GraphResponse.class),
                                 examples = @ExampleObject(
                                         value = """
                                                 {

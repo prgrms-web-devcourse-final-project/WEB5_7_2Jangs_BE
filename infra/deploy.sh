@@ -57,7 +57,7 @@ echo "[deploy] compose=$COMPOSE_FILE env=$ENV_FILE service=$SERVICE"
 docker compose "${ARGS[@]}" config >/dev/null
 
 # 2) 이미지 풀 + 대상 서비스만 업데이트
-docker compose "${ARGS[@]}" pull "$SERVICE" || true
+docker compose "${ARGS[@]}" pull "$SERVICE"
 docker compose "${ARGS[@]}" up -d "$SERVICE"
 
 # 3) 컨테이너 ID를 compose로 조회(이름 하드코딩 회피)
