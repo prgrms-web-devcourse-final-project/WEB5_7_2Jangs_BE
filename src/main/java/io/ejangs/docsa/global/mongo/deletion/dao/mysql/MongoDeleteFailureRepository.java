@@ -1,10 +1,10 @@
 package io.ejangs.docsa.global.mongo.deletion.dao.mysql;
 
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface MongoDeleteFailureRepository extends JpaRepository<MongoDeleteFailure, Long> {
+public interface MongoDeleteFailureRepository extends JpaRepository<MongoDeleteOutbox, Long> {
 
-    List<MongoDeleteFailure> findAllByResolvedIsFalse();
+    List<MongoDeleteOutbox> findAllByResolvedIsFalse();
 }

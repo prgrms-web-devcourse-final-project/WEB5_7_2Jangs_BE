@@ -2,7 +2,7 @@ package io.ejangs.docsa.global.mongo.deletion.app;
 
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -20,7 +20,7 @@ public class MongoDeleteFailureService {
     @Transactional
     public void saveFailure(MongoIdsDto dto) {
         try {
-            MongoDeleteFailure failure = MongoDeleteFailure.builder()
+            MongoDeleteOutbox failure = MongoDeleteOutbox.builder()
                     .saveContentIds(dto.saveContentsIds())
                     .commitBlockSequenceIds(dto.commitBlockSequenceIds())
                     .blockIds(dto.blockIds())

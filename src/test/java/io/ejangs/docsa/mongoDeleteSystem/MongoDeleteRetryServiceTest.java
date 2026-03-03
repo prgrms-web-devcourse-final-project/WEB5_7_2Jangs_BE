@@ -18,11 +18,10 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -101,7 +100,7 @@ class MongoDeleteRetryServiceTest {
                 .untilAsserted(() -> {
                     verify(retryService, times(2)).deleteMongoData(any());
 
-                    List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAll();
+                    List<MongoDeleteOutbox> failures = mongoDeleteFailureRepository.findAll();
                     assertThat(failures).isEmpty();
                 });
     }
@@ -142,10 +141,10 @@ class MongoDeleteRetryServiceTest {
                 .untilAsserted(() -> {
                     // 트랜잭션 안에서 Lazy 필드를 모두 접근해서 값으로 만들어둠
                     MongoDeleteFailureDto failureDto = transactionTemplate.execute(status -> {
-                        List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAll();
+                        List<MongoDeleteOutbox> failures = mongoDeleteFailureRepository.findAll();
                         assertThat(failures).hasSize(1);
 
-                        MongoDeleteFailure failure = failures.get(0);
+                        MongoDeleteOutbox failure = failures.get(0);
 
                         return new MongoDeleteFailureDto(
                                 failure.getSaveContentIds().size(),
@@ -182,7 +181,7 @@ class MongoDeleteRetryServiceTest {
                 .untilAsserted(() -> {
                     verify(retryService, times(1)).deleteMongoData(any());
 
-                    List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAll();
+                    List<MongoDeleteOutbox> failures = mongoDeleteFailureRepository.findAll();
                     assertThat(failures).isEmpty();
                 });
     }

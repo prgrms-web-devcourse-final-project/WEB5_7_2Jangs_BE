@@ -42,7 +42,7 @@ server:
 app:
   cors:
     allowed-origin:
-      - "https://docsa.o-r.kr",
+      - "https://docsa.o-r.kr"
       - "https://docsa-4hh.pages.dev"
 
 springdoc:

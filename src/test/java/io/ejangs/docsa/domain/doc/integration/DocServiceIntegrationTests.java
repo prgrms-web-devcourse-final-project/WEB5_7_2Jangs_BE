@@ -38,7 +38,7 @@ import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -250,7 +250,7 @@ public class DocServiceIntegrationTests {
 
             // then (비동기 or recover 고려)
             await().untilAsserted(() -> {
-                List<MongoDeleteFailure> failures =
+                List<MongoDeleteOutbox> failures =
                         mongoDeleteFailureRepository.findAll();
 
                 assertThat(failures).hasSize(1);

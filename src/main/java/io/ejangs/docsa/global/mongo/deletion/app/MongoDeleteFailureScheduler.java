@@ -2,7 +2,7 @@ package io.ejangs.docsa.global.mongo.deletion.app;
 
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteFailure;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +23,9 @@ public class MongoDeleteFailureScheduler {
     @Scheduled(fixedDelay = 1000 * 60 * 60 * 24 * 7)
     @Transactional(transactionManager = "mongoTransactionManager")
     public void run() {
-        List<MongoDeleteFailure> failures = mongoDeleteFailureRepository.findAllByResolvedIsFalse();
+        List<MongoDeleteOutbox> failures = mongoDeleteFailureRepository.findAllByResolvedIsFalse();
         log.info("[스케쥴러] Failures size : {}", failures.size());
-        for (MongoDeleteFailure failure : failures) {
+        for (MongoDeleteOutbox failure : failures) {
             try {
                 MongoIdsDto dto = new MongoIdsDto(
                         failure.getSaveContentIds(),
@@ -33,7 +33,7 @@ public class MongoDeleteFailureScheduler {
                         failure.getBlockIds()
                 );
                 mongoDeleteRetryService.deleteMongoData(dto);
-                failure.markResolved();
+                failure.markDone();
             } catch (Exception e) {
                 log.error("Mongo 삭제 스케쥴러 재시도 실패 : {}", e.getMessage(), e);
             }
