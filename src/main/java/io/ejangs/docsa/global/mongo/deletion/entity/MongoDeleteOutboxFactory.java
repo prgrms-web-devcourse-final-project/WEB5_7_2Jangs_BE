@@ -6,6 +6,7 @@ import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationS
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,7 +52,13 @@ public class MongoDeleteOutboxFactory {
             );
         }
 
-        return mongoDeleteOutboxRepository.save(MongoDeleteOutbox.open(
+        MongoDeleteOutbox existing = mongoDeleteOutboxRepository.findByOperationKey(operationKey)
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+
+        MongoDeleteOutbox newOutbox = MongoDeleteOutbox.open(
                 operationType,
                 operationSource,
                 operationKey,
@@ -59,7 +66,14 @@ public class MongoDeleteOutboxFactory {
                 targetMongoId,
                 ids.saveContentsIds(),
                 ids.commitBlockSequenceIds(),
-                ids.blockIds())
+                ids.blockIds()
         );
+
+        try {
+            return mongoDeleteOutboxRepository.save(newOutbox);
+        } catch (DataIntegrityViolationException e) {
+            return mongoDeleteOutboxRepository.findByOperationKey(operationKey)
+                    .orElseThrow(() -> e);
+        }
     }
 }

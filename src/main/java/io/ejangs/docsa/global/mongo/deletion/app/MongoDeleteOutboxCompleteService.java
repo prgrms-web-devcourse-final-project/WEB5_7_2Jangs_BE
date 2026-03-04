@@ -3,6 +3,8 @@ package io.ejangs.docsa.global.mongo.deletion.app;
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,5 +59,21 @@ public class MongoDeleteOutboxCompleteService {
 
         targetOutbox.markRetry(errorMessage);
         mongoDeleteOutboxRepository.save(targetOutbox);
+    }
+
+    @Transactional
+    public int recoverTimedOutProcessing(LocalDateTime threshold) {
+        List<MongoDeleteOutbox> stuckOutboxes = mongoDeleteOutboxRepository
+                .findTop100ByStatusAndUpdatedAtBeforeOrderByUpdatedAtAsc(
+                        MongoDeleteOutbox.OutboxStatus.PROCESSING,
+                        threshold
+                );
+        if (stuckOutboxes.isEmpty()) {
+            return 0;
+        }
+
+        stuckOutboxes.forEach(outbox -> outbox.markRetry(outbox.getLastError() + " (recovered)"));
+        mongoDeleteOutboxRepository.saveAll(stuckOutboxes);
+        return stuckOutboxes.size();
     }
 }

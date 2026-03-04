@@ -141,12 +141,14 @@ public class MongoDeleteOutbox extends BaseEntity {
 
     public void markProcessing() {
         this.status = OutboxStatus.PROCESSING;
+        updateTimestamp();
     }
 
     public void markDone() {
         this.status = OutboxStatus.DONE;
         this.doneAt = LocalDateTime.now();
         this.lastError = null;
+        updateTimestamp();
     }
 
     public void markRetry(String errorMessage) {
@@ -155,10 +157,12 @@ public class MongoDeleteOutbox extends BaseEntity {
 
         if (this.retryCount >= this.maxRetry) {
             this.status = OutboxStatus.FAILED;
+            updateTimestamp();
             return;
         }
 
         this.status = OutboxStatus.OPEN;
+        updateTimestamp();
     }
 
 }
