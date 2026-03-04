@@ -6,8 +6,9 @@ import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +41,13 @@ public class MergeOrchestrator {
                     List.of(compensateTarget.cbsId()),
                     compensateTarget.blockIds()
             );
-            mongoDeleteOutboxFactory.create(OperationType.DELETE_COMMIT, OperationSource.COMPENSATION,
-                    null, compensateTarget.cbsId(), compensateMongoIds);
+            mongoDeleteOutboxFactory.create(
+                    TriggerType.COMPENSATE,
+                    DomainType.COMMIT,
+                    OriginType.CBS_ID,
+                    compensateTarget.cbsId(),
+                    compensateMongoIds
+            );
             throw e;
         }
     }

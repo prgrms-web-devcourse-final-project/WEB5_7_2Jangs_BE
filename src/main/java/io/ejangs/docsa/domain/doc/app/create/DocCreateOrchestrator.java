@@ -5,8 +5,9 @@ import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,12 @@ public class DocCreateOrchestrator {
     private void compensateMongo(String saveContentId) {
 
         MongoIdsDto dto = new MongoIdsDto(List.of(saveContentId), null, null);
-        mongoDeleteOutboxFactory.create(OperationType.DELETE_DOC, OperationSource.COMPENSATION,
-                null, saveContentId, dto);
+        mongoDeleteOutboxFactory.create(
+                TriggerType.COMPENSATE,
+                DomainType.DOC,
+                OriginType.SAVE_CONTENT_ID,
+                saveContentId,
+                dto
+        );
     }
 }

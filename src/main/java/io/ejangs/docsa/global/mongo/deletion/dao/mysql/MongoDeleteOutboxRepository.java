@@ -1,6 +1,9 @@
 package io.ejangs.docsa.global.mongo.deletion.dao.mysql;
 
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -17,5 +20,10 @@ public interface MongoDeleteOutboxRepository extends JpaRepository<MongoDeleteOu
 
     Optional<MongoDeleteOutbox> findByIdAndStatus(Long id, MongoDeleteOutbox.OutboxStatus status);
 
-    Optional<MongoDeleteOutbox> findByOperationKey(String operationKey);
+    Optional<MongoDeleteOutbox> findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(
+            TriggerType triggerType,
+            DomainType domainType,
+            OriginType originType,
+            String originId
+    );
 }

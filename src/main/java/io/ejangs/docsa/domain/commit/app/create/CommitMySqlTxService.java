@@ -11,8 +11,9 @@ import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.domain.edge.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
@@ -58,8 +59,13 @@ public class CommitMySqlTxService {
                 null
         );
 
-        mongoDeleteOutboxFactory.create(OperationType.DELETE_SAVE, OperationSource.USER_REQUEST,
-                newCommit.getId(), saveMongoId, saveCleanupIds);
+        mongoDeleteOutboxFactory.create(
+                TriggerType.DELETE_AFTER_SAVE_SUCCESS,
+                DomainType.SAVE,
+                OriginType.COMMIT_ID,
+                newCommit.getId(),
+                saveCleanupIds
+        );
 
         return newCommit;
     }

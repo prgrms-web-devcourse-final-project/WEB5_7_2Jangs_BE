@@ -24,7 +24,10 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "mongo_delete_outbox",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_mongo_delete_outbox_operation_key", columnNames = {"operation_key"})
+                @UniqueConstraint(
+                        name = "uk_mongo_delete_outbox_trigger_domain_origin",
+                        columnNames = {"trigger_type", "domain_type", "origin_type", "origin_id"}
+                )
         }
 )
 @Getter
@@ -38,16 +41,26 @@ public class MongoDeleteOutbox extends BaseEntity {
         FAILED
     }
 
-    public enum OperationType {
-        DELETE_SAVE,
-        DELETE_COMMIT,
-        DELETE_DOC,
-        DELETE_BRANCH
+    public enum TriggerType {
+        DELETE,
+        COMPENSATE,
+        DELETE_AFTER_SAVE_SUCCESS
     }
 
-    public enum OperationSource {
-        USER_REQUEST,
-        COMPENSATION
+    public enum DomainType {
+        DOC,
+        BRANCH,
+        COMMIT,
+        SAVE
+    }
+
+    public enum OriginType {
+        DOC_ID,
+        BRANCH_ID,
+        COMMIT_ID,
+        SAVE_ID,
+        SAVE_CONTENT_ID,
+        CBS_ID
     }
 
     @Id
@@ -55,21 +68,19 @@ public class MongoDeleteOutbox extends BaseEntity {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "operation_type", length = 64, nullable = false)
-    private OperationType operationType;
+    @Column(name = "trigger_type", length = 64, nullable = false)
+    private TriggerType triggerType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "operation_source", length = 64, nullable = false)
-    private OperationSource operationSource;
+    @Column(name = "domain_type", length = 64, nullable = false)
+    private DomainType domainType;
 
-    @Column(name = "operation_key", length = 255, nullable = false)
-    private String operationKey;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origin_type", length = 64, nullable = false)
+    private OriginType originType;
 
-    @Column(name = "target_id", nullable = true)
-    private Long domainId;
-
-    @Column(name = "target_mongo_id", nullable = true)
-    private String targetMongoId;
+    @Column(name = "origin_id", length = 255, nullable = false)
+    private String originId;
 
     @ElementCollection
     @CollectionTable(name = "mongo_outbox_save_ids", joinColumns = @JoinColumn(name = "outbox_id"))
@@ -105,22 +116,20 @@ public class MongoDeleteOutbox extends BaseEntity {
     private Long version;
 
     public static MongoDeleteOutbox open(
-            OperationType operationType,
-            OperationSource operationSource,
-            String operationKey,
-            Long targetId,
-            String targetMongoId,
+            TriggerType triggerType,
+            DomainType domainType,
+            OriginType originType,
+            String originId,
             List<String> saveIds,
             List<String> commitIds,
             List<String> blockIds
     ) {
 
         MongoDeleteOutbox outbox = new MongoDeleteOutbox();
-        outbox.operationType = operationType;
-        outbox.operationSource = operationSource;
-        outbox.operationKey = operationKey;
-        outbox.targetMongoId = targetMongoId;
-        outbox.domainId = targetId;
+        outbox.triggerType = triggerType;
+        outbox.domainType = domainType;
+        outbox.originType = originType;
+        outbox.originId = originId;
         outbox.saveContentIds = saveIds;
         outbox.commitBlockSequenceIds = commitIds;
         outbox.blockIds = blockIds;
@@ -128,15 +137,6 @@ public class MongoDeleteOutbox extends BaseEntity {
         outbox.retryCount = 0;
         outbox.maxRetry = 10;
         return outbox;
-    }
-
-    public static String buildOperationKey(
-            OperationSource operationSource,
-            OperationType operationType,
-            String refType,
-            String refValue
-    ) {
-        return operationSource + ":" + operationType + ":" + refType + ":" + refValue;
     }
 
     public void markProcessing() {

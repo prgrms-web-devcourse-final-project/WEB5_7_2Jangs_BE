@@ -25,8 +25,9 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import java.util.List;
@@ -125,8 +126,13 @@ public class DocService {
 
         user.removeDocument(doc);
 
-        mongoDeleteOutboxFactory.create(OperationType.DELETE_DOC, OperationSource.USER_REQUEST,
-                docId, null, docDeleteMongoIds);
+        mongoDeleteOutboxFactory.create(
+                TriggerType.DELETE,
+                DomainType.DOC,
+                OriginType.DOC_ID,
+                docId,
+                docDeleteMongoIds
+        );
     }
 
 }

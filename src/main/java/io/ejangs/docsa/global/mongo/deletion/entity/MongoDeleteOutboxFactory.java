@@ -2,8 +2,9 @@ package io.ejangs.docsa.global.mongo.deletion.entity;
 
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,15 +19,31 @@ public class MongoDeleteOutboxFactory {
 
     @Transactional
     public MongoDeleteOutbox create(
-            OperationType operationType,
-            OperationSource operationSource,
-            Long targetId,
-            String targetMongoId,
+            TriggerType triggerType,
+            DomainType domainType,
+            OriginType originType,
+            Long originId,
+            MongoIdsDto ids
+    ) {
+        Objects.requireNonNull(originId, "originId is required");
+        if (originId <= 0) {
+            throw new IllegalArgumentException("originId must be positive");
+        }
+        return create(triggerType, domainType, originType, String.valueOf(originId), ids);
+    }
+
+    @Transactional
+    public MongoDeleteOutbox create(
+            TriggerType triggerType,
+            DomainType domainType,
+            OriginType originType,
+            String originId,
             MongoIdsDto ids
     ) {
 
-        Objects.requireNonNull(operationType, "operationType is required");
-        Objects.requireNonNull(operationSource, "operationSource is required");
+        Objects.requireNonNull(triggerType, "triggerType is required");
+        Objects.requireNonNull(domainType, "domainType is required");
+        Objects.requireNonNull(originType, "originType is required");
         Objects.requireNonNull(ids, "mongo ids is required");
 
         if (ids.saveContentsIds().isEmpty()
@@ -35,35 +52,28 @@ public class MongoDeleteOutboxFactory {
             return null;
         }
 
-        String operationKey;
-        if (operationSource == OperationSource.COMPENSATION) {
-            if (targetMongoId == null) {
-                throw new IllegalArgumentException("targetMongoId is required");
-            }
-            operationKey = MongoDeleteOutbox.buildOperationKey(
-                    operationSource, operationType, "MONGO_ID", targetMongoId
-            );
-        } else {
-            if (targetId == null || targetId <= 0) {
-                throw new IllegalArgumentException("targetId is required");
-            }
-            operationKey = MongoDeleteOutbox.buildOperationKey(
-                    operationSource, operationType, "DOMAIN_ID", String.valueOf(targetId)
-            );
+        String normalizedOriginId = originId == null ? "" : originId.trim();
+        if (normalizedOriginId.isBlank()) {
+            throw new IllegalArgumentException("originId is required");
         }
 
-        MongoDeleteOutbox existing = mongoDeleteOutboxRepository.findByOperationKey(operationKey)
+        MongoDeleteOutbox existing = mongoDeleteOutboxRepository
+                .findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(
+                        triggerType,
+                        domainType,
+                        originType,
+                        normalizedOriginId
+                )
                 .orElse(null);
         if (existing != null) {
             return existing;
         }
 
         MongoDeleteOutbox newOutbox = MongoDeleteOutbox.open(
-                operationType,
-                operationSource,
-                operationKey,
-                targetId,
-                targetMongoId,
+                triggerType,
+                domainType,
+                originType,
+                normalizedOriginId,
                 ids.saveContentsIds(),
                 ids.commitBlockSequenceIds(),
                 ids.blockIds()
@@ -72,7 +82,13 @@ public class MongoDeleteOutboxFactory {
         try {
             return mongoDeleteOutboxRepository.save(newOutbox);
         } catch (DataIntegrityViolationException e) {
-            return mongoDeleteOutboxRepository.findByOperationKey(operationKey)
+            return mongoDeleteOutboxRepository
+                    .findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(
+                            triggerType,
+                            domainType,
+                            originType,
+                            normalizedOriginId
+                    )
                     .orElseThrow(() -> e);
         }
     }

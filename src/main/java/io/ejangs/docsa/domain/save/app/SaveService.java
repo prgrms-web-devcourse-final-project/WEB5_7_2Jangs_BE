@@ -12,8 +12,9 @@ import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
@@ -86,10 +87,10 @@ public class SaveService {
                 null
         );
         mongoDeleteOutboxFactory.create(
-                OperationType.DELETE_SAVE,
-                OperationSource.USER_REQUEST,
+                TriggerType.DELETE,
+                DomainType.SAVE,
+                OriginType.SAVE_ID,
                 findSave.getId(),
-                saveMongoId,
                 outboxTarget
         );
     }

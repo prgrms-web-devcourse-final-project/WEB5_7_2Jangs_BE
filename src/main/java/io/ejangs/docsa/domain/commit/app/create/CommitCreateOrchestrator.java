@@ -5,8 +5,9 @@ import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,8 +32,13 @@ public class CommitCreateOrchestrator {
                     request, createdCbsId);
         } catch (Exception e) {
             log.warn("[SAGA] 커밋 생성 실패 -> Mongo 삭제 Outbox 기록. ", e);
-            mongoDeleteOutboxFactory.create(OperationType.DELETE_COMMIT, OperationSource.COMPENSATION,
-                    null, createdCbsId, compensateTarget);
+            mongoDeleteOutboxFactory.create(
+                    TriggerType.COMPENSATE,
+                    DomainType.COMMIT,
+                    OriginType.CBS_ID,
+                    createdCbsId,
+                    compensateTarget
+            );
             throw e;
         }
     }

@@ -2,8 +2,9 @@ package io.ejangs.docsa.domain.branch.app.create;
 
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,12 @@ public class BranchCreateOrchestrator {
             log.warn("[SAGA] 브랜치/저장 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
             MongoIdsDto compensateTarget = new MongoIdsDto(List.of(saveContentId), null, null);
             mongoDeleteOutboxFactory.create(
-                    OperationType.DELETE_BRANCH, OperationSource.COMPENSATION,
-                    null, saveContentId, compensateTarget);
+                    TriggerType.COMPENSATE,
+                    DomainType.BRANCH,
+                    OriginType.SAVE_CONTENT_ID,
+                    saveContentId,
+                    compensateTarget
+            );
             throw e;
         }
     }

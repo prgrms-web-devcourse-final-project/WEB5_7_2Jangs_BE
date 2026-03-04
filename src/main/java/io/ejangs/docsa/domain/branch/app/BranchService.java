@@ -17,8 +17,9 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
@@ -154,8 +155,13 @@ public class BranchService {
         // 8. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
         branchQueryService.delete(branch);
 
-        mongoDeleteOutboxFactory.create(OperationType.DELETE_BRANCH, OperationSource.USER_REQUEST,
-                branchId, null, deletableMongoIds);
+        mongoDeleteOutboxFactory.create(
+                TriggerType.DELETE,
+                DomainType.BRANCH,
+                OriginType.BRANCH_ID,
+                branchId,
+                deletableMongoIds
+        );
 
     }
 
