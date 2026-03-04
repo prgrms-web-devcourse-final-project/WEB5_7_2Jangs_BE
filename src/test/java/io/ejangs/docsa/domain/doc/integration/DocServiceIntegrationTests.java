@@ -37,7 +37,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
-import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteFailureRepository;
+import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +89,7 @@ public class DocServiceIntegrationTests {
     private BlockRepository blockRepository;
 
     @Autowired
-    private MongoDeleteFailureRepository mongoDeleteFailureRepository;
+    private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
     @Value("${default.branch}")
     private String defaultBranchName;
@@ -218,7 +218,7 @@ public class DocServiceIntegrationTests {
         private UserRepository userRepository;
 
         @Autowired
-        private MongoDeleteFailureRepository mongoDeleteFailureRepository;
+        private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
         @MockitoBean
         private DocCreateMySqlTxService docCreateMySqlTxService;
@@ -251,7 +251,7 @@ public class DocServiceIntegrationTests {
             // then (비동기 or recover 고려)
             await().untilAsserted(() -> {
                 List<MongoDeleteOutbox> failures =
-                        mongoDeleteFailureRepository.findAll();
+                        mongoDeleteOutboxRepository.findAll();
 
                 assertThat(failures).hasSize(1);
                 assertThat(failures.get(0).getResolved()).isFalse();

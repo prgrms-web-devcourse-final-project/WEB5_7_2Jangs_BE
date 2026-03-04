@@ -16,7 +16,6 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +24,7 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "mongo_delete_outbox",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_mongo_delete_outbox_operation_target", columnNames = {"operation_type", "target_id"})
+                @UniqueConstraint(name = "uk_mongo_delete_outbox_operation_key", columnNames = {"operation_key"})
         }
 )
 @Getter
@@ -34,6 +33,7 @@ public class MongoDeleteOutbox extends BaseEntity {
 
     public enum OutboxStatus {
         OPEN,
+        PROCESSING,
         DONE,
         FAILED
     }
@@ -45,6 +45,11 @@ public class MongoDeleteOutbox extends BaseEntity {
         DELETE_BRANCH
     }
 
+    public enum OperationSource {
+        USER_REQUEST,
+        COMPENSATION
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -53,8 +58,18 @@ public class MongoDeleteOutbox extends BaseEntity {
     @Column(name = "operation_type", length = 64, nullable = false)
     private OperationType operationType;
 
-    @Column(name = "target_id", nullable = false)
-    private Long targetId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "operation_source", length = 64, nullable = false)
+    private OperationSource operationSource;
+
+    @Column(name = "operation_key", length = 255, nullable = false)
+    private String operationKey;
+
+    @Column(name = "target_id", nullable = true)
+    private Long domainId;
+
+    @Column(name = "target_mongo_id", nullable = true)
+    private String targetMongoId;
 
     @ElementCollection
     @CollectionTable(name = "mongo_outbox_save_ids", joinColumns = @JoinColumn(name = "outbox_id"))
@@ -91,34 +106,47 @@ public class MongoDeleteOutbox extends BaseEntity {
 
     public static MongoDeleteOutbox open(
             OperationType operationType,
-            long targetId,
+            OperationSource operationSource,
+            String operationKey,
+            Long targetId,
+            String targetMongoId,
             List<String> saveIds,
             List<String> commitIds,
             List<String> blockIds
     ) {
-        List<String> normalizedSaveIds = List.copyOf(saveIds == null ? List.of() : saveIds);
-        List<String> normalizedCommitIds = List.copyOf(commitIds == null ? List.of() : commitIds);
-        List<String> normalizedBlockIds = List.copyOf(blockIds == null ? List.of() : blockIds);
-
-        if (normalizedSaveIds.isEmpty() && normalizedCommitIds.isEmpty() && normalizedBlockIds.isEmpty()) {
-            throw new IllegalArgumentException("at least one delete target id is required");
-        }
 
         MongoDeleteOutbox outbox = new MongoDeleteOutbox();
         outbox.operationType = operationType;
-        outbox.targetId = targetId;
-        outbox.saveContentIds = normalizedSaveIds;
-        outbox.commitBlockSequenceIds = normalizedCommitIds;
-        outbox.blockIds = normalizedBlockIds;
+        outbox.operationSource = operationSource;
+        outbox.operationKey = operationKey;
+        outbox.targetMongoId = targetMongoId;
+        outbox.domainId = targetId;
+        outbox.saveContentIds = saveIds;
+        outbox.commitBlockSequenceIds = commitIds;
+        outbox.blockIds = blockIds;
         outbox.status = OutboxStatus.OPEN;
         outbox.retryCount = 0;
         outbox.maxRetry = 10;
         return outbox;
     }
 
+    public static String buildOperationKey(
+            OperationSource operationSource,
+            OperationType operationType,
+            String refType,
+            String refValue
+    ) {
+        return operationSource + ":" + operationType + ":" + refType + ":" + refValue;
+    }
+
+    public void markProcessing() {
+        this.status = OutboxStatus.PROCESSING;
+    }
+
     public void markDone() {
         this.status = OutboxStatus.DONE;
         this.doneAt = LocalDateTime.now();
+        this.lastError = null;
     }
 
     public void markRetry(String errorMessage) {
@@ -132,4 +160,5 @@ public class MongoDeleteOutbox extends BaseEntity {
 
         this.status = OutboxStatus.OPEN;
     }
+
 }

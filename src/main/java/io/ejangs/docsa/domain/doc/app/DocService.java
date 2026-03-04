@@ -25,11 +25,13 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,10 +49,10 @@ public class DocService {
     private final EdgeService edgeService;
 
     private final DocCreateOrchestrator docCreateOrchestrator;
+    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     private final DocListAssembler docListAssembler;
     private final MongoIdsCollector mongoIdsCollector;
-    private final ApplicationEventPublisher eventPublisher;
 
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
         User user = docQueryService.getUserOrThrow(userId);
@@ -73,7 +75,7 @@ public class DocService {
 
     @Transactional(readOnly = true)
     public Page<DocPageResponse> searchList(Long userId, String keyword, Pageable pageable) {
-        Page<Doc> docs = docQueryService.searchByTitle(keyword,userId,pageable);
+        Page<Doc> docs = docQueryService.searchByTitle(keyword, userId, pageable);
         return docListAssembler.assembleDocList(docs);
     }
 
@@ -123,8 +125,8 @@ public class DocService {
 
         user.removeDocument(doc);
 
-        log.warn("[MONGO] deleteDocument");
-        eventPublisher.publishEvent(docDeleteMongoIds);
+        mongoDeleteOutboxFactory.create(OperationType.DELETE_DOC, OperationSource.USER_REQUEST,
+                docId, null, docDeleteMongoIds);
     }
 
 }

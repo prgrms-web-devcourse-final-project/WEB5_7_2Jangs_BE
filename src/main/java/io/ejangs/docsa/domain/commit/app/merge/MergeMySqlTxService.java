@@ -14,11 +14,13 @@ import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationSource;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OperationType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +32,7 @@ public class MergeMySqlTxService {
     private final SaveQueryService saveQueryService;
     private final EdgeService edgeService;
     private final BranchQueryService branchQueryService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     @Transactional
     public Commit createMySqlPart(Doc doc, Branch baseBranch, Branch targetBranch,
@@ -59,7 +61,8 @@ public class MergeMySqlTxService {
                 null,
                 null
         );
-        eventPublisher.publishEvent(saveCleanupIds);
+
+        mongoDeleteOutboxFactory.create(OperationType.DELETE_SAVE, OperationSource.USER_REQUEST, savedCommit.getId(), saveMongoId, saveCleanupIds);
 
         return savedCommit;
     }
