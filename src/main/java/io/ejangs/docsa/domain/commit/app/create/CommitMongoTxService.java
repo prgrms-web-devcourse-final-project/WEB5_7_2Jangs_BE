@@ -25,7 +25,7 @@ public class CommitMongoTxService {
     private final BlockService blockService;
     private final CommitBlockSequenceRepository cbsRepository;
 
-    @Transactional(transactionManager = "mongoTransactionManager")
+    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
     public MongoIdsDto createMongoPart(CreateCommitRequest request, String baseCommitCbsMongoId) {
         // 이번 커밋에서 "새로 저장된" 블록들 (Mongo insert)
         List<Block> newBlocks = blockService.saveBlocks(request.blocks());

@@ -84,7 +84,7 @@ public class CommitService {
         return assembler.assemble(commit.getCommitMongoId());
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest,
             Long userId) {
         MergeBranches mergeBranches = prepareMergeBranches(docId, mergeRequest, userId);

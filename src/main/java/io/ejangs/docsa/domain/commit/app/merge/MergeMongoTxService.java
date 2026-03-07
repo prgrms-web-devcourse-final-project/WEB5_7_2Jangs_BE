@@ -19,7 +19,7 @@ public class MergeMongoTxService {
     private final BlockService blockService;
     private final CommitQueryService commitQueryService;
 
-    @Transactional(transactionManager = "mongoTransactionManager")
+    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
     public CommitMongoIdsDto createMongoPart(List<BlockDto> blocks) {
         List<Block> savedBlocks = blockService.saveBlocks(blocks);
 

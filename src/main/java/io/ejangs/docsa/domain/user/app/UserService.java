@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 @Service
-@Transactional
+@Transactional(rollbackOn = Exception.class)
 @RequiredArgsConstructor
 public class UserService {
 

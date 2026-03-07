@@ -80,7 +80,7 @@ public class DocService {
         return docListAssembler.assembleDocList(docs);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public DocTitleUpdateResponse updateTitle(Long userId, Long docId, DocTitleRequest request) {
         String title = request.title();
 
@@ -114,7 +114,7 @@ public class DocService {
     }
 
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Long docId, Long userId) {
         User user = docQueryService.getUserOrThrow(userId);
         Doc doc = docQueryService.getByIdAndUserId(docId, userId);

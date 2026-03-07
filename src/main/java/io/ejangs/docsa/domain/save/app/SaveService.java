@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class SaveService {
 
@@ -41,7 +42,6 @@ public class SaveService {
         return SaveMapper.toSaveGetResponse(findSave.getUpdatedAt(), saveContent.getContent());
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public SaveUpdateResponse updateSave(SaveIdentifierDto dto, SaveUpdateRequest request) {
         Save findSave = getValidSave(dto);
 
@@ -66,7 +66,6 @@ public class SaveService {
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
     }
 
-    @Transactional
     public void deleteSave(SaveIdentifierDto dto) {
         Save findSave = getValidSave(dto);
         Branch branch = findSave.getBranch();

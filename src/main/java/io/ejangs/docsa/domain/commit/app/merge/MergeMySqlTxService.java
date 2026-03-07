@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class MergeMySqlTxService {
 
@@ -35,7 +36,6 @@ public class MergeMySqlTxService {
     private final BranchQueryService branchQueryService;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
-    @Transactional
     public Commit createMySqlPart(Doc doc, Branch baseBranch, Branch targetBranch,
             MergeCommitRequest request, String commitMongoId) {
         Commit commit = CommitMapper.toEntity(targetBranch, request);

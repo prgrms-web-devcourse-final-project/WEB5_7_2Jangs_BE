@@ -98,7 +98,7 @@ public class BranchService {
         );
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BranchRenameResponse renameBranch(Long documentId, Long branchId, String newName,
             Long userId) {
 
@@ -121,7 +121,7 @@ public class BranchService {
      * 삭제하려는 브랜치는 메인 브랜치가 아니며 파생된 서브브랜치 또한 가지고 있지 않아야 합니다. 삭제 가능한 브랜치임을 확인 후 오직 해당 브랜치에서만 존재하는 블록을
      * 삭제한 후 나머지 브랜치 관련 정보를 삭제합니다.
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteBranch(Long documentId, Long branchId, Long userId) {
 
         // 1. 브랜치 검증

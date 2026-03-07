@@ -31,7 +31,7 @@ public class CommitMySqlTxService {
     private final EdgeService edgeService;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Commit createMySqlPart(Doc doc, Branch branch, CreateCommitRequest request, String commitCbsMongoId) {
         Commit newCommit = CommitMapper.toEntity(branch, request);
         newCommit.initializeCommitMongoId(commitCbsMongoId);

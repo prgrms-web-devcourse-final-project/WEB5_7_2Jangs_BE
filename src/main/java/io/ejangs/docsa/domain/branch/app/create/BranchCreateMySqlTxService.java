@@ -18,7 +18,7 @@ public class BranchCreateMySqlTxService {
     private final BranchQueryService branchQueryService;
     private final SaveQueryService saveQueryService;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BranchCreateResponse createBranchOrSave(BranchCreateContext context, String saveContentId) {
         Branch targetBranch = context.fromBranch();
 

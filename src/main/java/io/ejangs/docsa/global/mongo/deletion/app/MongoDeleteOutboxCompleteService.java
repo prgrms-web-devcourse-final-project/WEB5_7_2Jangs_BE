@@ -12,12 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class MongoDeleteOutboxCompleteService {
 
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
-    @Transactional
     public MongoIdsDto claimOpen(Long outboxId) {
         MongoDeleteOutbox targetOutbox = mongoDeleteOutboxRepository
                 .findByIdAndStatus(outboxId, MongoDeleteOutbox.OutboxStatus.OPEN)
@@ -35,7 +35,6 @@ public class MongoDeleteOutboxCompleteService {
         );
     }
 
-    @Transactional
     public void done(Long outboxId) {
         MongoDeleteOutbox targetOutbox = mongoDeleteOutboxRepository
                 .findByIdAndStatus(outboxId, MongoDeleteOutbox.OutboxStatus.PROCESSING)
@@ -48,7 +47,6 @@ public class MongoDeleteOutboxCompleteService {
         mongoDeleteOutboxRepository.save(targetOutbox);
     }
 
-    @Transactional
     public void retry(Long outboxId, String errorMessage) {
         MongoDeleteOutbox targetOutbox = mongoDeleteOutboxRepository
                 .findByIdAndStatus(outboxId, MongoDeleteOutbox.OutboxStatus.PROCESSING)
@@ -61,7 +59,6 @@ public class MongoDeleteOutboxCompleteService {
         mongoDeleteOutboxRepository.save(targetOutbox);
     }
 
-    @Transactional
     public int recoverTimedOutProcessing(LocalDateTime threshold) {
         List<MongoDeleteOutbox> stuckOutboxes = mongoDeleteOutboxRepository
                 .findTop100ByStatusAndUpdatedAtBeforeOrderByUpdatedAtAsc(

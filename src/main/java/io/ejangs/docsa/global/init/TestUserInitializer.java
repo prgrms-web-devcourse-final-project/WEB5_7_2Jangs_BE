@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Profile({"local", "stg"})
+@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class TestUserInitializer {
 
@@ -22,7 +23,6 @@ public class TestUserInitializer {
     private static final String testUserPassword = "Testtest1";
 
     @PostConstruct
-    @Transactional
     public void intiTestUser() {
         if (userRepository.findByEmail(testUserEmail).isEmpty()) {
             User user = User.builder()

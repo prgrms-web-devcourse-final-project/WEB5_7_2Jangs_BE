@@ -12,12 +12,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class MongoDeleteOutboxFactory {
 
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
-    @Transactional
     public MongoDeleteOutbox create(
             TriggerType triggerType,
             DomainType domainType,
@@ -32,7 +32,6 @@ public class MongoDeleteOutboxFactory {
         return create(triggerType, domainType, originType, String.valueOf(originId), ids);
     }
 
-    @Transactional
     public MongoDeleteOutbox create(
             TriggerType triggerType,
             DomainType domainType,
