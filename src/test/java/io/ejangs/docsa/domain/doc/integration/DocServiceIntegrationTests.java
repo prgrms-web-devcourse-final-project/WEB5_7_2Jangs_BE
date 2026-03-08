@@ -2,13 +2,11 @@ package io.ejangs.docsa.domain.doc.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.mongodb.MongoTimeoutException;
@@ -182,13 +180,15 @@ public class DocServiceIntegrationTests {
         @Autowired
         private SaveContentRepository saveContentRepository;
 
+        @Autowired
+        private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
+
         @MockitoBean
         private DocCreateMySqlTxService docCreateMySqlTxService; // MySQL 파트만 실패 유도
 
         @Test
-        @DisplayName("MySQL 생성 실패 시 Mongo에 먼저 생성된 SaveContent는 보상 삭제된다")
-        @Transactional(propagation = Propagation.NOT_SUPPORTED)
-        void mysqlFail_compensateMongoDelete() {
+        @DisplayName("MySQL 생성 실패 시 Mongo 보상 Outbox가 적재된다")
+        void mysqlFail_createCompensateOutbox() {
             // given
             User user = userRepository.save(DocTestUtils.createUser());
             DocTitleRequest request = new DocTitleRequest("MySQL 실패 케이스");
@@ -203,13 +203,21 @@ public class DocServiceIntegrationTests {
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("MySQL 생성 실패");
 
-            // 보상 삭제 결과: 이번 요청에서 생성된 SaveContent는 남지 않아야 함
-            assertThat(saveContentRepository.count()).isEqualTo(beforeSaveContentCount);
+            // Mongo에 저장된 데이터는 비동기 워커가 삭제하므로 즉시 1건 증가 상태다.
+            assertThat(saveContentRepository.count()).isEqualTo(beforeSaveContentCount + 1);
+
+            List<MongoDeleteOutbox> outboxes = mongoDeleteOutboxRepository.findAll();
+            assertThat(outboxes).hasSize(1);
+            MongoDeleteOutbox outbox = outboxes.getFirst();
+            assertThat(outbox.getTriggerType()).isEqualTo(MongoDeleteOutbox.TriggerType.COMPENSATE);
+            assertThat(outbox.getDomainType()).isEqualTo(MongoDeleteOutbox.DomainType.DOC);
+            assertThat(outbox.getOriginType()).isEqualTo(MongoDeleteOutbox.OriginType.SAVE_CONTENT_ID);
+            assertThat(outbox.getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
         }
     }
     @Nested
-    @DisplayName("MySQL 실패 + 보상 삭제 3회 실패")
-    class MySqlFailureWithCompensateFailureTest {
+    @DisplayName("MySQL 실패 시 보상 Outbox 상태")
+    class MySqlFailureWithCompensateOutboxTest {
 
         @Autowired
         private DocService docService;
@@ -223,13 +231,9 @@ public class DocServiceIntegrationTests {
         @MockitoBean
         private DocCreateMySqlTxService docCreateMySqlTxService;
 
-        @MockitoBean
-        private CommitBlockSequenceRepository mockedCommitBlockSequenceRepository;
-
         @Test
-        @DisplayName("보상 삭제가 3회 모두 실패하면 MongoDeleteFailure가 저장된다")
-        @Transactional(propagation = Propagation.NOT_SUPPORTED)
-        void mysqlFail_and_compensateFail_storeFailure() {
+        @DisplayName("MySQL 생성 실패 시 보상 Outbox는 OPEN 상태로 저장된다")
+        void mysqlFail_storeOpenOutbox() {
 
             // given
             User user = userRepository.save(DocTestUtils.createUser());
@@ -239,23 +243,15 @@ public class DocServiceIntegrationTests {
             when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
                     .thenThrow(new RuntimeException("MySQL 생성 실패"));
 
-            // 보상 삭제 실패 유도 (Retry + Recover 경로를 실제로 타게 함)
-            doThrow(new RuntimeException("보상 삭제 실패"))
-                    .when(mockedCommitBlockSequenceRepository).deleteAllById(any());
-
-            // when
+            // when & then
             assertThatThrownBy(() -> docService.create(request, user.getId()))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("MySQL 생성 실패");
 
-            // then (비동기 or recover 고려)
-            await().untilAsserted(() -> {
-                List<MongoDeleteOutbox> failures =
-                        mongoDeleteOutboxRepository.findAll();
-
-                assertThat(failures).hasSize(1);
-                assertThat(failures.get(0).getResolved()).isFalse();
-            });
+            List<MongoDeleteOutbox> outboxes = mongoDeleteOutboxRepository.findAll();
+            assertThat(outboxes).hasSize(1);
+            assertThat(outboxes.getFirst().getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
+            assertThat(outboxes.getFirst().getRetryCount()).isEqualTo(0);
         }
     }
 

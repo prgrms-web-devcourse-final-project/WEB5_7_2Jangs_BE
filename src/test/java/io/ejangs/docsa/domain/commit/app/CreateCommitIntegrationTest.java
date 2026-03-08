@@ -31,6 +31,8 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -76,6 +78,9 @@ public class CreateCommitIntegrationTest {
 
     @Autowired
     private BlockRepository blockRepository;
+
+    @Autowired
+    private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
     private User testUser;
     private Doc testDoc;
@@ -209,10 +214,11 @@ public class CreateCommitIntegrationTest {
         private CommitMySqlTxService commitMySqlTxService;
 
         @Test
-        @DisplayName("Mongo 성공 후 MySQL 실패 시 생성된 block/CBS는 보상 삭제된다")
+        @DisplayName("Mongo 성공 후 MySQL 실패 시 보상 Outbox가 생성된다")
         void mysqlFail_compensateMongoDelete() {
             long beforeCbsCount = cbsRepository.count();
             long beforeBlockCount = blockRepository.count();
+            long beforeOutboxCount = mongoDeleteOutboxRepository.count();
 
             CreateCommitRequest request =
                     new CreateCommitRequest("mysql fail", "description", baseBranch.getId(), blocks, blockOrders);
@@ -223,8 +229,18 @@ public class CreateCommitIntegrationTest {
             assertThatThrownBy(() -> commitService.createCommit(testDoc.getId(), request, testUser.getId()))
                     .isInstanceOf(RuntimeException.class);
 
-            assertThat(cbsRepository.count()).isEqualTo(beforeCbsCount);
-            assertThat(blockRepository.count()).isEqualTo(beforeBlockCount);
+            assertThat(cbsRepository.count()).isEqualTo(beforeCbsCount + 1);
+            assertThat(blockRepository.count()).isEqualTo(beforeBlockCount + blocks.size());
+            assertThat(mongoDeleteOutboxRepository.count()).isEqualTo(beforeOutboxCount + 1);
+
+            assertThat(mongoDeleteOutboxRepository.findAll())
+                    .anySatisfy(outbox -> {
+                        assertThat(outbox.getTriggerType()).isEqualTo(MongoDeleteOutbox.TriggerType.COMPENSATE);
+                        assertThat(outbox.getDomainType()).isEqualTo(MongoDeleteOutbox.DomainType.COMMIT);
+                        assertThat(outbox.getOriginType()).isEqualTo(MongoDeleteOutbox.OriginType.CBS_ID);
+                        assertThat(outbox.getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
+                        assertThat(outbox.getOriginId()).isNotBlank();
+                    });
         }
     }
 
