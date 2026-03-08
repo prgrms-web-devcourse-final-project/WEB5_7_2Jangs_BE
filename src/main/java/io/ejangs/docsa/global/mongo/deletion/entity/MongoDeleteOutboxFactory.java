@@ -1,5 +1,6 @@
 package io.ejangs.docsa.global.mongo.deletion.entity;
 
+import jakarta.persistence.EntityManager;
 import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MongoDeleteOutboxFactory {
 
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
+    private final EntityManager entityManager;
 
     public MongoDeleteOutbox create(
             TriggerType triggerType,
@@ -81,6 +83,11 @@ public class MongoDeleteOutboxFactory {
         try {
             return mongoDeleteOutboxRepository.save(newOutbox);
         } catch (DataIntegrityViolationException e) {
+            // 유니크 키 충돌 시, 실패한 엔티티를 영속성 컨텍스트에서 분리합니다.
+            // 같은 트랜잭션의 후속 flush에서 발생할 수 있는 부작용을 방지하기 위함
+            if (entityManager.contains(newOutbox)) {
+                entityManager.detach(newOutbox);
+            }
             return mongoDeleteOutboxRepository
                     .findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(
                             triggerType,
