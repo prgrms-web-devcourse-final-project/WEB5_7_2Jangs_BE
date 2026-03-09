@@ -22,7 +22,10 @@ public class MongoDeleteOutboxWorker {
     private final MongoDeleteService mongoDeleteService;
     private final MongoDeleteOutboxCompleteService mongoDeleteOutboxCompleteService;
 
-    @Scheduled(fixedDelayString = "PT1M")
+    @Scheduled(
+            fixedDelayString = "${mongo.delete.outbox.worker.fixed-delay:PT1M}",
+            initialDelayString = "${mongo.delete.outbox.worker.initial-delay:PT0S}"
+    )
     public void run() {
         int recovered = mongoDeleteOutboxCompleteService.recoverTimedOutProcessing(
                 LocalDateTime.now().minus(PROCESSING_TIMEOUT)
