@@ -53,3 +53,9 @@ app:
   cors:
     allowed-origin:
 
+mongo:
+  delete:
+    outbox:
+      worker:
+        fixed-delay: PT1M
+        initial-delay: PT24H

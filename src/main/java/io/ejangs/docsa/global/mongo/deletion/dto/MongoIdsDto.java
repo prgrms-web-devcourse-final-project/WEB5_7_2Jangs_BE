@@ -10,10 +10,12 @@ public record MongoIdsDto(
 ) {
 
     public MongoIdsDto {
-        saveContentsIds = saveContentsIds == null ? List.of() : saveContentsIds;
-        commitBlockSequenceIds =
-                commitBlockSequenceIds == null ? List.of() : commitBlockSequenceIds;
-        blockIds = blockIds == null ? List.of() : blockIds;
+        List<String> normalizedSaveIds = List.copyOf(saveContentsIds == null ? List.of() : saveContentsIds);
+        List<String> normalizedCommitIds = List.copyOf(commitBlockSequenceIds == null ? List.of() : commitBlockSequenceIds);
+        List<String> normalizedBlockIds = List.copyOf(blockIds == null ? List.of() : blockIds);
+        saveContentsIds = normalizedSaveIds;
+        commitBlockSequenceIds = normalizedCommitIds;
+        blockIds = normalizedBlockIds;
     }
 
 }

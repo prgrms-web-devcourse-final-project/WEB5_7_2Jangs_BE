@@ -17,13 +17,16 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.mongo.deletion.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +45,7 @@ public class CommitService {
 
     private final CommitContentAssembler assembler;
     private final MongoIdsCollector mongoIdsCollector;
-    private final ApplicationEventPublisher eventPublisher;
+    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     public CreateCommitResponse createCommit(Long docId,
             CreateCommitRequest request,
@@ -55,7 +58,8 @@ public class CommitService {
 
         String baseCommitCbsMongoId = commitQueryService.resolveBaseCommitCbsMongoId(branch);
 
-        Commit newCommit = commitCreateOrchestrator.create(request, baseCommitCbsMongoId, doc, branch);
+        Commit newCommit = commitCreateOrchestrator.create(request, baseCommitCbsMongoId, doc,
+                branch);
 
         return CommitMapper.toCreateCommitResponse(newCommit);
     }
@@ -80,7 +84,7 @@ public class CommitService {
         return assembler.assemble(commit.getCommitMongoId());
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest,
             Long userId) {
         MergeBranches mergeBranches = prepareMergeBranches(docId, mergeRequest, userId);
@@ -96,9 +100,12 @@ public class CommitService {
         return CommitMapper.toCreateCommitResponse(mergedCommit);
     }
 
-    private record MergeBranches(Branch baseBranch, Branch targetBranch) { }
+    private record MergeBranches(Branch baseBranch, Branch targetBranch) {
 
-    private MergeBranches prepareMergeBranches(Long docId, MergeCommitRequest mergeRequest, Long userId) {
+    }
+
+    private MergeBranches prepareMergeBranches(Long docId, MergeCommitRequest mergeRequest,
+            Long userId) {
         Branch baseBranch = getLeafCommitById(mergeRequest.baseCommitId()).getBranch();
         Branch targetBranch = getLeafCommitById(mergeRequest.targetCommitId()).getBranch();
 
@@ -120,7 +127,8 @@ public class CommitService {
         }
     }
 
-    private void validateMergePermission(Long docId, Long userId, Branch baseBranch, Branch targetBranch) {
+    private void validateMergePermission(Long docId, Long userId, Branch baseBranch,
+            Branch targetBranch) {
         branchQueryService.checkBranchInDocOwnedByUser(docId, baseBranch.getId(), userId);
         branchQueryService.checkBranchInDocOwnedByUser(docId, targetBranch.getId(), userId);
     }
@@ -149,8 +157,13 @@ public class CommitService {
 
         commitQueryService.deleteById(commit.getId());
 
-        log.warn("[MONGO] deleteCommit");
-        eventPublisher.publishEvent(commitDeleteMongoIds);
+        mongoDeleteOutboxFactory.create(
+                TriggerType.DELETE,
+                DomainType.COMMIT,
+                OriginType.COMMIT_ID,
+                commitId,
+                commitDeleteMongoIds
+        );
     }
 
     private void checkFromOrRootCommit(Commit commit) {

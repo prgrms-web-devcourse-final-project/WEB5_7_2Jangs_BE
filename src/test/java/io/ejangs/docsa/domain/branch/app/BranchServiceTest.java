@@ -18,6 +18,10 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +29,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -53,13 +56,13 @@ class BranchServiceTest {
     private CommitBlockSequenceRepository commitBlockSequenceRepository;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
-
-    @Mock
     private BranchQueryService branchQueryService;
 
     @Mock
     private BranchCreateOrchestrator branchCreateOrchestrator;
+
+    @Mock
+    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     @Test
     @DisplayName("leaf이면서 root이면서 save가 존재하는 상황에서 브랜치를 이미 있는 이름으로 생성 시 - BRANCH_NAME_DUPLICATED")
@@ -273,9 +276,15 @@ class BranchServiceTest {
         // then - 브랜치 실제 삭제
         verify(branchQueryService).delete(branch);
 
-        // 이벤트 발행 검증
+        // Outbox 적재 검증
         ArgumentCaptor<MongoIdsDto> captor = ArgumentCaptor.forClass(MongoIdsDto.class);
-        verify(eventPublisher).publishEvent(captor.capture());
+        verify(mongoDeleteOutboxFactory).create(
+                eq(TriggerType.DELETE),
+                eq(DomainType.BRANCH),
+                eq(OriginType.BRANCH_ID),
+                eq(branchId),
+                captor.capture()
+        );
 
         MongoIdsDto emitted = captor.getValue();
         assertEquals(List.of("seq1", "seq2"), emitted.commitBlockSequenceIds());
