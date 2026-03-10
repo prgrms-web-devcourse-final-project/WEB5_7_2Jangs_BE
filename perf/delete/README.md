@@ -14,6 +14,8 @@
   - 생성된 문서를 찾아 삭제만 수행
 - `perf/delete/compare_delete_summary.mjs`
   - 두 브랜치 결과 비교 표 출력
+- `perf/cleanup_perf_docs.sh`
+  - 생성된 perf 문서 정리 (`MODE=multi` 또는 `MODE=all`)
 
 ## 0) App run (example)
 
@@ -110,3 +112,26 @@ node perf/delete/compare_delete_summary.mjs \
 - 동일 DB 스펙, 동일 JVM 옵션
 - 워밍업 1회 후 본측정 3회 이상 (평균/편차 사용)
 - 브랜치 순서 바꿔서 반복 (`dev -> refactor`, `refactor -> dev`)
+
+## 6) Cleanup
+
+다중 유저 테스트 데이터(`PDEL-*`) 정리:
+
+```bash
+BASE_URL=http://localhost:8080 \
+MODE=multi \
+USER_PREFIX=perfdel USER_DOMAIN=test.com USER_COUNT=100 \
+USER_PASSWORD=Testtest1 \
+bash perf/cleanup_perf_docs.sh
+```
+
+staging HTTPS(자체 서명 인증서)면:
+
+```bash
+BASE_URL=https://<stg-domain-or-ip>:8443 \
+INSECURE_TLS=1 \
+MODE=multi \
+USER_PREFIX=perfdel USER_DOMAIN=test.com USER_COUNT=100 \
+USER_PASSWORD=Testtest1 \
+bash perf/cleanup_perf_docs.sh
+```

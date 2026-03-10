@@ -25,6 +25,8 @@
   - 두 결과 JSON 비교 표 출력
 - `results/`
   - 실행 결과 JSON 저장
+- `../cleanup_perf_docs.sh`
+  - 생성된 perf 문서 정리 (`MODE=single` 또는 `MODE=all`)
 
 ## Environment variables
 
@@ -91,3 +93,24 @@ node perf/single_delete/compare_single_delete_summary.mjs \
 - 이 벤치는 `setup()`에서 데이터를 생성하고, 본 실행에서 삭제만 측정합니다.
 - `commit` 삭제는 서비스 제약(leaf이며 root/from commit이 아니어야 함)을 만족하도록 데이터셋을 생성합니다.
 - 진짜 single-user 조건 유지를 위해 실행 VU를 강제로 1로 고정했습니다.
+
+## Cleanup
+
+단일 유저 테스트 데이터(`SDEL-*`) 정리:
+
+```bash
+BASE_URL='http://localhost:8080' \
+MODE=single \
+TEST_EMAIL='test@test.com' USER_PASSWORD='Testtest1' \
+bash perf/cleanup_perf_docs.sh
+```
+
+staging HTTPS(자체 서명 인증서)면:
+
+```bash
+BASE_URL='https://<stg-domain-or-ip>:8443' \
+INSECURE_TLS=1 \
+MODE=single \
+TEST_EMAIL='test@test.com' USER_PASSWORD='Testtest1' \
+bash perf/cleanup_perf_docs.sh
+```
