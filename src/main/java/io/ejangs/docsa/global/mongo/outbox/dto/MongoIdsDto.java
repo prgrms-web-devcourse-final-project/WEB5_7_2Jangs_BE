@@ -1,4 +1,4 @@
-package io.ejangs.docsa.global.mongo.deletion.dto;
+package io.ejangs.docsa.global.mongo.outbox.dto;
 
 import java.util.List;
 

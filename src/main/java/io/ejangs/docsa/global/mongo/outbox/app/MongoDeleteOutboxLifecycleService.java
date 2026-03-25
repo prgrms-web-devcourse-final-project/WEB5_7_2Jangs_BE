@@ -1,8 +1,8 @@
-package io.ejangs.docsa.global.mongo.deletion.app;
+package io.ejangs.docsa.global.mongo.outbox.app;
 
-import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
-public class MongoDeleteOutboxCompleteService {
+public class MongoDeleteOutboxLifecycleService {
 
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 

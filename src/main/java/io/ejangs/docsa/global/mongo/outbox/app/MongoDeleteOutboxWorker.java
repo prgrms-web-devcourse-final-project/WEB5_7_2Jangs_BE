@@ -1,8 +1,8 @@
-package io.ejangs.docsa.global.mongo.deletion.app;
+package io.ejangs.docsa.global.mongo.outbox.app;
 
-import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,14 +20,14 @@ public class MongoDeleteOutboxWorker {
 
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
     private final MongoDeleteService mongoDeleteService;
-    private final MongoDeleteOutboxCompleteService mongoDeleteOutboxCompleteService;
+    private final MongoDeleteOutboxLifecycleService mongoDeleteOutboxLifecycleService;
 
     @Scheduled(
             fixedDelayString = "${mongo.delete.outbox.worker.fixed-delay:PT1M}",
             initialDelayString = "${mongo.delete.outbox.worker.initial-delay:PT0S}"
     )
     public void run() {
-        int recovered = mongoDeleteOutboxCompleteService.recoverTimedOutProcessing(
+        int recovered = mongoDeleteOutboxLifecycleService.recoverTimedOutProcessing(
                 LocalDateTime.now().minus(PROCESSING_TIMEOUT)
         );
         if (recovered > 0) {
@@ -46,16 +46,16 @@ public class MongoDeleteOutboxWorker {
 
     private void deleteTarget(List<MongoDeleteOutbox> outboxes) {
         for (MongoDeleteOutbox outbox : outboxes) {
-            MongoIdsDto target = mongoDeleteOutboxCompleteService.claimOpen(outbox.getId());
+            MongoIdsDto target = mongoDeleteOutboxLifecycleService.claimOpen(outbox.getId());
             if (target == null) {
                 continue;
             }
             try {
                 mongoDeleteService.deleteTarget(target);
-                mongoDeleteOutboxCompleteService.done(outbox.getId());
+                mongoDeleteOutboxLifecycleService.done(outbox.getId());
             } catch (Exception e) {
                 log.error("[Outbox Worker] Error : {}", e.getMessage(), e);
-                mongoDeleteOutboxCompleteService.retry(outbox.getId(), e.getMessage());
+                mongoDeleteOutboxLifecycleService.retry(outbox.getId(), e.getMessage());
             }
         }
     }

@@ -1,4 +1,4 @@
-package io.ejangs.docsa.global.mongo.deletion.entity;
+package io.ejangs.docsa.global.mongo.outbox.entity;
 
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.CollectionTable;
