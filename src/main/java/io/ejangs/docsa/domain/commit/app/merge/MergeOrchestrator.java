@@ -1,15 +1,15 @@
 package io.ejangs.docsa.domain.commit.app.merge;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.global.mongo.deletion.dto.CommitMongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.dto.CommitMongoIdsDto;
 import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,24 +1,24 @@
-package io.ejangs.docsa.global.mongo.deletion.entity;
+package io.ejangs.docsa.global.mongo.outbox.app;
 
-import jakarta.persistence.EntityManager;
-import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
+import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class MongoDeleteOutboxFactory {
 
+    private final MongoDeleteOutboxCreateService mongoDeleteOutboxCreateService;
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
-    private final EntityManager entityManager;
 
     public MongoDeleteOutbox create(
             TriggerType triggerType,
@@ -81,13 +81,8 @@ public class MongoDeleteOutboxFactory {
         );
 
         try {
-            return mongoDeleteOutboxRepository.save(newOutbox);
+            mongoDeleteOutboxCreateService.tryCreate(newOutbox);
         } catch (DataIntegrityViolationException e) {
-            // 유니크 키 충돌 시, 실패한 엔티티를 영속성 컨텍스트에서 분리합니다.
-            // 같은 트랜잭션의 후속 flush에서 발생할 수 있는 부작용을 방지하기 위함
-            if (entityManager.contains(newOutbox)) {
-                entityManager.detach(newOutbox);
-            }
             return mongoDeleteOutboxRepository
                     .findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(
                             triggerType,
@@ -95,7 +90,10 @@ public class MongoDeleteOutboxFactory {
                             originType,
                             normalizedOriginId
                     )
-                    .orElseThrow(() -> e);
+                    .orElseThrow(() -> new CustomException(DatabaseErrorCode.DATABASE_ERROR));
+
         }
+
+        return newOutbox;
     }
 }

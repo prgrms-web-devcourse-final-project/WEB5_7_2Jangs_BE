@@ -1,20 +1,16 @@
-package io.ejangs.docsa.mongoDeleteSystem;
+package io.ejangs.docsa.global.mongo.outbox.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 
-import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteOutboxCompleteService;
-import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteOutboxWorker;
-import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteService;
-import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OutboxStatus;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OutboxStatus;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class MongoDeleteOutboxTest {
+class MongoDeleteOutboxIntegrationTest {
 
     @Autowired
     private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
@@ -42,7 +38,7 @@ class MongoDeleteOutboxTest {
     private MongoDeleteOutboxWorker mongoDeleteOutboxWorker;
 
     @Autowired
-    private MongoDeleteOutboxCompleteService mongoDeleteOutboxCompleteService;
+    private MongoDeleteOutboxLifecycleService mongoDeleteOutboxLifecycleService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -127,7 +123,7 @@ class MongoDeleteOutboxTest {
     @DisplayName("PROCESSING timeout 건은 run() 시작 시 복구되어 재처리된다")
     void workerRecoversTimedOutProcessingBeforeDelete() {
         MongoDeleteOutbox outbox = createOpenOutbox();
-        mongoDeleteOutboxCompleteService.claimOpen(outbox.getId());
+        mongoDeleteOutboxLifecycleService.claimOpen(outbox.getId());
 
         MongoDeleteOutbox processing = mongoDeleteOutboxRepository.findById(outbox.getId()).orElseThrow();
         ReflectionTestUtils.setField(processing, "updatedAt", LocalDateTime.now().minusMinutes(10));
@@ -150,19 +146,19 @@ class MongoDeleteOutboxTest {
     void completeServiceNoOpOnStatusMismatch() {
         MongoDeleteOutbox outbox = createOpenOutbox();
 
-        mongoDeleteOutboxCompleteService.done(outbox.getId());
-        mongoDeleteOutboxCompleteService.retry(outbox.getId(), "ignored");
+        mongoDeleteOutboxLifecycleService.done(outbox.getId());
+        mongoDeleteOutboxLifecycleService.retry(outbox.getId(), "ignored");
 
         MongoDeleteOutbox open = mongoDeleteOutboxRepository.findById(outbox.getId()).orElseThrow();
         assertThat(open.getStatus()).isEqualTo(OutboxStatus.OPEN);
         assertThat(open.getRetryCount()).isEqualTo(0);
         assertThat(open.getLastError()).isNull();
 
-        assertThat(mongoDeleteOutboxCompleteService.claimOpen(outbox.getId())).isNotNull();
-        mongoDeleteOutboxCompleteService.done(outbox.getId());
+        assertThat(mongoDeleteOutboxLifecycleService.claimOpen(outbox.getId())).isNotNull();
+        mongoDeleteOutboxLifecycleService.done(outbox.getId());
 
-        assertThat(mongoDeleteOutboxCompleteService.claimOpen(outbox.getId())).isNull();
-        mongoDeleteOutboxCompleteService.retry(outbox.getId(), "ignored2");
+        assertThat(mongoDeleteOutboxLifecycleService.claimOpen(outbox.getId())).isNull();
+        mongoDeleteOutboxLifecycleService.retry(outbox.getId(), "ignored2");
 
         MongoDeleteOutbox done = mongoDeleteOutboxRepository.findById(outbox.getId()).orElseThrow();
         assertThat(done.getStatus()).isEqualTo(OutboxStatus.DONE);

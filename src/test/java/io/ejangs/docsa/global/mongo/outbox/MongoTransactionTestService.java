@@ -1,4 +1,4 @@
-package io.ejangs.docsa.mongoDeleteSystem;
+package io.ejangs.docsa.global.mongo.outbox;
 
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;

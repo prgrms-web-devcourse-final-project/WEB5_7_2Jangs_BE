@@ -1,17 +1,18 @@
-package io.ejangs.docsa.global.mongo.deletion.entity;
+package io.ejangs.docsa.global.mongo.outbox.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.global.mongo.deletion.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
-import jakarta.persistence.EntityManager;
+import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,13 +24,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class MongoDeleteOutboxFactoryTest {
+class MongoDeleteOutboxFactoryUnitTest {
 
     @Mock
     private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
     @Mock
-    private EntityManager entityManager;
+    private MongoDeleteOutboxCreateService mongoDeleteOutboxCreateService;
 
     @InjectMocks
     private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
@@ -60,9 +61,9 @@ class MongoDeleteOutboxFactoryTest {
                 originType,
                 originId
         )).thenReturn(java.util.Optional.empty(), java.util.Optional.of(existing));
-        when(entityManager.contains(any(MongoDeleteOutbox.class))).thenReturn(true);
-        when(mongoDeleteOutboxRepository.save(any(MongoDeleteOutbox.class)))
-                .thenThrow(new DataIntegrityViolationException("duplicate key"));
+        doThrow(new DataIntegrityViolationException("duplicate key"))
+                .when(mongoDeleteOutboxCreateService)
+                .tryCreate(any(MongoDeleteOutbox.class));
 
         MongoDeleteOutbox result = mongoDeleteOutboxFactory.create(
                 triggerType,
@@ -80,7 +81,6 @@ class MongoDeleteOutboxFactoryTest {
                         originType,
                         originId
                 );
-        verify(mongoDeleteOutboxRepository).save(any(MongoDeleteOutbox.class));
-        verify(entityManager).detach(any(MongoDeleteOutbox.class));
+        verify(mongoDeleteOutboxCreateService).tryCreate(any(MongoDeleteOutbox.class));
     }
 }

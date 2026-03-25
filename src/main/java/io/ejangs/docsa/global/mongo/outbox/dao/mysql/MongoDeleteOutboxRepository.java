@@ -1,9 +1,9 @@
-package io.ejangs.docsa.global.mongo.deletion.dao.mysql;
+package io.ejangs.docsa.global.mongo.outbox.dao.mysql;
 
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.mongo.deletion.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;

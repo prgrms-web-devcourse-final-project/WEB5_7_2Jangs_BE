@@ -135,7 +135,9 @@ function buildCommitBody(title, branchId) {
       data: {
         id: blockId,
         type: 'paragraph',
-        text: `${title}-text-${i}`,
+        data: {
+          text: `${title}-text-${i}`,
+        },
       },
     });
     blockOrders.push(blockId);
