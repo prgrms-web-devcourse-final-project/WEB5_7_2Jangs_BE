@@ -1,8 +1,8 @@
-package io.ejangs.docsa.global.mongo.deletion.util;
+package io.ejangs.docsa.global.mongo.outbox.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

@@ -3,6 +3,9 @@ package io.ejangs.docsa.domain.doc.unit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,7 +16,10 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
-import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +38,7 @@ class DocCreateOrchestratorTest {
     private DocCreateMySqlTxService docCreateMySqlTxService;
 
     @Mock
-    private MongoDeleteRetryService mongoDeleteRetryService;
+    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     @InjectMocks
     private DocCreateOrchestrator orchestrator;
@@ -51,7 +57,7 @@ class DocCreateOrchestratorTest {
         DocCreateResponse result = orchestrator.create("doc", user);
 
         assertThat(result).isEqualTo(expected);
-        verify(mongoDeleteRetryService, never()).deleteMongoData(any());
+        verify(mongoDeleteOutboxFactory, never()).create(any(), any(), any(), anyString(), any());
     }
 
     @Test
@@ -69,6 +75,15 @@ class DocCreateOrchestratorTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("mysql fail");
 
-        verify(mongoDeleteRetryService).deleteMongoData(any());
+        verify(mongoDeleteOutboxFactory).create(
+                eq(TriggerType.COMPENSATE),
+                eq(DomainType.DOC),
+                eq(OriginType.SAVE_CONTENT_ID),
+                eq("save-1"),
+                argThat(ids ->
+                        ids.saveContentsIds().contains("save-1")
+                                && ids.commitBlockSequenceIds().isEmpty()
+                                && ids.blockIds().isEmpty())
+        );
     }
 }

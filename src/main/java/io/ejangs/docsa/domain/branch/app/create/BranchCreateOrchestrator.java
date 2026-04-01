@@ -1,8 +1,11 @@
 package io.ejangs.docsa.domain.branch.app.create;
 
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
-import io.ejangs.docsa.global.mongo.deletion.app.MongoDeleteRetryService;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +18,7 @@ public class BranchCreateOrchestrator {
 
     private final BranchCreateMongoTxService branchCreateMongoTxService;
     private final BranchCreateMySqlTxService branchCreateMySqlTxService;
-    private final MongoDeleteRetryService mongoDeleteRetryService;
+    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     public BranchCreateResponse createBranchOrSave(BranchCreateContext context) {
         String saveContentId = branchCreateMongoTxService.createSaveContentFromCommit(
@@ -24,9 +27,15 @@ public class BranchCreateOrchestrator {
         try {
             return branchCreateMySqlTxService.createBranchOrSave(context, saveContentId);
         } catch (Exception e) {
-            log.warn("[SAGA] 브랜치/저장 생성 실패 -> Mongo 보상 삭제.", e);
+            log.warn("[SAGA] 브랜치/저장 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
             MongoIdsDto compensateTarget = new MongoIdsDto(List.of(saveContentId), null, null);
-            mongoDeleteRetryService.deleteMongoData(compensateTarget);
+            mongoDeleteOutboxFactory.create(
+                    TriggerType.COMPENSATE,
+                    DomainType.BRANCH,
+                    OriginType.SAVE_CONTENT_ID,
+                    saveContentId,
+                    compensateTarget
+            );
             throw e;
         }
     }

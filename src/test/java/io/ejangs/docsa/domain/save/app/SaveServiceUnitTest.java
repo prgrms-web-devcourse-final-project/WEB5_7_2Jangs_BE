@@ -3,6 +3,9 @@ package io.ejangs.docsa.domain.save.app;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
@@ -19,8 +22,12 @@ import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -39,6 +47,8 @@ class SaveServiceUnitTest {
 
     @Mock
     private SaveQueryService saveQueryService;
+    @Mock
+    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
     @Mock
     private Save mockSave;
     @Mock
@@ -186,11 +196,20 @@ class SaveServiceUnitTest {
         when(mockSave.getBranch()).thenReturn(mockBranch);
         when(mockBranch.getCommits()).thenReturn(List.of(mockCommit));
         when(mockSave.getSaveMongoId()).thenReturn("mongo-1");
+        when(mockSave.getId()).thenReturn(saveId);
 
         saveService.deleteSave(idDto);
 
         verify(saveQueryService).deleteSave(mockSave);
-        verify(saveQueryService).deleteSaveContentById("mongo-1");
+        ArgumentCaptor<MongoIdsDto> targetCaptor = ArgumentCaptor.forClass(MongoIdsDto.class);
+        verify(mongoDeleteOutboxFactory).create(
+                eq(TriggerType.DELETE),
+                eq(DomainType.SAVE),
+                eq(OriginType.SAVE_ID),
+                eq(saveId),
+                targetCaptor.capture()
+        );
+        assertThat(targetCaptor.getValue().saveContentsIds()).containsExactly("mongo-1");
     }
 
     @Test
@@ -234,8 +253,8 @@ class SaveServiceUnitTest {
     }
 
     @Test
-    @DisplayName("deleteSave 실패 - MongoDB 삭제 실패")
-    void deleteSave_shouldFail_whenMongoDeleteFails() {
+    @DisplayName("deleteSave 실패 - Outbox 생성 실패")
+    void deleteSave_shouldFail_whenOutboxCreateFails() {
         Branch mockBranch = org.mockito.Mockito.mock(Branch.class);
         Commit mockCommit = org.mockito.Mockito.mock(Commit.class);
 
@@ -245,15 +264,15 @@ class SaveServiceUnitTest {
         when(mockSave.getBranch()).thenReturn(mockBranch);
         when(mockBranch.getCommits()).thenReturn(List.of(mockCommit));
         when(mockSave.getSaveMongoId()).thenReturn("mongo-1");
-        doThrow(new RuntimeException("mongo delete failed"))
-                .when(saveQueryService).deleteSaveContentById("mongo-1");
+        when(mockSave.getId()).thenReturn(saveId);
+        doThrow(new RuntimeException("outbox create failed"))
+                .when(mongoDeleteOutboxFactory)
+                .create(any(), any(), any(), anyLong(), any(MongoIdsDto.class));
 
         assertThatThrownBy(() -> saveService.deleteSave(idDto))
-                .isInstanceOf(CustomException.class)
-                .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
-                        .isEqualTo(DatabaseErrorCode.DATABASE_ERROR));
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("outbox create failed");
 
         verify(saveQueryService).deleteSave(mockSave);
-        verify(saveQueryService).deleteSaveContentById("mongo-1");
     }
 }

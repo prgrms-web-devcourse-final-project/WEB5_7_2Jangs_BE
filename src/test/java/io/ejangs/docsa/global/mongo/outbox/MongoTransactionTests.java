@@ -1,4 +1,4 @@
-package io.ejangs.docsa.mongoDeleteSystem;
+package io.ejangs.docsa.global.mongo.outbox;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 

@@ -16,15 +16,18 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.deletion.util.MongoDeleteMapper;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.mongo.outbox.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 
 import java.util.*;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,8 +42,8 @@ public class BranchService {
     private final CommitQueryService commitQueryService;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final EdgeService edgeService;
-    private final ApplicationEventPublisher eventPublisher;
     private final BranchCreateOrchestrator branchCreateOrchestrator;
+    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     /**
      * '이어서 작업하기' 로직으로, 브랜치를 생성하고 저장을 추가하거나 기존 브랜치에 저장을 추가합니다.
@@ -77,7 +80,8 @@ public class BranchService {
         boolean hasSave = fromBranch.getSave() != null;
 
         boolean createNewBranch =
-                !isLeaf || !fromBranch.getName().equals(request.name()) || (isLeaf && isRoot && hasSave);
+                !isLeaf || !fromBranch.getName().equals(request.name()) || (isLeaf && isRoot
+                        && hasSave);
 
         if (createNewBranch) {
             branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
@@ -94,7 +98,7 @@ public class BranchService {
         );
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BranchRenameResponse renameBranch(Long documentId, Long branchId, String newName,
             Long userId) {
 
@@ -117,7 +121,7 @@ public class BranchService {
      * 삭제하려는 브랜치는 메인 브랜치가 아니며 파생된 서브브랜치 또한 가지고 있지 않아야 합니다. 삭제 가능한 브랜치임을 확인 후 오직 해당 브랜치에서만 존재하는 블록을
      * 삭제한 후 나머지 브랜치 관련 정보를 삭제합니다.
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteBranch(Long documentId, Long branchId, Long userId) {
 
         // 1. 브랜치 검증
@@ -141,9 +145,6 @@ public class BranchService {
         // 5. 브랜치에서 삭제 가능한 블록과 시퀀스, SaveContent 삭제 이벤트 발행
         MongoIdsDto deletableMongoIds = collectDeletableMongoDataForBranch(branch, branchCommits);
 
-        log.warn("[MONGO] deleteBranch");
-        eventPublisher.publishEvent(deletableMongoIds);
-
         // 6. 브랜치가 속한 문서의 수정시간 갱신
         RenewUpdatedAtHelper.touch(branch);
 
@@ -153,6 +154,14 @@ public class BranchService {
 
         // 8. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
         branchQueryService.delete(branch);
+
+        mongoDeleteOutboxFactory.create(
+                TriggerType.DELETE,
+                DomainType.BRANCH,
+                OriginType.BRANCH_ID,
+                branchId,
+                deletableMongoIds
+        );
 
     }
 

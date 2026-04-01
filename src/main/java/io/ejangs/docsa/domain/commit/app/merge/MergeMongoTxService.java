@@ -5,7 +5,7 @@ import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
-import io.ejangs.docsa.global.mongo.deletion.dto.CommitMongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.dto.CommitMongoIdsDto;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class MergeMongoTxService {
     private final BlockService blockService;
     private final CommitQueryService commitQueryService;
 
-    @Transactional(transactionManager = "mongoTransactionManager")
+    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
     public CommitMongoIdsDto createMongoPart(List<BlockDto> blocks) {
         List<Block> savedBlocks = blockService.saveBlocks(blocks);
 

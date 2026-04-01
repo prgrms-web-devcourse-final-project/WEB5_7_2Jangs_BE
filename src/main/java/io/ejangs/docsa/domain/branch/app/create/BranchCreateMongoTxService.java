@@ -16,7 +16,7 @@ public class BranchCreateMongoTxService {
     private final CommitContentAssembler commitContentAssembler;
     private final SaveContentRepository saveContentRepository;
 
-    @Transactional(transactionManager = "mongoTransactionManager")
+    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
     public String createSaveContentFromCommit(String commitMongoId) {
         List<Map<String, Object>> blockContents = commitContentAssembler.assemble(commitMongoId);
 

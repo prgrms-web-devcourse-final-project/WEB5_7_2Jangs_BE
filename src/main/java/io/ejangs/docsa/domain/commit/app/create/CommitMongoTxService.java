@@ -8,7 +8,7 @@ import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
-import io.ejangs.docsa.global.mongo.deletion.dto.MongoIdsDto;
+import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +25,7 @@ public class CommitMongoTxService {
     private final BlockService blockService;
     private final CommitBlockSequenceRepository cbsRepository;
 
-    @Transactional(transactionManager = "mongoTransactionManager")
+    @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
     public MongoIdsDto createMongoPart(CreateCommitRequest request, String baseCommitCbsMongoId) {
         // 이번 커밋에서 "새로 저장된" 블록들 (Mongo insert)
         List<Block> newBlocks = blockService.saveBlocks(request.blocks());
