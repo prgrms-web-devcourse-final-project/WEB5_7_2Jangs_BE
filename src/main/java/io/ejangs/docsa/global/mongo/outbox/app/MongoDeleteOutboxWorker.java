@@ -36,7 +36,6 @@ public class MongoDeleteOutboxWorker {
 
         List<MongoDeleteOutbox> outboxes = mongoDeleteOutboxRepository
                 .findTop100ByStatusOrderByCreatedAtAsc(MongoDeleteOutbox.OutboxStatus.OPEN);
-        log.info("[Outbox Worker] Target size : {}", outboxes.size());
         if (outboxes.isEmpty()) {
             return;
         }

@@ -4,8 +4,6 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +18,6 @@ public class TestUserInitializer {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final Environment environment;
 
     private static final String testUserEmail = "test@test.com";
     private static final String testUserName = "test";
@@ -35,7 +32,7 @@ public class TestUserInitializer {
     @PostConstruct
     public void initTestUser() {
         String encodedPassword = createBaseTestUserIfAbsent();
-        seedPerfUsersOnStg(encodedPassword);
+        seedPerfUsersIfEnabled(encodedPassword);
     }
 
     private String createBaseTestUserIfAbsent() {
@@ -55,10 +52,7 @@ public class TestUserInitializer {
                 .orElseGet(() -> passwordEncoder.encode(testUserPassword));
     }
 
-    private void seedPerfUsersOnStg(String encodedPassword) {
-        if (!environment.acceptsProfiles(Profiles.of("stg"))) {
-            return;
-        }
+    private void seedPerfUsersIfEnabled(String encodedPassword) {
         if (perfSeedUserCount <= 0) {
             return;
         }
