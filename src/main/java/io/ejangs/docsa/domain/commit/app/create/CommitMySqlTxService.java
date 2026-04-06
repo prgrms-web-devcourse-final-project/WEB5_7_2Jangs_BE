@@ -39,9 +39,6 @@ public class CommitMySqlTxService {
 
         branch.initializeRootCommitIfNull(newCommit);
 
-        // 브랜치의 Save 삭제
-        String saveMongoId = saveQueryService.deleteSaveIfExists(branch);
-
         Commit baseCommit = Optional.ofNullable(branch.getLeafCommit()).orElse(branch.getFromCommit());
         branch.updateLeafCommit(newCommit);
 
@@ -52,20 +49,6 @@ public class CommitMySqlTxService {
         }
 
         RenewUpdatedAtHelper.touch(branch);
-
-        MongoIdsDto saveCleanupIds = new MongoIdsDto(
-                saveMongoId == null ? null : List.of(saveMongoId),
-                null,
-                null
-        );
-
-        mongoDeleteOutboxFactory.create(
-                TriggerType.DELETE_AFTER_SAVE_SUCCESS,
-                DomainType.SAVE,
-                OriginType.COMMIT_ID,
-                newCommit.getId(),
-                saveCleanupIds
-        );
 
         return newCommit;
     }
