@@ -42,6 +42,7 @@ import org.springframework.http.MediaType;
                         examples = @ExampleObject(
                                 value = """
                                         {
+                                            "branchName": "merged-branch",
                                             "title": "문서 병합 완료",
                                             "description": "병합 커밋입니다.",
                                             "baseCommitId": 1,
@@ -131,16 +132,6 @@ import org.springframework.http.MediaType;
                                                             "status": 400,
                                                             "message": "기록에 대한 설명은 100자를 초과 할 수 없습니다.",
                                                             "error": "UNEXPECTED_ERROR"
-                                                        }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "전달 받은 두 기록이 같은 버전안에 있는 경우",
-                                                value = """
-                                                        {
-                                                            "status": 400,
-                                                            "message": "잘못된 요청입니다.",
-                                                            "error": "COMMIT_BAD_REQUEST"
                                                         }
                                                         """
                                         ),

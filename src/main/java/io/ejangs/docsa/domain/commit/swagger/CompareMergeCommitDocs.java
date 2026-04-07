@@ -33,18 +33,18 @@ import org.springframework.http.MediaType;
                         in = ParameterIn.PATH
                 ),
                 @Parameter(
-                        name = "baseId",
+                        name = "base",
                         description = "base commit 의 id",
                         example = "1",
                         required = true,
-                        in = ParameterIn.PATH
+                        in = ParameterIn.QUERY
                 ),
                 @Parameter(
-                        name = "targetId",
+                        name = "target",
                         description = "target commit 의 id",
                         example = "2",
                         required = true,
-                        in = ParameterIn.PATH
+                        in = ParameterIn.QUERY
                 )
         },
         responses = {

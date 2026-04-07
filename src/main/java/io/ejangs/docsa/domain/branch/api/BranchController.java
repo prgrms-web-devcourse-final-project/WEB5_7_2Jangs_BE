@@ -5,7 +5,7 @@ import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.request.BranchRenameRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
-import io.ejangs.docsa.domain.branch.swagger.CreateBranchOrSaveDocs;
+import io.ejangs.docsa.domain.branch.swagger.CreateBranchDocs;
 import io.ejangs.docsa.domain.branch.swagger.DeleteBranchDocs;
 import io.ejangs.docsa.domain.branch.swagger.RenameBranchDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
@@ -26,7 +26,7 @@ public class BranchController {
     private final BranchService branchService;
 
     @PostMapping
-    @CreateBranchOrSaveDocs
+    @CreateBranchDocs
     public ResponseEntity<BranchCreateResponse> createBranch(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long documentId, @Valid @RequestBody BranchCreateRequest request) {
