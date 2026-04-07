@@ -20,12 +20,12 @@ public class BranchCreateOrchestrator {
     private final BranchCreateMySqlTxService branchCreateMySqlTxService;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
-    public BranchCreateResponse createBranchOrSave(BranchCreateContext context) {
+    public BranchCreateResponse create(BranchCreateContext context) {
         String saveContentId = branchCreateMongoTxService.createSaveContentFromCommit(
                 context.fromCommitMongoId());
 
         try {
-            return branchCreateMySqlTxService.createBranchOrSave(context, saveContentId);
+            return branchCreateMySqlTxService.createMySqlPart(context, saveContentId);
         } catch (Exception e) {
             log.warn("[SAGA] 브랜치/저장 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
             MongoIdsDto compensateTarget = new MongoIdsDto(List.of(saveContentId), null, null);

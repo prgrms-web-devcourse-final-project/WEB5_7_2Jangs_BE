@@ -51,12 +51,12 @@ public class BranchService {
      * fromCommitId가 존재하면 기존 커밋에서 브랜치를 만들거나 저장(save)을 추가하는 상황입니다. fromCommitId가 null이면 최초 브랜치 생성으로,
      * 이 경우는 doc 도메인에서 처리합니다.
      */
-    public BranchCreateResponse createBranchOrSave(Long documentId, BranchCreateRequest request,
+    public BranchCreateResponse createBranch(Long documentId, BranchCreateRequest request,
             Long userId) {
 
         BranchCreateContext context = prepareBranchCreateContext(documentId, request, userId);
 
-        return branchCreateOrchestrator.createBranchOrSave(context);
+        return branchCreateOrchestrator.create(context);
     }
 
     private BranchCreateContext prepareBranchCreateContext(Long documentId,
@@ -72,29 +72,26 @@ public class BranchService {
             throw new CustomException(DocErrorCode.COMMIT_NOT_IN_DOCUMENT);
         }
 
-        boolean isLeaf = fromBranch.getLeafCommit() != null
-                && fromBranch.getLeafCommit().getId().equals(fromCommitId);
+//        boolean isLeaf = fromBranch.getLeafCommit() != null
+//                && fromBranch.getLeafCommit().getId().equals(fromCommitId);
+//
+//        boolean isRoot = fromBranch.getRootCommit() != null
+//                && fromBranch.getRootCommit().getId().equals(fromCommitId);
+//        boolean hasSave = fromBranch.getSave() != null;
+//
+//        boolean createNewBranch =
+//                !isLeaf || !fromBranch.getName().equals(request.name()) || (isLeaf && isRoot
+//                        && hasSave);
 
-        boolean isRoot = fromBranch.getRootCommit() != null
-                && fromBranch.getRootCommit().getId().equals(fromCommitId);
-        boolean hasSave = fromBranch.getSave() != null;
+        branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
 
-        boolean createNewBranch =
-                !isLeaf || !fromBranch.getName().equals(request.name()) || (isLeaf && isRoot
-                        && hasSave);
-
-        if (createNewBranch) {
-            branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
-        }
 
         return new BranchCreateContext(
                 fromBranch.getDoc(),
                 fromBranch,
                 fromCommit,
                 request.name(),
-                fromCommit.getCommitMongoId(),
-                isLeaf,
-                createNewBranch
+                fromCommit.getCommitMongoId()
         );
     }
 

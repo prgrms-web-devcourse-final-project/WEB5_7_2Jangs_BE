@@ -25,17 +25,15 @@ public class BranchController {
 
     private final BranchService branchService;
 
-    // 브랜치에 이어서 새로운 저장 생성 or 새로운 브랜치 + 저장 생성
     @PostMapping
     @CreateBranchOrSaveDocs
-    public ResponseEntity<BranchCreateResponse> createBranchOrSave(
+    public ResponseEntity<BranchCreateResponse> createBranch(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long documentId, @Valid @RequestBody BranchCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(branchService.createBranchOrSave(documentId, request, userDetails.getId()));
+                .body(branchService.createBranch(documentId, request, userDetails.getId()));
     }
 
-    // 브랜치 이름 수정
     @PatchMapping("/{branchId}")
     @RenameBranchDocs
     public ResponseEntity<BranchRenameResponse> renameBranch(
@@ -47,7 +45,6 @@ public class BranchController {
                         userDetails.getId()));
     }
 
-    // 브랜치 삭제
     @DeleteMapping("/{branchId}")
     @DeleteBranchDocs
     public ResponseEntity<Void> deleteBranch(@AuthenticationPrincipal CustomUserDetails userDetails,
