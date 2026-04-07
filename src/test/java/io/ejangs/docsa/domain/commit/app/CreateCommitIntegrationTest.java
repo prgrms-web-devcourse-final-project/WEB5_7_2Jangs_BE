@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitMySqlTxService;
@@ -45,6 +44,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -91,7 +91,7 @@ public class CreateCommitIntegrationTest {
     private Commit commit21;
     private Commit commit22;
     private Commit commit30;
-    private List<BlockDto> blocks;
+    private List<Map<String, Object>> blocks;
     private List<String> blockOrders;
 
     @BeforeEach

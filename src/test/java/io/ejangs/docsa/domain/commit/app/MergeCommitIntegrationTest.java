@@ -3,7 +3,6 @@ package io.ejangs.docsa.domain.commit.app;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
@@ -22,6 +21,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +59,7 @@ class MergeCommitIntegrationTest {
     private Branch targetBranch;
     private Commit baseCommit;
     private Commit targetCommit;
-    private List<BlockDto> blockContent;
+    private List<Map<String, Object>> blockContent;
     private CustomUserDetails userDetails;
 
     @BeforeEach
@@ -144,6 +144,7 @@ class MergeCommitIntegrationTest {
     void mergeCommit_EmptyContent_Success() {
         // given
         MergeCommitRequest request = new MergeCommitRequest(
+                "merged-branch",
                 "Empty merge commit",
                 "Merge with empty content",
                 baseCommit.getId(),
@@ -186,6 +187,7 @@ class MergeCommitIntegrationTest {
     void mergeCommit_BaseBranch_NotFound() {
         // given
         MergeCommitRequest request = new MergeCommitRequest(
+                "merged-branch",
                 "Merge commit",
                 "Merge feature into main",
                 999L,   // 존재하지 않는 베이스 커밋 ID
@@ -206,6 +208,7 @@ class MergeCommitIntegrationTest {
     void mergeCommit_TargetBranch_NotFound() {
         // given
         MergeCommitRequest request = new MergeCommitRequest(
+                "merged-branch",
                 "Merge commit",
                 "Merge feature into main",
                 baseCommit.getId(),
@@ -229,6 +232,7 @@ class MergeCommitIntegrationTest {
         commitRepository.save(testMiddleCommit);
 
         MergeCommitRequest request = new MergeCommitRequest(
+                "merged-branch",
                 "Merge commit",
                 "Merge feature into main",
                 testMiddleCommit.getId(),
@@ -245,10 +249,11 @@ class MergeCommitIntegrationTest {
     }
 
     @Test
-    @DisplayName("동일한 브랜치끼리 병합 시도 테스트")
-    void mergeCommit_SameBranch_Fail() {
+    @DisplayName("동일한 브랜치끼리 병합해도 새 기록이 생성된다")
+    void mergeCommit_SameBranch_Success() {
         // given
         MergeCommitRequest request = new MergeCommitRequest(
+                "merged-branch",
                 "Self merge commit",
                 "Merge branch into itself",
                 baseCommit.getId(),
@@ -256,11 +261,15 @@ class MergeCommitIntegrationTest {
                 blockContent
         );
 
-        // when & then
-        assertThatThrownBy(
-                () -> commitService.mergeCommit(testDoc.getId(), request, userDetails.getId())
-        )
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining(CommitErrorCode.COMMIT_BAD_REQUEST.getMessage());
+        // when
+        CreateCommitResponse response =
+                commitService.mergeCommit(testDoc.getId(), request, userDetails.getId());
+
+        // then
+        assertThat(response).isNotNull();
+        Commit mergeCommit = commitRepository.findById(response.id()).orElse(null);
+        assertThat(mergeCommit).isNotNull();
+        assertThat(mergeCommit.getTitle()).isEqualTo("Self merge commit");
+        assertThat(mergeCommit.getDescription()).isEqualTo("Merge branch into itself");
     }
 }

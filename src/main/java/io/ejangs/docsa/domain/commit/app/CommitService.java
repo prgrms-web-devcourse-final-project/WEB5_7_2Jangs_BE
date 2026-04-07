@@ -109,7 +109,6 @@ public class CommitService {
         Branch baseBranch = getLeafCommitById(mergeRequest.baseCommitId()).getBranch();
         Branch targetBranch = getLeafCommitById(mergeRequest.targetCommitId()).getBranch();
 
-        validateDifferentBranch(baseBranch, targetBranch);
         validateMergePermission(docId, userId, baseBranch, targetBranch);
 
         return new MergeBranches(baseBranch, targetBranch);
@@ -121,11 +120,6 @@ public class CommitService {
         return commit;
     }
 
-    private void validateDifferentBranch(Branch baseBranch, Branch targetBranch) {
-        if (baseBranch.getId().equals(targetBranch.getId())) {
-            throw new CustomException(CommitErrorCode.COMMIT_BAD_REQUEST);
-        }
-    }
 
     private void validateMergePermission(Long docId, Long userId, Branch baseBranch,
             Branch targetBranch) {

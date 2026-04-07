@@ -2,8 +2,11 @@ package io.ejangs.docsa.domain.commit.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -224,14 +227,15 @@ class CommitServiceMockTest {
     }
 
     @Test
-    @DisplayName("merge 검증 실패 - 같은 브랜치 요청이면 COMMIT_BAD_REQUEST")
-    void mergeCommit_fail_whenBaseAndTargetAreSameBranch() {
+    @DisplayName("merge는 같은 브랜치 요청도 허용하고 오케스트레이터까지 전달한다")
+    void mergeCommit_success_whenBaseAndTargetAreSameBranch() {
         Long baseCommitId = 11L;
         Long targetCommitId = 22L;
 
         Branch sameBranch = org.mockito.Mockito.mock(Branch.class);
         Commit baseCommit = org.mockito.Mockito.mock(Commit.class);
         Commit targetCommit = org.mockito.Mockito.mock(Commit.class);
+        Commit mergedCommit = org.mockito.Mockito.mock(Commit.class);
 
         when(baseCommit.getId()).thenReturn(baseCommitId);
         when(targetCommit.getId()).thenReturn(targetCommitId);
@@ -239,11 +243,16 @@ class CommitServiceMockTest {
         when(targetCommit.getBranch()).thenReturn(sameBranch);
         when(sameBranch.getId()).thenReturn(100L);
         when(sameBranch.getLeafCommit()).thenReturn(baseCommit, targetCommit);
+        when(mergedCommit.getId()).thenReturn(999L);
 
         when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
         when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
+        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(mergeOrchestrator.merge(eq(doc), eq(sameBranch), eq(sameBranch), any(MergeCommitRequest.class)))
+                .thenReturn(mergedCommit);
 
         MergeCommitRequest request = new MergeCommitRequest(
+                "merged-branch",
                 "merge",
                 "same branch",
                 baseCommitId,
@@ -251,12 +260,12 @@ class CommitServiceMockTest {
                 Collections.emptyList()
         );
 
-        assertThatThrownBy(() -> commitService.mergeCommit(docId, request, userDetails.getId()))
-                .isInstanceOfSatisfying(CustomException.class,
-                        e -> assertThat(e.getErrorCode()).isEqualTo(CommitErrorCode.COMMIT_BAD_REQUEST));
+        var response = commitService.mergeCommit(docId, request, userDetails.getId());
 
-        verify(branchQueryService, never()).checkBranchInDocOwnedByUser(docId, 100L, userDetails.getId());
-        verifyNoInteractions(mergeOrchestrator);
+        assertThat(response.id()).isEqualTo(999L);
+        verify(branchQueryService, times(2))
+                .checkBranchInDocOwnedByUser(docId, 100L, userDetails.getId());
+        verify(mergeOrchestrator).merge(doc, sameBranch, sameBranch, request);
     }
 
     @Test
@@ -290,6 +299,7 @@ class CommitServiceMockTest {
                 .when(branchQueryService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
 
         MergeCommitRequest request = new MergeCommitRequest(
+                "merged-branch",
                 "merge",
                 "ownership fail",
                 baseCommitId,

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.block.document.Block;
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
@@ -72,6 +71,7 @@ public class CommitIntegrationTestUtils {
     public static MergeCommitRequest createMergeCommitRequest(Commit baseCommit,
             Commit targetCommit) {
         return new MergeCommitRequest(
+                "merged-branch",
                 "Merge commit",
                 "Merge feature into main",
                 baseCommit.getId(),
@@ -80,18 +80,18 @@ public class CommitIntegrationTestUtils {
         );
     }
 
-    public static List<BlockDto> createTestBlockContent() {
+    public static List<Map<String, Object>> createTestBlockContent() {
         return List.of(
-                new BlockDto(Map.of(
+                Map.of(
                         "id", "block-1",
                         "type", "paragraph",
                         "data", Map.of("text", "Test content 1")
-                )),
-                new BlockDto(Map.of(
+                ),
+                Map.of(
                         "id", "block-2",
                         "type", "paragraph",
                         "data", Map.of("text", "Test content 2")
-                ))
+                )
         );
     }
 
@@ -246,10 +246,9 @@ public class CommitIntegrationTestUtils {
                 mapper.readValue(editorJsonCreate, new TypeReference<>() {
                 });
 
-        List<BlockDto> blocks = createBlocks.stream().map(BlockDto::new).toList();
         List<String> blockOrders = List.of("aa1", "aa2", "aa3", "aa4", "aa5");
 
-        return new TestCreateCommitRequestDto(blocks, blockOrders);
+        return new TestCreateCommitRequestDto(createBlocks, blockOrders);
     }
 
     private static final String editorJson10 = """
