@@ -4,6 +4,8 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
@@ -34,7 +36,7 @@ public class DocCreateOrchestrator {
         } catch (Exception e) {
             log.warn("[SAGA] 문서 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
             compensateMongo(saveContentId);
-            throw e;
+            throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
         }
     }
 

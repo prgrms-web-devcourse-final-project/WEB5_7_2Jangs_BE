@@ -13,14 +13,11 @@ import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.block.app.BlockService;
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
-import io.ejangs.docsa.domain.branch.app.BranchService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
-import io.ejangs.docsa.domain.commit.app.merge.MergeOrchestrator;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
-import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
@@ -30,9 +27,7 @@ import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
-import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.util.MongoIdsCollector;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,16 +55,10 @@ class CommitServiceMockTest {
     private CommitQueryService commitQueryService;
 
     @Mock
-    private BranchService branchService;
-
-    @Mock
     private BranchQueryService branchQueryService;
 
     @Mock
     private CommitCreateOrchestrator commitCreateOrchestrator;
-
-    @Mock
-    private MergeOrchestrator mergeOrchestrator;
 
     @Mock
     private BlockService blockService;
@@ -226,92 +215,4 @@ class CommitServiceMockTest {
                 .hasMessageContaining("orchestrator fail");
     }
 
-    @Test
-    @DisplayName("merge는 같은 브랜치 요청도 허용하고 오케스트레이터까지 전달한다")
-    void mergeCommit_success_whenBaseAndTargetAreSameBranch() {
-        Long baseCommitId = 11L;
-        Long targetCommitId = 22L;
-
-        Branch sameBranch = org.mockito.Mockito.mock(Branch.class);
-        Commit baseCommit = org.mockito.Mockito.mock(Commit.class);
-        Commit targetCommit = org.mockito.Mockito.mock(Commit.class);
-        Commit mergedCommit = org.mockito.Mockito.mock(Commit.class);
-
-        when(baseCommit.getId()).thenReturn(baseCommitId);
-        when(targetCommit.getId()).thenReturn(targetCommitId);
-        when(baseCommit.getBranch()).thenReturn(sameBranch);
-        when(targetCommit.getBranch()).thenReturn(sameBranch);
-        when(sameBranch.getId()).thenReturn(100L);
-        when(sameBranch.getLeafCommit()).thenReturn(baseCommit, targetCommit);
-        when(mergedCommit.getId()).thenReturn(999L);
-
-        when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
-        when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
-        when(docQueryService.getById(docId)).thenReturn(doc);
-        when(mergeOrchestrator.merge(eq(doc), eq(sameBranch), eq(sameBranch), any(MergeCommitRequest.class)))
-                .thenReturn(mergedCommit);
-
-        MergeCommitRequest request = new MergeCommitRequest(
-                "merged-branch",
-                "merge",
-                "same branch",
-                baseCommitId,
-                targetCommitId,
-                Collections.emptyList()
-        );
-
-        var response = commitService.mergeCommit(docId, request, userDetails.getId());
-
-        assertThat(response.id()).isEqualTo(999L);
-        verify(branchQueryService, times(2))
-                .checkBranchInDocOwnedByUser(docId, 100L, userDetails.getId());
-        verify(mergeOrchestrator).merge(doc, sameBranch, sameBranch, request);
-    }
-
-    @Test
-    @DisplayName("merge 권한 검증 실패 - base/target 중 하나라도 권한이 없으면 예외")
-    void mergeCommit_fail_whenAnyBranchOwnershipCheckFails() {
-        Long baseCommitId = 31L;
-        Long targetCommitId = 32L;
-
-        Branch baseBranch = org.mockito.Mockito.mock(Branch.class);
-        Branch targetBranch = org.mockito.Mockito.mock(Branch.class);
-        Commit baseCommit = org.mockito.Mockito.mock(Commit.class);
-        Commit targetCommit = org.mockito.Mockito.mock(Commit.class);
-
-        when(baseCommit.getId()).thenReturn(baseCommitId);
-        when(targetCommit.getId()).thenReturn(targetCommitId);
-        when(baseCommit.getBranch()).thenReturn(baseBranch);
-        when(targetCommit.getBranch()).thenReturn(targetBranch);
-        when(baseBranch.getId()).thenReturn(201L);
-        when(targetBranch.getId()).thenReturn(202L);
-        when(baseBranch.getLeafCommit()).thenReturn(baseCommit);
-        when(targetBranch.getLeafCommit()).thenReturn(targetCommit);
-
-        when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
-        when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
-
-        // baseBranch 권한 체크는 통과
-        org.mockito.Mockito.doNothing()
-                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
-        // targetBranch 권한 체크에서 실패
-        doThrow(new CustomException(BranchErrorCode.BRANCH_NOT_FOUND_OR_FORBIDDEN))
-                .when(branchQueryService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
-
-        MergeCommitRequest request = new MergeCommitRequest(
-                "merged-branch",
-                "merge",
-                "ownership fail",
-                baseCommitId,
-                targetCommitId,
-                Collections.emptyList()
-        );
-
-        assertThatThrownBy(() -> commitService.mergeCommit(docId, request, userDetails.getId()))
-                .isInstanceOf(CustomException.class);
-
-        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, 201L, userDetails.getId());
-        verify(branchQueryService).checkBranchInDocOwnedByUser(docId, 202L, userDetails.getId());
-        verifyNoInteractions(mergeOrchestrator);
-    }
 }

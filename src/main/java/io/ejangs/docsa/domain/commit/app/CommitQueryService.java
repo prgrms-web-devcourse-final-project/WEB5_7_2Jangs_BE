@@ -52,6 +52,23 @@ public class CommitQueryService {
         return findCommitMongoIdById(baseCommitId).orElse(null);
     }
 
+    @Transactional(readOnly = true)
+    public void checkTwoCommitsInDocOwnedByUser(Long commitId1, Long commitId2, Long documentId, Long userId) {
+        if (commitId1.equals(commitId2)) {
+            throw new CustomException(CommitErrorCode.INVALID_MERGE_REQUEST);
+        }
+
+        long count = commitRepository.countCommitsInOwnedDoc(
+                List.of(commitId1, commitId2),
+                documentId,
+                userId
+        );
+
+        if (count != 2) {
+            throw new CustomException(CommitErrorCode.COMMIT_NOT_FOUND);
+        }
+    }
+
     public Commit saveAndFlush(Commit commit) {
         return commitRepository.saveAndFlush(commit);
     }

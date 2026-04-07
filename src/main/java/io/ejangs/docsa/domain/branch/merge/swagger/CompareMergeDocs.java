@@ -1,6 +1,6 @@
-package io.ejangs.docsa.domain.commit.swagger;
+package io.ejangs.docsa.domain.branch.merge.swagger;
 
-import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
+import io.ejangs.docsa.domain.branch.merge.dto.response.CompareMergeResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -50,52 +50,39 @@ import org.springframework.http.MediaType;
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "2개의 기록(commit) 조회 성공 - content 2개 반환",
+                        description = "2개의 기록(commit) 조회 성공 - 병합 비교용 블록 목록 반환",
                         content = @Content(
-                                schema = @Schema(implementation = CompareMergeCommitResponse.class),
+                                schema = @Schema(implementation = CompareMergeResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
-                                                    "base": {
-                                                        "id": "base123",
-                                                        "title": "기록A 제목",
-                                                        "content": [
-                                                            {
-                                                                "id": "mhTl6ghSkV",
-                                                                "type": "paragraph",
-                                                                "data": {
-                                                                    "text": "Hey. Meet the new Editor. On this picture you can see it in action. Then, try a demo 🤓"
-                                                                }
+                                                    "base": [
+                                                        {
+                                                            "id": "mhTl6ghSkV",
+                                                            "type": "paragraph",
+                                                            "data": {
+                                                                "text": "기준 기록의 첫 문단입니다."
                                                             }
-                                                        ]
-                                                    },
-                                                    "target": {
-                                                        "id": "target456",
-                                                        "title": "기록 B 제목",
-                                                        "content": [
-                                                            {
-                                                                "id": "l98dyx3yjb",
-                                                                "type": "header",
-                                                                "data": {
-                                                                    "text": "Key features",
-                                                                    "level": 3
-                                                                }
-                                                            },
-                                                            {
-                                                                "id": "os_YI4eub4",
-                                                                "type": "list",
-                                                                "data": {
-                                                                    "type": "unordered",
-                                                                    "items": [
-                                                                        "It is a block-style editor",
-                                                                        "It returns clean data output in JSON",
-                                                                        "Designed to be extendable and pluggable with a simple API"
-                                                                    ]
-                                                                }
+                                                        }
+                                                    ],
+                                                    "target": [
+                                                        {
+                                                            "id": "l98dyx3yjb",
+                                                            "type": "header",
+                                                            "data": {
+                                                                "text": "비교 기록 제목",
+                                                                "level": 3
                                                             }
-                                                        ]
-                                                    }
+                                                        },
+                                                        {
+                                                            "id": "os_YI4eub4",
+                                                            "type": "paragraph",
+                                                            "data": {
+                                                                "text": "비교 기록에서 수정된 문단입니다."
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                                 """
                                 )
@@ -140,7 +127,7 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                         {
                                                             "status": 404,
-                                                            "message": "해당 기록를 찾을 수 없습니다.",
+                                                            "message": "해당 기록을 찾을 수 없습니다.",
                                                             "error": "COMMIT_NOT_FOUND"
                                                         }
                                                         """
@@ -170,6 +157,6 @@ import org.springframework.http.MediaType;
                 )
         }
 )
-public @interface CompareMergeCommitDocs {
+public @interface CompareMergeDocs {
 
 }

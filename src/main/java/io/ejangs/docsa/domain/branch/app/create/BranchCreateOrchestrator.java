@@ -1,6 +1,8 @@
 package io.ejangs.docsa.domain.branch.app.create;
 
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
@@ -36,7 +38,7 @@ public class BranchCreateOrchestrator {
                     saveContentId,
                     compensateTarget
             );
-            throw e;
+            throw new CustomException(BranchErrorCode.FAIL_CREATE_BRANCH);
         }
     }
 }

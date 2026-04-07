@@ -3,11 +3,8 @@ package io.ejangs.docsa.domain.commit.app;
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
-import io.ejangs.docsa.domain.commit.app.merge.MergeOrchestrator;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
-import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
-import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
@@ -41,8 +38,6 @@ public class CommitService {
     private final EdgeService edgeService;
 
     private final CommitCreateOrchestrator commitCreateOrchestrator;
-    private final MergeOrchestrator mergeCommitOrchestrator;
-
     private final CommitContentAssembler assembler;
     private final MongoIdsCollector mongoIdsCollector;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
@@ -70,61 +65,9 @@ public class CommitService {
         return CommitMapper.toCommitResponse(content);
     }
 
-    @Transactional(readOnly = true)
-    public CompareMergeCommitResponse getCommitsForMerge(Long docId, Long baseId, Long targetId,
-            Long userId) {
-        docQueryService.checkByIdAndUserId(docId, userId);
-        List<Map<String, Object>> baseContent = getWholeContent(baseId);
-        List<Map<String, Object>> targetContent = getWholeContent(targetId);
-        return CommitMapper.toCompareMergeCommitResponse(baseContent, targetContent);
-    }
-
     private List<Map<String, Object>> getWholeContent(Long commitId) {
         Commit commit = commitQueryService.getById(commitId);
         return assembler.assemble(commit.getCommitMongoId());
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public CreateCommitResponse mergeCommit(Long docId, MergeCommitRequest mergeRequest,
-            Long userId) {
-        MergeBranches mergeBranches = prepareMergeBranches(docId, mergeRequest, userId);
-
-        Doc doc = docQueryService.getById(docId);
-
-        Commit mergedCommit = mergeCommitOrchestrator.merge(
-                doc,
-                mergeBranches.baseBranch(),
-                mergeBranches.targetBranch(),
-                mergeRequest
-        );
-        return CommitMapper.toCreateCommitResponse(mergedCommit);
-    }
-
-    private record MergeBranches(Branch baseBranch, Branch targetBranch) {
-
-    }
-
-    private MergeBranches prepareMergeBranches(Long docId, MergeCommitRequest mergeRequest,
-            Long userId) {
-        Branch baseBranch = getLeafCommitById(mergeRequest.baseCommitId()).getBranch();
-        Branch targetBranch = getLeafCommitById(mergeRequest.targetCommitId()).getBranch();
-
-        validateMergePermission(docId, userId, baseBranch, targetBranch);
-
-        return new MergeBranches(baseBranch, targetBranch);
-    }
-
-    private Commit getLeafCommitById(Long commitId) {
-        Commit commit = commitQueryService.getById(commitId);
-        checkLeafCommit(commit);
-        return commit;
-    }
-
-
-    private void validateMergePermission(Long docId, Long userId, Branch baseBranch,
-            Branch targetBranch) {
-        branchQueryService.checkBranchInDocOwnedByUser(docId, baseBranch.getId(), userId);
-        branchQueryService.checkBranchInDocOwnedByUser(docId, targetBranch.getId(), userId);
     }
 
     @Transactional(rollbackFor = Exception.class)

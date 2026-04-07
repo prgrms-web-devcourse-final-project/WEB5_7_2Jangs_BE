@@ -8,10 +8,10 @@ import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
-import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.edge.entity.Edge;
+import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -68,12 +68,10 @@ public class CommitIntegrationTestUtils {
                 .build();
     }
 
-    public static MergeCommitRequest createMergeCommitRequest(Commit baseCommit,
+    public static MergeRequest createMergeRequest(Commit baseCommit,
             Commit targetCommit) {
-        return new MergeCommitRequest(
+        return new MergeRequest(
                 "merged-branch",
-                "Merge commit",
-                "Merge feature into main",
                 baseCommit.getId(),
                 targetCommit.getId(),
                 createTestBlockContent()
