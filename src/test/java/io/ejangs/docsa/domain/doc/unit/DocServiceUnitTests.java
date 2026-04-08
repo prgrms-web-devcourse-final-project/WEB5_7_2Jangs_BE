@@ -312,7 +312,7 @@ public class DocServiceUnitTests {
         // Mock Branch, Commit, Edge 리스트
         LocalDateTime now = LocalDateTime.now();
         List<BranchGraphDto> branches = List.of(
-                new BranchGraphDto(1L, "main", now, null, null, null, null)
+                new BranchGraphDto(1L, "main", now, null, null, null, null, null)
         );
         List<CommitGraphDto> commits = List.of(
                 new CommitGraphDto(100L, 1L, "Initial Commit", "desc", now)

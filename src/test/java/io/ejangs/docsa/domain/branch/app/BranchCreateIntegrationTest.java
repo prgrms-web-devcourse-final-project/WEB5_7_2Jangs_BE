@@ -226,7 +226,7 @@ class BranchCreateIntegrationTest {
                 .commitMongoId(sequence.getId())
                 .build());
 
-        branch.initializeRootCommitIfNull(commit);
+        branch.updateRootCommit(commit);
         branch.updateLeafCommit(commit);
         branch = branchRepository.saveAndFlush(branch);
 

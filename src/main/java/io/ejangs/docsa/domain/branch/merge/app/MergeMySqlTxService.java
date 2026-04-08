@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.branch.merge.app;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
@@ -21,15 +22,15 @@ public class MergeMySqlTxService {
     private final SaveQueryService saveQueryService;
     private final BranchQueryService branchQueryService;
 
-    public MergeResponse createMySqlPart(Doc doc, Commit baseCommit,
-            MergeRequest request, String saveMongoId) {
+    public MergeResponse createMySqlPart(MergeContext context, MergeRequest request, String saveMongoId) {
 
-        Branch newBranch = branchQueryService.createBranch(doc, request.branchName(), baseCommit);
+        Branch newBranch = branchQueryService.createBranch(context.doc(), request.branchName(), context.baseCommit());
+        newBranch.updateMergeTargetCommit(context.targetCommit());
 
         Save save = saveQueryService.createSave(newBranch, saveMongoId);
         newBranch.setSave(save);
-        RenewUpdatedAtHelper.touch(newBranch);
         branchQueryService.save(newBranch);
+        RenewUpdatedAtHelper.touch(newBranch);
 
         return new MergeResponse(newBranch.getId(), save.getId());
     }

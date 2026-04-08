@@ -54,6 +54,10 @@ public class Branch extends BaseEntity {
     @JoinColumn(name = "leaf_commit_id")
     private Commit leafCommit;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "marge_target_commit_id")
+    private Commit mergeTargetCommit;
+
     @OneToMany(mappedBy = "branch", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Commit> commits;
 
@@ -72,10 +76,14 @@ public class Branch extends BaseEntity {
         this.leafCommit = leafCommit;
     }
 
-    public void initializeRootCommitIfNull(Commit commit) {
+    public void updateRootCommit(Commit commit) {
         if (this.rootCommit == null) {
             this.rootCommit = commit;
         }
+    }
+
+    public void updateMergeTargetCommit(Commit mergeTargetCommit) {
+        this.mergeTargetCommit = mergeTargetCommit;
     }
 
     public void setSave(Save save) {

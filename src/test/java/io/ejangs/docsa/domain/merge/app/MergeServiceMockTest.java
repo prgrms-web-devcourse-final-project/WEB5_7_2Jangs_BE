@@ -3,7 +3,9 @@ package io.ejangs.docsa.domain.merge.app;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -12,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.merge.app.MergeOrchestrator;
 import io.ejangs.docsa.domain.branch.merge.app.MergeService;
+import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.entity.Commit;
@@ -82,8 +85,10 @@ class MergeServiceMockTest {
         when(targetCommit.getId()).thenReturn(targetCommitId);
         when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
         when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
-        when(mergeOrchestrator.merge(eq(doc), eq(baseCommit), any(MergeRequest.class)))
-                .thenReturn(new MergeResponse(999L, 1001L));
+        MergeResponse expected = new MergeResponse(999L, 1001L);
+        doReturn(expected)
+                .when(mergeOrchestrator)
+                .merge(any(MergeContext.class), any(MergeRequest.class));
 
         MergeRequest request = new MergeRequest(
                 "merged-branch",
@@ -94,12 +99,17 @@ class MergeServiceMockTest {
 
         var response = mergeService.merge(docId, request, userId);
 
-        assertThat(response.branchId()).isEqualTo(999L);
-        assertThat(response.saveId()).isEqualTo(1001L);
+        assertThat(response).isEqualTo(expected);
         verify(branchQueryService).checkDuplicatedWithBranchName(docId, "merged-branch");
         verify(commitQueryService)
                 .checkTwoCommitsInDocOwnedByUser(baseCommitId, targetCommitId, docId, userId);
-        verify(mergeOrchestrator).merge(doc, baseCommit, request);
+        verify(mergeOrchestrator).merge(
+                argThat(context ->
+                        context.doc().equals(doc)
+                                && context.baseCommit().equals(baseCommit)
+                                && context.targetCommit().equals(targetCommit)),
+                eq(request)
+        );
     }
 
     @Test

@@ -16,6 +16,7 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
         b.name,
         b.createdAt,
         b.fromCommit.id,
+        b.mergeTargetCommit.id,
         b.rootCommit.id,
         b.leafCommit.id,
         (
@@ -41,4 +42,3 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
 
     boolean existsByDocIdAndName(Long docId, String name);
 }
-

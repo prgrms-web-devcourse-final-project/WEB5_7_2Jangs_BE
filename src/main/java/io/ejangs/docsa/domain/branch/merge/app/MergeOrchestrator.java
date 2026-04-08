@@ -1,5 +1,6 @@
 package io.ejangs.docsa.domain.branch.merge.app;
 
+import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
@@ -25,12 +26,11 @@ public class MergeOrchestrator {
     private final MergeMySqlTxService mergeMySqlTxService;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
-    public MergeResponse merge(Doc doc, Commit baseCommit, MergeRequest request) {
+    public MergeResponse merge(MergeContext context, MergeRequest request) {
         String saveMongoId = mergeMongoTxService.createMongoPart(request.content());
         try {
             return mergeMySqlTxService.createMySqlPart(
-                    doc,
-                    baseCommit,
+                    context,
                     request,
                     saveMongoId
             );

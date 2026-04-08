@@ -94,13 +94,13 @@ class MergeIntegrationTest {
         baseCommit = CommitIntegrationTestUtils.createTestCommit(baseBranch, "Base commit");
         commitRepository.save(baseCommit);
         baseBranch.updateLeafCommit(baseCommit);
-        baseBranch.initializeRootCommitIfNull(baseCommit);
+        baseBranch.updateRootCommit(baseCommit);
 
         // 타겟 커밋 생성
         targetCommit = CommitIntegrationTestUtils.createTestCommit(targetBranch, "Target commit");
         commitRepository.save(targetCommit);
         targetBranch.updateLeafCommit(targetCommit);
-        targetBranch.initializeRootCommitIfNull(targetCommit);
+        targetBranch.updateRootCommit(targetCommit);
 
         // 전문 생성
         blockContent = CommitIntegrationTestUtils.createTestBlockContent();

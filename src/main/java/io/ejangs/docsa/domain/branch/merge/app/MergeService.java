@@ -27,9 +27,7 @@ public class MergeService {
         MergeContext mergeContext = validateMerge(docId, mergeRequest, userId);
 
         return mergeOrchestrator.merge(
-                mergeContext.doc(),
-                mergeContext.baseCommit(),
-                mergeRequest
+                mergeContext, mergeRequest
         );
     }
 
@@ -47,10 +45,10 @@ public class MergeService {
                 userId
         );
 
-        return new MergeContext(baseCommit, doc);
+        return new MergeContext(baseCommit, targetCommit, doc);
     }
 
-    private record MergeContext(Commit baseCommit, Doc doc) {
+    public record MergeContext(Commit baseCommit, Commit targetCommit, Doc doc) {
 
     }
 }

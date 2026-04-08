@@ -215,7 +215,7 @@ public class CommitIntegrationTestUtils {
                 .build();
 
         // 브랜치 1 초기화
-        branch1.initializeRootCommitIfNull(commit10);
+        branch1.updateRootCommit(commit10);
         branch1.updateLeafCommit(commit30);
 
         // 간선 설정
@@ -223,7 +223,7 @@ public class CommitIntegrationTestUtils {
         Edge.builder().doc(doc1).prevCommit(commit20).nextCommit(commit30).build();
 
         // 브랜치 2 초기화
-        branch2.initializeRootCommitIfNull(commit21);
+        branch2.updateRootCommit(commit21);
         branch2.updateLeafCommit(commit22);
 
         // 간선 설정

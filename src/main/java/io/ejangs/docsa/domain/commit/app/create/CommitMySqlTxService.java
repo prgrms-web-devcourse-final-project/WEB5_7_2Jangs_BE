@@ -32,7 +32,7 @@ public class CommitMySqlTxService {
         newCommit.initializeCommitMongoId(commitCbsMongoId);
         newCommit = commitQueryService.saveAndFlush(newCommit);
 
-        branch.initializeRootCommitIfNull(newCommit);
+        branch.updateRootCommit(newCommit);
 
         Commit baseCommit = Optional.ofNullable(branch.getLeafCommit()).orElse(branch.getFromCommit());
         branch.updateLeafCommit(newCommit);
