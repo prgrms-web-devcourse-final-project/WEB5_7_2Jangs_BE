@@ -55,7 +55,7 @@ public class Branch extends BaseEntity {
     private Commit leafCommit;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "marge_target_commit_id")
+    @JoinColumn(name = "merge_target_commit_id")
     private Commit mergeTargetCommit;
 
     @OneToMany(mappedBy = "branch", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
