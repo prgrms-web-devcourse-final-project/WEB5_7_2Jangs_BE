@@ -7,10 +7,7 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
-import io.ejangs.docsa.domain.branch.merge.dto.response.CompareMergeResponse;
 import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +22,6 @@ public class MergeService {
     private final CommitContentAssembler commitContentAssembler;
     private final MergeOrchestrator mergeOrchestrator;
 
-    @Transactional(readOnly = true)
-    public CompareMergeResponse compare(Long docId, Long baseId, Long targetId, Long userId) {
-        docQueryService.checkByIdAndUserId(docId, userId);
-
-        List<Map<String, Object>> baseContent = getWholeContent(baseId);
-        List<Map<String, Object>> targetContent = getWholeContent(targetId);
-
-        return new CompareMergeResponse(baseContent, targetContent);
-    }
-
     @Transactional(rollbackFor = Exception.class)
     public MergeResponse merge(Long docId, MergeRequest mergeRequest, Long userId) {
         MergeContext mergeContext = validateMerge(docId, mergeRequest, userId);
@@ -44,11 +31,6 @@ public class MergeService {
                 mergeContext.baseCommit(),
                 mergeRequest
         );
-    }
-
-    private List<Map<String, Object>> getWholeContent(Long commitId) {
-        Commit commit = commitQueryService.getById(commitId);
-        return commitContentAssembler.assemble(commit.getCommitMongoId());
     }
 
     private MergeContext validateMerge(Long docId, MergeRequest mergeRequest, Long userId) {
