@@ -30,6 +30,7 @@ public class MergeController {
 
     private final MergeService mergeService;
 
+
     @GetMapping("/api/document/{docId}/merge")
     @CompareMergeDocs
     public ResponseEntity<CompareMergeResponse> compare(

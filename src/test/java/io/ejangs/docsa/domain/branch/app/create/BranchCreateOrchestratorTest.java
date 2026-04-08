@@ -12,6 +12,8 @@ import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
@@ -68,8 +70,8 @@ class BranchCreateOrchestratorTest {
                 .thenThrow(new RuntimeException("mysql fail"));
 
         assertThatThrownBy(() -> orchestrator.create(context))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("mysql fail");
+                .isInstanceOf(CustomException.class)
+                        .hasMessage(BranchErrorCode.FAIL_CREATE_BRANCH.getMessage());
 
         verify(mongoDeleteOutboxFactory).create(
                 eq(TriggerType.COMPENSATE),

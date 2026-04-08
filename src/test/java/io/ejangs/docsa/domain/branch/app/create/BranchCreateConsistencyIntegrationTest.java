@@ -24,6 +24,8 @@ import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
@@ -162,8 +164,8 @@ class BranchCreateConsistencyIntegrationTest {
                     fixture.commit(),
                     unique("feature"),
                     fixture.commit().getCommitMongoId()
-            ))).isInstanceOf(RuntimeException.class)
-                    .hasMessage("force mysql rollback after persist");
+            ))).isInstanceOf(CustomException.class)
+                    .hasMessage(BranchErrorCode.FAIL_CREATE_BRANCH.getMessage());
 
             Set<String> afterSaveContentIds = currentSaveContentIds();
             afterSaveContentIds.removeAll(beforeSaveContentIds);

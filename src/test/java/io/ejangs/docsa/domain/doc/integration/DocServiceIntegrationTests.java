@@ -200,8 +200,8 @@ public class DocServiceIntegrationTests {
 
             // when & then
             assertThatThrownBy(() -> docService.create(request, user.getId()))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("MySQL 생성 실패");
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
             // Mongo에 저장된 데이터는 비동기 워커가 삭제하므로 즉시 1건 증가 상태다.
             assertThat(saveContentRepository.count()).isEqualTo(beforeSaveContentCount + 1);
@@ -245,8 +245,8 @@ public class DocServiceIntegrationTests {
 
             // when & then
             assertThatThrownBy(() -> docService.create(request, user.getId()))
-                    .isInstanceOf(RuntimeException.class)
-                    .hasMessageContaining("MySQL 생성 실패");
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
             List<MongoDeleteOutbox> outboxes = mongoDeleteOutboxRepository.findAll();
             assertThat(outboxes).hasSize(1);

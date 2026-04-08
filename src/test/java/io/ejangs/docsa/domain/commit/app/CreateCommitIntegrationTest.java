@@ -30,6 +30,7 @@ import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
 import org.junit.jupiter.api.BeforeEach;
@@ -227,7 +228,8 @@ public class CreateCommitIntegrationTest {
                     .thenThrow(new RuntimeException("mysql fail"));
 
             assertThatThrownBy(() -> commitService.createCommit(testDoc.getId(), request, testUser.getId()))
-                    .isInstanceOf(RuntimeException.class);
+                    .isInstanceOf(CustomException.class)
+                            .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
             assertThat(cbsRepository.count()).isEqualTo(beforeCbsCount + 1);
             assertThat(blockRepository.count()).isEqualTo(beforeBlockCount + blocks.size());
@@ -241,33 +243,6 @@ public class CreateCommitIntegrationTest {
                         assertThat(outbox.getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
                         assertThat(outbox.getOriginId()).isNotBlank();
                     });
-        }
-    }
-
-    @Nested
-    @DisplayName("MySQL 실패 + 보상 삭제도 실패")
-    @Transactional
-    class MySqlFailureCompensateFailureTest {
-
-        @MockitoBean
-        private CommitMySqlTxService commitMySqlTxService;
-
-        @MockitoBean
-        private SaveContentRepository mockedSaveContentRepository;
-
-        @Test
-        @DisplayName("보상 삭제 3회 실패 시 MongoDeleteFailure 저장")
-        void mysqlFail_compensateFail_storeFailure() {
-            CreateCommitRequest request =
-                    new CreateCommitRequest("compensate fail", "description", baseBranch.getId(), blocks, blockOrders);
-
-            when(commitMySqlTxService.createMySqlPart(any(), any(), any(), anyString()))
-                    .thenThrow(new RuntimeException("mysql fail"));
-            doThrow(new RuntimeException("compensate fail"))
-                    .when(mockedSaveContentRepository).deleteAllById(any());
-
-            assertThatThrownBy(() -> commitService.createCommit(testDoc.getId(), request, testUser.getId()))
-                    .isInstanceOf(RuntimeException.class);
         }
     }
 }

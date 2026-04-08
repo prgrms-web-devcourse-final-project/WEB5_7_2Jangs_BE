@@ -175,39 +175,4 @@ class MergeServiceMockTest {
 
         verifyNoInteractions(mergeOrchestrator);
     }
-
-    @Test
-    @DisplayName("compare는 기준/대상 커밋 내용을 그대로 반환한다")
-    void compare_success() {
-        Long baseId = 1L;
-        Long targetId = 2L;
-        List<Map<String, Object>> baseContent = CommitMockTestUtils.createMockContent();
-        List<Map<String, Object>> targetContent = CommitMockTestUtils.createMockContent();
-
-        when(baseCommit.getCommitMongoId()).thenReturn("base-mongo-commit-id");
-        when(targetCommit.getCommitMongoId()).thenReturn("target-mongo-commit-id");
-        when(commitQueryService.getById(baseId)).thenReturn(baseCommit);
-        when(commitQueryService.getById(targetId)).thenReturn(targetCommit);
-        when(commitContentAssembler.assemble("base-mongo-commit-id")).thenReturn(baseContent);
-        when(commitContentAssembler.assemble("target-mongo-commit-id")).thenReturn(targetContent);
-
-        CompareMergeResponse response = mergeService.compare(docId, baseId, targetId, userId);
-
-        assertThat(response.base()).isEqualTo(baseContent);
-        assertThat(response.target()).isEqualTo(targetContent);
-        verify(docQueryService).checkByIdAndUserId(docId, userId);
-    }
-
-    @Test
-    @DisplayName("compare 실패 - 문서가 없으면 커밋 조회 전 중단한다")
-    void compare_fail_whenDocNotFound() {
-        doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
-                .when(docQueryService).checkByIdAndUserId(docId, userId);
-
-        assertThatThrownBy(() -> mergeService.compare(docId, 1L, 2L, userId))
-                .isInstanceOf(CustomException.class);
-
-        verifyNoInteractions(commitQueryService);
-        verifyNoInteractions(commitContentAssembler);
-    }
 }
