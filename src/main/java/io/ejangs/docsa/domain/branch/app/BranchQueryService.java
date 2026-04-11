@@ -62,8 +62,8 @@ public class BranchQueryService {
         }
     }
 
-    public boolean checkFromOrRootCommitInBranch(Commit commit) {
-        return branchRepository.existsByRootCommitIdOrFromCommitId(commit.getId());
+    public boolean checkFromCommitOrMergeCommitInBranch(Commit commit) {
+        return branchRepository.existsByFromOrMergeTargetCommitId(commit.getId());
     }
 
     public void checkDuplicatedWithBranchName(Long docId, String branchName) {

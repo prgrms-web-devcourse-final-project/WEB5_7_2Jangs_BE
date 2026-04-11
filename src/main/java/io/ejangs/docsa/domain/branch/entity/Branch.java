@@ -117,6 +117,18 @@ public class Branch extends BaseEntity {
         this.commits.remove(commit);
     }
 
+    public void detachRootCommit(Commit commit) {
+        if (this.rootCommit != null && this.rootCommit.getId().equals(commit.getId())) {
+            this.rootCommit = null;
+        }
+
+        if (this.leafCommit != null && this.leafCommit.getId().equals(commit.getId())) {
+            this.leafCommit = null;
+        }
+
+        removeCommit(commit);
+    }
+
     public void removeSave() {
         this.save = null;
     }

@@ -35,10 +35,11 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
     @Query("""
                 SELECT CASE WHEN EXISTS (
                     SELECT 1 FROM Branch b
-                    WHERE b.rootCommit.id = :commitId OR b.fromCommit.id = :commitId
+                    WHERE b.fromCommit.id = :commitId
+                    OR b.mergeTargetCommit.id = :commitId
                 ) THEN true ELSE false END
             """)
-    boolean existsByRootCommitIdOrFromCommitId(@Param("commitId") Long commitId);
+    boolean existsByFromOrMergeTargetCommitId(@Param("commitId") Long commitId);
 
     boolean existsByDocIdAndName(Long docId, String name);
 }

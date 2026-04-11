@@ -77,18 +77,26 @@ public class CommitService {
         Commit commit = commitQueryService.getById(commitId);
         // LeafCommit일 경우에만 삭제 가능
         checkLeafCommit(commit);
-        // 어느 브랜치의 FromCommit이나 RootCommit일 경우 삭제 불가능
-        checkFromOrRootCommit(commit);
+        // 어느 브랜치의 FromCommit이나 MergeTargetCommit일 경우 삭제 불가능
+        checkFromOrMergeTargetCommit(commit);
 
         // 간선을 삭제하면서 새로 LeafCommit이 될 Commit들을 수집
         List<Commit> prevCommits = edgeService.cutEdge(doc, commitId);
 
-        for (Commit prevCommit : prevCommits) {
-            Branch branch = prevCommit.getBranch();
-            branch.updateLeafCommit(prevCommit);
-            branch.removeCommit(commit);
-            RenewUpdatedAtHelper.touch(branch);
+        Branch currentBranch = commit.getBranch();
+
+        Commit prevCommitInSameBranch = prevCommits.stream()
+                .filter(prevCommit -> prevCommit.getBranch().getId().equals(currentBranch.getId()))
+                .findFirst()
+                .orElse(null);
+
+        currentBranch.detachRootCommit(commit);
+
+        if (prevCommitInSameBranch != null) {
+            currentBranch.updateLeafCommit(prevCommitInSameBranch);
         }
+
+        RenewUpdatedAtHelper.touch(currentBranch);
 
         MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
 
@@ -103,8 +111,8 @@ public class CommitService {
         );
     }
 
-    private void checkFromOrRootCommit(Commit commit) {
-        if (branchQueryService.checkFromOrRootCommitInBranch(commit)) {
+    private void checkFromOrMergeTargetCommit(Commit commit) {
+        if (branchQueryService.checkFromCommitOrMergeCommitInBranch(commit)) {
             throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
         }
     }
