@@ -1,6 +1,9 @@
 package io.ejangs.docsa.domain.branch.app.create;
 
+import io.ejangs.docsa.domain.branch.dto.BranchCreateContext;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
@@ -20,12 +23,12 @@ public class BranchCreateOrchestrator {
     private final BranchCreateMySqlTxService branchCreateMySqlTxService;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
-    public BranchCreateResponse createBranchOrSave(BranchCreateContext context) {
+    public BranchCreateResponse create(BranchCreateContext context) {
         String saveContentId = branchCreateMongoTxService.createSaveContentFromCommit(
                 context.fromCommitMongoId());
 
         try {
-            return branchCreateMySqlTxService.createBranchOrSave(context, saveContentId);
+            return branchCreateMySqlTxService.createMySqlPart(context, saveContentId);
         } catch (Exception e) {
             log.warn("[SAGA] 브랜치/저장 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
             MongoIdsDto compensateTarget = new MongoIdsDto(List.of(saveContentId), null, null);
@@ -36,7 +39,7 @@ public class BranchCreateOrchestrator {
                     saveContentId,
                     compensateTarget
             );
-            throw e;
+            throw new CustomException(BranchErrorCode.FAIL_CREATE_BRANCH);
         }
     }
 }

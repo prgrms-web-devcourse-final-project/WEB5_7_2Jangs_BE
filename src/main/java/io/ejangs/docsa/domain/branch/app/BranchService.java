@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.branch.app;
 
-import io.ejangs.docsa.domain.branch.app.create.BranchCreateContext;
+import io.ejangs.docsa.domain.branch.dto.BranchCreateContext;
 import io.ejangs.docsa.domain.branch.app.create.BranchCreateOrchestrator;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
@@ -45,18 +45,12 @@ public class BranchService {
     private final BranchCreateOrchestrator branchCreateOrchestrator;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
-    /**
-     * '이어서 작업하기' 로직으로, 브랜치를 생성하고 저장을 추가하거나 기존 브랜치에 저장을 추가합니다.
-     * <p>
-     * fromCommitId가 존재하면 기존 커밋에서 브랜치를 만들거나 저장(save)을 추가하는 상황입니다. fromCommitId가 null이면 최초 브랜치 생성으로,
-     * 이 경우는 doc 도메인에서 처리합니다.
-     */
-    public BranchCreateResponse createBranchOrSave(Long documentId, BranchCreateRequest request,
+    public BranchCreateResponse createBranch(Long documentId, BranchCreateRequest request,
             Long userId) {
 
         BranchCreateContext context = prepareBranchCreateContext(documentId, request, userId);
 
-        return branchCreateOrchestrator.createBranchOrSave(context);
+        return branchCreateOrchestrator.create(context);
     }
 
     private BranchCreateContext prepareBranchCreateContext(Long documentId,
@@ -72,29 +66,15 @@ public class BranchService {
             throw new CustomException(DocErrorCode.COMMIT_NOT_IN_DOCUMENT);
         }
 
-        boolean isLeaf = fromBranch.getLeafCommit() != null
-                && fromBranch.getLeafCommit().getId().equals(fromCommitId);
+        branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
 
-        boolean isRoot = fromBranch.getRootCommit() != null
-                && fromBranch.getRootCommit().getId().equals(fromCommitId);
-        boolean hasSave = fromBranch.getSave() != null;
-
-        boolean createNewBranch =
-                !isLeaf || !fromBranch.getName().equals(request.name()) || (isLeaf && isRoot
-                        && hasSave);
-
-        if (createNewBranch) {
-            branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
-        }
 
         return new BranchCreateContext(
                 fromBranch.getDoc(),
                 fromBranch,
                 fromCommit,
                 request.name(),
-                fromCommit.getCommitMongoId(),
-                isLeaf,
-                createNewBranch
+                fromCommit.getCommitMongoId()
         );
     }
 

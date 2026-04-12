@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.save.app;
 
 import com.mongodb.DuplicateKeyException;
-import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
@@ -11,13 +10,7 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
-import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
-import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
-import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -31,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class SaveService {
 
     private final SaveQueryService saveQueryService;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     @Transactional(readOnly = true)
     public SaveGetResponse getSave(SaveIdentifierDto dto) {
@@ -64,34 +56,6 @@ public class SaveService {
         }
 
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
-    }
-
-    public void deleteSave(SaveIdentifierDto dto) {
-        Save findSave = getValidSave(dto);
-        Branch branch = findSave.getBranch();
-        String saveMongoId = findSave.getSaveMongoId();
-
-        // 해당 브랜치에 커밋이 하나도 없고 저장만 존재하는 최초 상태에서는 저장을 삭제할 수 없다.
-        if (branch.getCommits().isEmpty()) {
-            throw new CustomException(SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT);
-        }
-
-        RenewUpdatedAtHelper.touch(findSave);
-        branch.removeSave();
-        saveQueryService.deleteSave(findSave);
-
-        MongoIdsDto outboxTarget = new MongoIdsDto(
-                saveMongoId == null || saveMongoId.isBlank() ? List.of() : List.of(saveMongoId),
-                null,
-                null
-        );
-        mongoDeleteOutboxFactory.create(
-                TriggerType.DELETE,
-                DomainType.SAVE,
-                OriginType.SAVE_ID,
-                findSave.getId(),
-                outboxTarget
-        );
     }
 
     private Save getValidSave(SaveIdentifierDto dto) {

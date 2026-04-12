@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verify;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
-import io.ejangs.docsa.domain.commit.dto.response.CompareMergeCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
@@ -134,107 +133,4 @@ class GetCommitMockTest {
         verify(assembler, never()).assemble(any());
     }
 
-    @Test
-    @DisplayName("compareCommitForMerge - 정상적으로 두 커밋을 조회한다")
-    void compareCommitForMerge_Success() {
-        // given
-        Long docId = 1L;
-        Long baseId = 1L;
-        Long targetId = 2L;
-        String baseCommitMongoId = "base-mongo-commit-id";
-        String targetCommitMongoId = "mongo-commit-id";
-
-        List<Map<String, Object>> baseContent = CommitMockTestUtils.createMockContent();
-        List<Map<String, Object>> targetContent = CommitMockTestUtils.createMockContent();
-
-        given(commitQueryService.getById(baseId)).willReturn(baseCommit);
-        given(commitQueryService.getById(targetId)).willReturn(targetCommit);
-        given(assembler.assemble(baseCommitMongoId)).willReturn(baseContent);
-        given(assembler.assemble(targetCommitMongoId)).willReturn(targetContent);
-
-        // when
-        CompareMergeCommitResponse response = commitService.getCommitsForMerge(docId, baseId,
-                targetId, userDetails.getId());
-
-        // then
-        assertThat(response).isNotNull();
-        assertThat(response.base()).isEqualTo(baseContent);
-        assertThat(response.target()).isEqualTo(targetContent);
-
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService).getById(baseId);
-        verify(commitQueryService).getById(targetId);
-        verify(assembler).assemble(baseCommitMongoId);
-        verify(assembler).assemble(targetCommitMongoId);
-    }
-
-    @Test
-    @DisplayName("compareCommitForMerge - 베이스 커밋이 존재하지 않을 때")
-    void compareCommitForMerge_BaseCommit_NotFound() {
-        // given
-        Long docId = 1L;
-        Long baseId = 999L;
-        Long targetId = 2L;
-
-        given(commitQueryService.getById(baseId))
-                .willThrow(new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
-
-        // when & then
-        assertThatThrownBy(() -> commitService.getCommitsForMerge(docId, baseId, targetId,
-                userDetails.getId()))
-                .isInstanceOf(CustomException.class);
-
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService).getById(baseId);
-        verify(commitQueryService, never()).getById(targetId);
-        verify(assembler, never()).assemble(any());
-    }
-
-    @Test
-    @DisplayName("compareCommitForMerge - 타겟 커밋이 존재하지 않을 때")
-    void compareCommitForMerge_TargetCommit_NotFound() {
-        // given
-        Long docId = 1L;
-        Long baseId = 1L;
-        Long targetId = 999L;
-        String baseCommitMongoId = "base-mongo-commit-id";
-
-        List<Map<String, Object>> baseContent = CommitMockTestUtils.createMockContent();
-
-        given(commitQueryService.getById(baseId)).willReturn(baseCommit);
-        given(commitQueryService.getById(targetId))
-                .willThrow(new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
-        given(assembler.assemble(baseCommitMongoId)).willReturn(baseContent);
-
-        // when & then
-        assertThatThrownBy(() -> commitService.getCommitsForMerge(docId, baseId, targetId,
-                userDetails.getId()))
-                .isInstanceOf(CustomException.class);
-
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService).getById(baseId);
-        verify(commitQueryService).getById(targetId);
-        verify(assembler).assemble(baseCommitMongoId);
-    }
-
-    @Test
-    @DisplayName("compareCommitForMerge - 문서가 존재하지 않을 때")
-    void compareCommitForMerge_Doc_NotFound() {
-        // given
-        Long docId = 999L;
-        Long baseId = 1L;
-        Long targetId = 2L;
-
-        doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
-                .when(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-
-        // when & then
-        assertThatThrownBy(() -> commitService.getCommitsForMerge(docId, baseId, targetId,
-                userDetails.getId()))
-                .isInstanceOf(CustomException.class);
-
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService, never()).getById(any());
-        verify(assembler, never()).assemble(any());
-    }
 }

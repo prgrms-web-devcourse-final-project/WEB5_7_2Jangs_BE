@@ -20,17 +20,16 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "이어서 작업하기",
+        summary = "새 브랜치를 생성합니다.",
         description = """
-                새로운 저장을 만듭니다. 직전에 선택한 직전 기록의 종류에 따라 다음을 실행합니다:
-                
-                - 최신기록에서 이어서 작업할 경우 그 버전에 새로운 저장 생성
-                - 아니라면 새로운 버전 생성 후 새로운 저장 생성
+                선택한 기록(fromCommitId)을 기준으로 새로운 브랜치와 작업장(save)을 생성합니다.
+                🔐 이 API는 세션 로그인 상태에서 호출되어야 하며,
+                클라이언트는 쿠키(`JSESSIONID`)를 통해 인증 정보를 전송해야 합니다.
                 """,
         parameters = {
                 @Parameter(
-                        name = "docId",
-                        description = "저장이 속한 문서 id",
+                        name = "documentId",
+                        description = "브랜치를 생성할 문서 ID",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
@@ -43,7 +42,7 @@ import org.springframework.http.MediaType;
                         examples = @ExampleObject(
                                 value = """
                                         {
-                                            "name": "main",
+                                            "name": "feature-branch",
                                             "fromCommitId": 10
                                         }
                                         """
@@ -52,16 +51,16 @@ import org.springframework.http.MediaType;
         ),
         responses = {
                 @ApiResponse(
-                        responseCode = "200",
-                        description = "이어서 작업하기 성공 (새로운 저장 or 새로운 버전&저장 생성)",
+                        responseCode = "201",
+                        description = "브랜치와 작업장 생성 성공",
                         content = @Content(
                                 schema = @Schema(implementation = BranchCreateResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
-                                                	"branchId" : 1,
-                                                	"saveId": 4
+                                                    "branchId": 3,
+                                                    "saveId": 4
                                                 }
                                                 """
                                 )
@@ -69,40 +68,40 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "이어서 작업하기 실패 - 잘못된 요청",
+                        description = "브랜치 생성 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "요청으로 온 fromCommitId 이 null",
+                                                name = "fromCommitId가 null인 경우",
                                                 value = """
-                                                {
-                                                    "status": 400,
-                                                    "message": "잘못된 요청입니다.",
-                                                    "error": "INVALID_FROM_COMMIT"
-                                                }
-                                                """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "이어서 작업할 커밋을 선택해주세요.",
+                                                            "error": "VALIDATION_FAILED"
+                                                        }
+                                                        """
                                         ),
                                         @ExampleObject(
                                                 name = "기록이 해당 문서에 포함되어 있지 않음",
                                                 value = """
-                                                {
-                                                    "status": 400,
-                                                    "message": "기록이 해당 문서에 속해있지 않습니다.",
-                                                    "error": "COMMIT_NOT_IN_DOCUMENT"
-                                                }
-                                                """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "기록이 해당 문서에 속해있지 않습니다.",
+                                                            "error": "COMMIT_NOT_IN_DOCUMENT"
+                                                        }
+                                                        """
                                         ),
                                         @ExampleObject(
-                                                name = "생성하려는 버전의 이름이 이미 다른 버전의 이름으로 존재함",
+                                                name = "생성하려는 브랜치 이름이 문서 내에서 중복됨",
                                                 value = """
-                                                {
-                                                    "status": 400,
-                                                    "message": "새로운 버전의 이름은 다른 버전의 이름과 중복될 수 없습니다.",
-                                                    "error": "BRANCH_NAME_DUPLICATED"
-                                                }
-                                                """
+                                                        {
+                                                            "status": 400,
+                                                            "message": "새로운 버전의 이름은 다른 버전의 이름과 중복될 수 없습니다.",
+                                                            "error": "BRANCH_NAME_DUPLICATED"
+                                                        }
+                                                        """
                                         )
                                 }
                         )
@@ -126,7 +125,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "이어서 작업하기 실패 - 존재하지 않는 id",
+                        description = "브랜치 생성 실패 - 존재하지 않는 데이터",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -134,49 +133,47 @@ import org.springframework.http.MediaType;
                                         @ExampleObject(
                                                 name = "존재하지 않는 문서",
                                                 value = """
-                                                {
-                                                    "status": 404,
-                                                    "message": "해당 문서를 찾을 수 없습니다.",
-                                                    "error": "DOCUMENT_NOT_FOUND"
-                                                }
-                                                """
+                                                        {
+                                                            "status": 404,
+                                                            "message": "해당 문서를 찾을 수 없습니다.",
+                                                            "error": "DOCUMENT_NOT_FOUND"
+                                                        }
+                                                        """
                                         ),
                                         @ExampleObject(
                                                 name = "존재하지 않는 기록",
                                                 value = """
-                                                {
-                                                    "status": 404,
-                                                    "message": "해당 기록을 찾을 수 없습니다.",
-                                                    "error": "COMMIT_NOT_FOUND"
-                                                }
-                                                """
+                                                        {
+                                                            "status": 404,
+                                                            "message": "해당 기록을 찾을 수 없습니다.",
+                                                            "error": "COMMIT_NOT_FOUND"
+                                                        }
+                                                        """
                                         )
                                 }
                         )
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "이어서 작업하기 실패 - MySQL 또는 MongoDB 저장 실패",
+                        description = "브랜치 생성 실패 - MySQL 또는 MongoDB 저장 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                examples = {
-                                        @ExampleObject(
-                                                name = "MySQL 또는 MongoDB에 저장 실패",
-                                                value = """
-                                                            {
-                                                                "status": 500,
-                                                                "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-                                                                "error": "DATABASE_ERROR"
-                                                            }
-                                                        """
-                                        )
-                                }
+                                examples = @ExampleObject(
+                                        name = "MySQL 또는 MongoDB에 저장 실패",
+                                        value = """
+                                                {
+                                                    "status": 500,
+                                                    "message": "데이터 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                                                    "error": "DATABASE_ERROR"
+                                                }
+                                                """
+                                )
                         )
                 )
 
         }
 )
-public @interface CreateBranchOrSaveDocs {
+public @interface CreateBranchDocs {
 
 }

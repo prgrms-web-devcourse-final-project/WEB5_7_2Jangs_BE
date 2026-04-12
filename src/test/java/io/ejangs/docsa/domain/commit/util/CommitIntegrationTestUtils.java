@@ -5,14 +5,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
 import io.ejangs.docsa.domain.block.document.Block;
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
-import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.edge.entity.Edge;
+import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
@@ -69,29 +68,28 @@ public class CommitIntegrationTestUtils {
                 .build();
     }
 
-    public static MergeCommitRequest createMergeCommitRequest(Commit baseCommit,
+    public static MergeRequest createMergeRequest(Commit baseCommit,
             Commit targetCommit) {
-        return new MergeCommitRequest(
-                "Merge commit",
-                "Merge feature into main",
+        return new MergeRequest(
+                "merged-branch",
                 baseCommit.getId(),
                 targetCommit.getId(),
                 createTestBlockContent()
         );
     }
 
-    public static List<BlockDto> createTestBlockContent() {
+    public static List<Map<String, Object>> createTestBlockContent() {
         return List.of(
-                new BlockDto(Map.of(
+                Map.of(
                         "id", "block-1",
                         "type", "paragraph",
                         "data", Map.of("text", "Test content 1")
-                )),
-                new BlockDto(Map.of(
+                ),
+                Map.of(
                         "id", "block-2",
                         "type", "paragraph",
                         "data", Map.of("text", "Test content 2")
-                ))
+                )
         );
     }
 
@@ -109,9 +107,11 @@ public class CommitIntegrationTestUtils {
         Doc doc = Doc.builder().title("빈문서1").user(user).build();
         Branch branch = Branch.builder().name("main").doc(doc).build();
 
-        Save defaultSave = Save.builder().branch(branch).build();
         SaveContent saveContent = saveContentRepository.save(SaveContent.builder().build());
-        defaultSave.updateSaveMongoId(saveContent.getId());
+        Save defaultSave = Save.builder()
+                .branch(branch)
+                .saveMongoId(saveContent.getId())
+                .build();
 
         return new TestInitDocIntegrationDto(doc, branch);
     }
@@ -217,7 +217,7 @@ public class CommitIntegrationTestUtils {
                 .build();
 
         // 브랜치 1 초기화
-        branch1.initializeRootCommitIfNull(commit10);
+        branch1.updateRootCommit(commit10);
         branch1.updateLeafCommit(commit30);
 
         // 간선 설정
@@ -225,7 +225,7 @@ public class CommitIntegrationTestUtils {
         Edge.builder().doc(doc1).prevCommit(commit20).nextCommit(commit30).build();
 
         // 브랜치 2 초기화
-        branch2.initializeRootCommitIfNull(commit21);
+        branch2.updateRootCommit(commit21);
         branch2.updateLeafCommit(commit22);
 
         // 간선 설정
@@ -246,10 +246,9 @@ public class CommitIntegrationTestUtils {
                 mapper.readValue(editorJsonCreate, new TypeReference<>() {
                 });
 
-        List<BlockDto> blocks = createBlocks.stream().map(BlockDto::new).toList();
         List<String> blockOrders = List.of("aa1", "aa2", "aa3", "aa4", "aa5");
 
-        return new TestCreateCommitRequestDto(blocks, blockOrders);
+        return new TestCreateCommitRequestDto(createBlocks, blockOrders);
     }
 
     private static final String editorJson10 = """

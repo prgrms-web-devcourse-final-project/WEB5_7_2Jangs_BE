@@ -19,5 +19,20 @@ public interface CommitRepository extends JpaRepository<Commit, Long> {
             """)
     List<CommitGraphDto> getCommitGraphList(@Param("docId") Long docId);
 
+
+    @Query("""
+                select count(c.id)
+                from Commit c
+                join c.branch b
+                join b.doc d
+                where c.id in :commitIds
+                  and d.id = :documentId
+                  and d.user.id = :userId
+            """)
+    long countCommitsInOwnedDoc(
+            @Param("commitIds") List<Long> commitIds,
+            @Param("documentId") Long documentId,
+            @Param("userId") Long userId
+    );
 }
 

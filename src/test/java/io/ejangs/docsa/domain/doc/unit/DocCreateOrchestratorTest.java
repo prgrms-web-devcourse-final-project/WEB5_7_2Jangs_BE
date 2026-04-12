@@ -16,6 +16,8 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
@@ -61,7 +63,7 @@ class DocCreateOrchestratorTest {
     }
 
     @Test
-    @DisplayName("문서 생성 Saga 실패 - MySQL 실패 시 SaveContent 보상 삭제를 호출하고 예외를 유지한다")
+    @DisplayName("문서 생성 Saga 실패 - MySQL 실패 시 SaveContent 보상 삭제를 호출하고 FAIL_CREATE_DOCUMENT를 반환한다")
     void create_fail_compensateMongo() {
         User user = org.mockito.Mockito.mock(User.class);
         SaveContent saved = SaveContent.builder().build();
@@ -72,8 +74,8 @@ class DocCreateOrchestratorTest {
                 .thenThrow(new RuntimeException("mysql fail"));
 
         assertThatThrownBy(() -> orchestrator.create("doc", user))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("mysql fail");
+                .isInstanceOf(CustomException.class)
+                .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
         verify(mongoDeleteOutboxFactory).create(
                 eq(TriggerType.COMPENSATE),
