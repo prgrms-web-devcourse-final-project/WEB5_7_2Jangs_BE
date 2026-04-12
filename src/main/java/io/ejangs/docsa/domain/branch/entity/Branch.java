@@ -129,7 +129,4 @@ public class Branch extends BaseEntity {
         removeCommit(commit);
     }
 
-    public void removeSave() {
-        this.save = null;
-    }
 }

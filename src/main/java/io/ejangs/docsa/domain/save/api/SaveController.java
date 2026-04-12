@@ -5,7 +5,6 @@ import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
 import io.ejangs.docsa.domain.save.dto.response.SaveGetResponse;
 import io.ejangs.docsa.domain.save.dto.response.SaveUpdateResponse;
-import io.ejangs.docsa.domain.save.swagger.DeleteSaveDocs;
 import io.ejangs.docsa.domain.save.swagger.GetSaveDocs;
 import io.ejangs.docsa.domain.save.swagger.UpdateSaveDocs;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
@@ -14,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -51,16 +49,5 @@ public class SaveController {
         SaveUpdateResponse response = saveService.updateSave(
                 SaveIdentifierDto.of(docId, saveId, userDetails.getId()), saveUpdateRequest);
         return ResponseEntity.status(HttpStatus.OK).body(response);
-    }
-
-    @DeleteMapping
-    @DeleteSaveDocs
-    public ResponseEntity<Void> deleteSave(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Long docId,
-            @PathVariable Long saveId
-    ) {
-        saveService.deleteSave(SaveIdentifierDto.of(docId, saveId, userDetails.getId()));
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

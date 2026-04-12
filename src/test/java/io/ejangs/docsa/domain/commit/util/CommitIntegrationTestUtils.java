@@ -107,9 +107,11 @@ public class CommitIntegrationTestUtils {
         Doc doc = Doc.builder().title("빈문서1").user(user).build();
         Branch branch = Branch.builder().name("main").doc(doc).build();
 
-        Save defaultSave = Save.builder().branch(branch).build();
         SaveContent saveContent = saveContentRepository.save(SaveContent.builder().build());
-        defaultSave.updateSaveMongoId(saveContent.getId());
+        Save defaultSave = Save.builder()
+                .branch(branch)
+                .saveMongoId(saveContent.getId())
+                .build();
 
         return new TestInitDocIntegrationDto(doc, branch);
     }

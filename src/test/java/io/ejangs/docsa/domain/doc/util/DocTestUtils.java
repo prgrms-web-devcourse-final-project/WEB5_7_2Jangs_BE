@@ -98,6 +98,7 @@ public class DocTestUtils {
             if (i % 2 == 1) {
                 Save save = Save.builder()
                         .branch(branch)
+                        .saveMongoId("mock-save-mongo-id-" + i)
                         .build();
                 ReflectionTestUtils.setField(save, "id", i * 10L);
                 ReflectionTestUtils.setField(save, "createdAt", time.plusMinutes(3));
@@ -184,8 +185,10 @@ public class DocTestUtils {
                     .build();
             saveContent = saveContentRepository.save(saveContent);
 
-            Save save = Save.builder().branch(branch).build();
-            save.updateSaveMongoId(saveContent.getId());
+            Save save = Save.builder()
+                    .branch(branch)
+                    .saveMongoId(saveContent.getId())
+                    .build();
 
             branch.setSave(save);
             branch.updateLeafCommit(commit);
@@ -293,8 +296,10 @@ public class DocTestUtils {
         SaveContent saveContent = saveContentRepository.save(SaveContent.builder()
                 .content(List.of(saveJson)).build());
 
-        Save save = Save.builder().branch(fork).build();
-        save.updateSaveMongoId(saveContent.getId());
+        Save save = Save.builder()
+                .branch(fork)
+                .saveMongoId(saveContent.getId())
+                .build();
         fork.setSave(save);
 
         Edge edge1 = Edge.builder()
