@@ -1,7 +1,7 @@
 package io.ejangs.docsa.domain.branch.app;
 
 import io.ejangs.docsa.domain.branch.app.create.BranchCreateOrchestrator;
-import io.ejangs.docsa.domain.branch.app.create.BranchCreateContext;
+import io.ejangs.docsa.domain.branch.dto.BranchCreateContext;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;

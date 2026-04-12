@@ -128,6 +128,7 @@ class MergeIntegrationTest {
         assertThat(createdBranch.getFromCommit().getId()).isEqualTo(baseCommit.getId());
         assertThat(createdBranch.getLeafCommit()).isNull();
         assertThat(createdBranch.getRootCommit()).isNull();
+        assertThat(createdBranch.getMergeTargetCommit().getId()).isEqualTo(targetCommit.getId());
 
         Save createdSave = saveRepository.findById(response.saveId()).orElse(null);
         assertThat(createdSave).isNotNull();
