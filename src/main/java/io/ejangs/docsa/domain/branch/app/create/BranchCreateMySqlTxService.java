@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.branch.app.create;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
+import io.ejangs.docsa.domain.branch.dto.BranchCreateContext;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
@@ -19,16 +20,13 @@ public class BranchCreateMySqlTxService {
     private final SaveQueryService saveQueryService;
 
     @Transactional(rollbackFor = Exception.class)
-    public BranchCreateResponse createBranchOrSave(BranchCreateContext context, String saveContentId) {
-        Branch targetBranch = context.fromBranch();
+    public BranchCreateResponse createMySqlPart(BranchCreateContext context, String saveContentId) {
 
-        if (context.createNewBranch()) {
-            targetBranch = branchQueryService.createBranch(context.doc(), context.branchName(), context.fromCommit());
-        }
+        Branch newBranch = branchQueryService.createBranch(context.doc(), context.branchName(), context.fromCommit());
 
-        Save save = saveQueryService.createSave(targetBranch, saveContentId);
+        Save save = saveQueryService.createSave(newBranch, saveContentId);
         RenewUpdatedAtHelper.touch(save);
 
-        return BranchMapper.toBranchCreateResponse(targetBranch, save);
+        return BranchMapper.toBranchCreateResponse(newBranch, save);
     }
 }

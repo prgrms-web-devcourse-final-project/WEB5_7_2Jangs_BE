@@ -43,14 +43,14 @@ public class MongoDeleteOutbox extends BaseEntity {
 
     public enum TriggerType {
         DELETE,
-        COMPENSATE,
-        DELETE_AFTER_SAVE_SUCCESS
+        COMPENSATE
     }
 
     public enum DomainType {
         DOC,
         BRANCH,
         COMMIT,
+        MERGE,
         SAVE
     }
 

@@ -58,23 +58,4 @@ public class SaveQueryService {
         }
     }
 
-    public void deleteSave(Save save) {
-        saveRepository.delete(save);
-    }
-
-
-    public void deleteSaveContentById(String id) {
-        saveContentRepository.deleteById(id);
-    }
-
-    // 여기 있으면 안될거 같은데.. 일단..
-    public String deleteSaveIfExists(Branch branch) {
-        Save save = saveRepository.findByBranchId(branch.getId()).orElse(null);
-        branch.removeSave();
-        String saveMongoId = save != null ? save.getSaveMongoId() : null;
-        if (save != null) {
-            deleteSave(save);
-        }
-        return saveMongoId;
-    }
 }

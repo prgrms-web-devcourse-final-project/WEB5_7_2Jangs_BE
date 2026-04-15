@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.branch.app;
 
 import io.ejangs.docsa.domain.branch.app.create.BranchCreateOrchestrator;
+import io.ejangs.docsa.domain.branch.dto.BranchCreateContext;
 import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
@@ -12,10 +13,10 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
+import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
@@ -64,44 +65,8 @@ class BranchServiceTest {
     private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
     @Test
-    @DisplayName("leaf이면서 root이면서 save가 존재하는 상황에서 브랜치를 이미 있는 이름으로 생성 시 - BRANCH_NAME_DUPLICATED")
-    void testAddSaveToExistingBranch() {
-        // given
-        Long documentId = 1L;
-        Long userId = 1L;
-        Long commitId = 10L;
-        BranchCreateRequest request = new BranchCreateRequest("ignored", commitId);
-
-        Doc doc = mock(Doc.class);
-        Branch branch = mock(Branch.class);
-        Commit commit = mock(Commit.class);
-        Save save = mock(Save.class);
-
-        when(commit.getId()).thenReturn(commitId);
-        when(commit.getBranch()).thenReturn(branch);
-
-        when(branch.getDoc()).thenReturn(doc);
-        when(doc.getId()).thenReturn(documentId);
-        when(branch.getLeafCommit()).thenReturn(commit);
-        when(branch.getRootCommit()).thenReturn(commit);
-        when(branch.getName()).thenReturn("ignored");
-        when(branch.getSave()).thenReturn(save);
-
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
-        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
-        doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
-                .when(branchQueryService).checkDuplicatedWithBranchName(documentId, "ignored");
-
-        // when & then
-        CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranchOrSave(documentId, request, userId));
-        assertEquals(BranchErrorCode.BRANCH_NAME_DUPLICATED, ex.getErrorCode());
-        verifyNoInteractions(branchCreateOrchestrator);
-    }
-
-    @Test
-    @DisplayName("이어가기 - leaf + 다른 브랜치명인데 이름 중복이면 BRANCH_NAME_DUPLICATED")
-    void continueWork_fail_whenLeafAndDifferentNameButDuplicated() {
+    @DisplayName("새 브랜치 이름이 중복되면 BRANCH_NAME_DUPLICATED")
+    void createBranch_fail_whenDifferentNameButDuplicated() {
         // given
         Long documentId = 1L;
         Long userId = 1L;
@@ -112,12 +77,9 @@ class BranchServiceTest {
         Branch branch = mock(Branch.class);
         Commit commit = mock(Commit.class);
 
-        when(commit.getId()).thenReturn(commitId);
         when(commit.getBranch()).thenReturn(branch);
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
-        when(branch.getLeafCommit()).thenReturn(commit);
-        when(branch.getName()).thenReturn("main");
 
         when(commitQueryService.getById(commitId)).thenReturn(commit);
         doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
@@ -126,14 +88,14 @@ class BranchServiceTest {
 
         // when & then
         CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranchOrSave(documentId, request, userId));
+                () -> branchService.createBranch(documentId, request, userId));
         assertEquals(BranchErrorCode.BRANCH_NAME_DUPLICATED, ex.getErrorCode());
         verifyNoInteractions(branchCreateOrchestrator);
     }
 
     @Test
-    @DisplayName("이어가기 - fromBranch에 save가 있어도 새 브랜치 생성 경로는 정상 동작")
-    void continueWork_success_whenFromBranchHasSaveAndCreateNewBranch() {
+    @DisplayName("다른 이름으로 이어서 작업을 시작하면 항상 새 브랜치와 저장을 생성한다")
+    void createBranch_success_whenDifferentNameIsRequested() {
         // given
         Long documentId = 1L;
         Long userId = 1L;
@@ -144,33 +106,39 @@ class BranchServiceTest {
         Branch branch = mock(Branch.class);
         Commit commit = mock(Commit.class);
 
-        when(commit.getId()).thenReturn(commitId);
         when(commit.getBranch()).thenReturn(branch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
-        when(branch.getLeafCommit()).thenReturn(commit);
-        when(branch.getName()).thenReturn("main");
 
         when(commitQueryService.getById(commitId)).thenReturn(commit);
         doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
         doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
-        when(branchCreateOrchestrator.createBranchOrSave(any()))
+        when(branchCreateOrchestrator.create(any()))
                 .thenReturn(new BranchCreateResponse(101L, 201L));
 
         // when
-        BranchCreateResponse response = branchService.createBranchOrSave(documentId, request, userId);
+        BranchCreateResponse response = branchService.createBranch(documentId, request, userId);
 
         // then
         assertNotNull(response);
         assertEquals(101L, response.branchId());
         assertEquals(201L, response.saveId());
-        verify(branchCreateOrchestrator).createBranchOrSave(any());
+        ArgumentCaptor<BranchCreateContext> contextCaptor = ArgumentCaptor.forClass(
+                BranchCreateContext.class);
+        verify(branchCreateOrchestrator).create(contextCaptor.capture());
+
+        BranchCreateContext context = contextCaptor.getValue();
+        assertSame(doc, context.doc());
+        assertSame(branch, context.fromBranch());
+        assertSame(commit, context.fromCommit());
+        assertEquals("new-branch", context.branchName());
+        assertEquals("mongo-1", context.fromCommitMongoId());
     }
 
     @Test
-    @DisplayName("중간 커밋이면 새로운 브랜치 + 저장 추가")
-    void testCreateNewBranchAndSave() {
+    @DisplayName("중간 커밋에서 이어서 작업을 시작해도 새 브랜치와 저장을 생성한다")
+    void createBranch_success_fromIntermediateCommit() {
         // given
         Long documentId = 1L;
         Long userId = 1L;
@@ -190,18 +158,55 @@ class BranchServiceTest {
         when(commitQueryService.getById(commitId)).thenReturn(commit);
         doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
         doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
-        when(branchCreateOrchestrator.createBranchOrSave(any()))
+        when(branchCreateOrchestrator.create(any()))
                 .thenReturn(new BranchCreateResponse(100L, 200L));
 
         // when
         BranchCreateResponse response =
-                branchService.createBranchOrSave(documentId, request, userId);
+                branchService.createBranch(documentId, request, userId);
 
         // then
         assertNotNull(response);
         assertEquals(100L, response.branchId());
         assertEquals(200L, response.saveId());
-        verify(branchCreateOrchestrator).createBranchOrSave(any());
+        ArgumentCaptor<BranchCreateContext> contextCaptor = ArgumentCaptor.forClass(
+                BranchCreateContext.class);
+        verify(branchCreateOrchestrator).create(contextCaptor.capture());
+
+        BranchCreateContext context = contextCaptor.getValue();
+        assertSame(doc, context.doc());
+        assertSame(fromBranch, context.fromBranch());
+        assertSame(commit, context.fromCommit());
+        assertEquals("new-branch", context.branchName());
+        assertEquals("mongo-1", context.fromCommitMongoId());
+    }
+
+    @Test
+    @DisplayName("다른 문서의 커밋으로 브랜치를 만들려고 하면 COMMIT_NOT_IN_DOCUMENT")
+    void createBranch_fail_whenCommitBelongsToAnotherDocument() {
+        // given
+        Long documentId = 1L;
+        Long userId = 1L;
+        Long commitId = 10L;
+        BranchCreateRequest request = new BranchCreateRequest("new-branch", commitId);
+
+        Doc commitDoc = mock(Doc.class);
+        Branch branch = mock(Branch.class);
+        Commit commit = mock(Commit.class);
+
+        when(commit.getBranch()).thenReturn(branch);
+        when(branch.getDoc()).thenReturn(commitDoc);
+        when(commitDoc.getId()).thenReturn(999L);
+
+        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class,
+                () -> branchService.createBranch(documentId, request, userId));
+        assertEquals(DocErrorCode.COMMIT_NOT_IN_DOCUMENT, ex.getErrorCode());
+        verify(branchQueryService, never()).checkDuplicatedWithBranchName(anyLong(), anyString());
+        verifyNoInteractions(branchCreateOrchestrator);
     }
 
     @Test

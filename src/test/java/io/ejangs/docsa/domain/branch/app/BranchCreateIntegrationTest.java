@@ -39,7 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class BranchCreateOrSaveIntegrationTest {
+class BranchCreateIntegrationTest {
 
     @Autowired
     private BranchService branchService;
@@ -89,14 +89,14 @@ class BranchCreateOrSaveIntegrationTest {
     }
 
     @Test
-    @DisplayName("이어서 작업하기 - leafCommit=rootCommit, save 존재, 같은 이름 요청이면 BRANCH_NAME_DUPLICATED")
+    @DisplayName("같은 이름으로 브랜치를 만들려고 하면 BRANCH_NAME_DUPLICATED")
     void continueWork_fail_whenLeafRootHasSave_andSameName() {
-        Fixture fixture = createSingleCommitFixture(true, unique("main"));
+        Fixture fixture = createSingleCommitFixture(unique("main"));
         BranchCreateRequest request = new BranchCreateRequest(fixture.branch().getName(),
                 fixture.commit().getId());
 
         CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranchOrSave(fixture.doc().getId(), request,
+                () -> branchService.createBranch(fixture.doc().getId(), request,
                         fixture.user().getId()));
 
         assertThat(ex.getErrorCode()).isEqualTo(BranchErrorCode.BRANCH_NAME_DUPLICATED);
@@ -104,12 +104,12 @@ class BranchCreateOrSaveIntegrationTest {
     }
 
     @Test
-    @DisplayName("이어서 작업하기 - leafCommit=rootCommit, save 존재, 다른 이름이면 새 브랜치/저장 생성")
+    @DisplayName("다른 이름으로 브랜치를 만들면 기존 save가 있어도 새 브랜치와 save를 생성한다")
     void continueWork_success_whenLeafRootHasSave_andDifferentName() {
-        Fixture fixture = createSingleCommitFixture(true, unique("main"));
+        Fixture fixture = createSingleCommitFixture(unique("main"));
         String newBranchName = unique("feature");
 
-        BranchCreateResponse response = branchService.createBranchOrSave(
+        BranchCreateResponse response = branchService.createBranch(
                 fixture.doc().getId(),
                 new BranchCreateRequest(newBranchName, fixture.commit().getId()),
                 fixture.user().getId());
@@ -129,30 +129,9 @@ class BranchCreateOrSaveIntegrationTest {
     }
 
     @Test
-    @DisplayName("이어서 작업하기 - leafCommit=rootCommit, save 없음, 같은 이름이면 기존 브랜치에 저장 생성")
-    void continueWork_success_whenLeafRootHasNoSave_andSameName() {
-        Fixture fixture = createSingleCommitFixture(false, unique("main"));
-        BranchCreateRequest request = new BranchCreateRequest(fixture.branch().getName(),
-                fixture.commit().getId());
-
-        assertThat(saveRepository.findByBranchId(fixture.branch().getId())).isEmpty();
-
-        BranchCreateResponse response = branchService.createBranchOrSave(
-                fixture.doc().getId(), request, fixture.user().getId());
-
-        assertThat(response).isNotNull();
-        assertThat(response.branchId()).isEqualTo(fixture.branch().getId());
-        assertThat(response.saveId()).isNotNull();
-
-        Save createdSave = saveRepository.findById(response.saveId()).orElseThrow();
-        assertThat(createdSave.getBranch().getId()).isEqualTo(fixture.branch().getId());
-        createdSaveContentIds.add(createdSave.getSaveMongoId());
-    }
-
-    @Test
-    @DisplayName("이어서 작업하기 - 새 브랜치 생성 경로에서 이름 중복이면 BRANCH_NAME_DUPLICATED")
+    @DisplayName("새 브랜치 이름이 문서 내에서 중복되면 BRANCH_NAME_DUPLICATED")
     void continueWork_fail_whenCreateNewBranchPath_andNameDuplicated() {
-        Fixture fixture = createSingleCommitFixture(true, unique("main"));
+        Fixture fixture = createSingleCommitFixture(unique("main"));
         String duplicatedName = unique("dup");
 
         branchRepository.saveAndFlush(
@@ -160,7 +139,7 @@ class BranchCreateOrSaveIntegrationTest {
                         .build());
 
         CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranchOrSave(
+                () -> branchService.createBranch(
                         fixture.doc().getId(),
                         new BranchCreateRequest(duplicatedName, fixture.commit().getId()),
                         fixture.user().getId()));
@@ -168,7 +147,7 @@ class BranchCreateOrSaveIntegrationTest {
         assertThat(ex.getErrorCode()).isEqualTo(BranchErrorCode.BRANCH_NAME_DUPLICATED);
     }
 
-    private Fixture createSingleCommitFixture(boolean withSave, String branchName) {
+    private Fixture createSingleCommitFixture(String branchName) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
 
         User user = userRepository.saveAndFlush(User.builder()
@@ -205,20 +184,18 @@ class BranchCreateOrSaveIntegrationTest {
                 .commitMongoId(sequence.getId())
                 .build());
 
-        branch.initializeRootCommitIfNull(commit);
+        branch.updateRootCommit(commit);
         branch.updateLeafCommit(commit);
         branch = branchRepository.saveAndFlush(branch);
 
-        if (withSave) {
-            SaveContent initialSaveContent = saveContentRepository.save(
-                    SaveContent.builder()
-                            .content(List.of(Map.of("text", "save-" + suffix)))
-                            .build());
-            createdSaveContentIds.add(initialSaveContent.getId());
+        SaveContent initialSaveContent = saveContentRepository.save(
+                SaveContent.builder()
+                        .content(List.of(Map.of("text", "save-" + suffix)))
+                        .build());
+        createdSaveContentIds.add(initialSaveContent.getId());
 
-            saveRepository.saveAndFlush(
-                    Save.builder().branch(branch).saveMongoId(initialSaveContent.getId()).build());
-        }
+        saveRepository.saveAndFlush(
+                Save.builder().branch(branch).saveMongoId(initialSaveContent.getId()).build());
 
         return new Fixture(user, doc, branch, commit);
     }

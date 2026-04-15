@@ -15,6 +15,8 @@ import io.ejangs.docsa.domain.commit.app.create.CommitMySqlTxService;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.TriggerType;
@@ -62,7 +64,7 @@ class CommitCreateOrchestratorTest {
     }
 
     @Test
-    @DisplayName("Saga 생성 실패 - MySQL 실패 시 Mongo 보상 삭제를 호출하고 예외를 유지한다")
+    @DisplayName("Saga 생성 실패 - MySQL 실패 시 Mongo 보상 삭제를 기록하고 FAIL_CREATE_COMMIT 예외를 던진다")
     void create_fail_compensateMongo() {
         CreateCommitRequest request = new CreateCommitRequest("t", "d", 1L, Collections.emptyList(), Collections.emptyList());
         Doc doc = org.mockito.Mockito.mock(Doc.class);
@@ -74,8 +76,8 @@ class CommitCreateOrchestratorTest {
                 .thenThrow(new RuntimeException("mysql fail"));
 
         assertThatThrownBy(() -> orchestrator.create(request, "base-cbs", doc, branch))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("mysql fail");
+                .isInstanceOf(CustomException.class)
+                .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
         verify(mongoDeleteOutboxFactory).create(
                 eq(TriggerType.COMPENSATE),

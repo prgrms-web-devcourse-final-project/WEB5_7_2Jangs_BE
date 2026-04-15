@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.commit.util;
 
 import io.ejangs.docsa.domain.block.document.Block;
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
@@ -25,13 +24,6 @@ public class CommitMockTestUtils {
         return user;
     }
 
-    public static BlockDto createBlockRequest(String blockId) {
-        Map<String, Object> blockData = new HashMap<>();
-        blockData.put("id", blockId);
-        blockData.put("type", "text");
-        blockData.put("content", "Test content");
-        return new BlockDto(blockData);
-    }
 
     public static Block createBlock(String blockId) {
         Map<String, Object> content = new HashMap<>();

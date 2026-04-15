@@ -44,6 +44,7 @@ public class SaveServiceUtil {
     public static Save createSave(Branch branch) {
         return Save.builder()
                 .branch(branch)
+                .saveMongoId("mongoId")
                 .build();
     }
 

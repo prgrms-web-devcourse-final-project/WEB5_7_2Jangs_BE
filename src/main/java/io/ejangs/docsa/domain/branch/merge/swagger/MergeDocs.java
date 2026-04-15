@@ -1,7 +1,7 @@
-package io.ejangs.docsa.domain.commit.swagger;
+package io.ejangs.docsa.domain.branch.merge.swagger;
 
-import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
-import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
+import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
+import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,9 +20,10 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "request 에 담긴 2개의 commit id 를 기반으로 병합 합니다.",
+        summary = "기준/비교 커밋을 바탕으로 병합 결과 브랜치와 작업장을 생성합니다.",
         description = """
-                유저가 소유한 문서에서 기록 2개를 병합 합니다.
+                유저가 소유한 문서에서 기준 커밋과 비교 커밋을 검토한 뒤,
+                병합 결과를 담은 새 브랜치와 작업장을 생성합니다.
                 🔐 이 API는 세션 로그인 상태에서 호출되어야 하며,
                 클라이언트는 쿠키(`JSESSIONID`)를 통해 인증 정보를 전송해야 합니다.
                 """,
@@ -37,13 +38,12 @@ import org.springframework.http.MediaType;
         },
         requestBody = @RequestBody(
                 content = @Content(
-                        schema = @Schema(implementation = MergeCommitRequest.class),
+                        schema = @Schema(implementation = MergeRequest.class),
                         mediaType = MediaType.APPLICATION_JSON_VALUE,
                         examples = @ExampleObject(
                                 value = """
                                         {
-                                            "title": "문서 병합 완료",
-                                            "description": "병합 커밋입니다.",
+                                            "branchName": "merged-branch",
                                             "baseCommitId": 1,
                                             "targetCommitId": 2,
                                             "content": [
@@ -83,14 +83,15 @@ import org.springframework.http.MediaType;
         responses = {
                 @ApiResponse(
                         responseCode = "201",
-                        description = "기록 병합 성공 후 새로운 기록 생성 및 id 할당",
+                        description = "병합 결과를 담은 새 브랜치와 작업장 생성 성공",
                         content = @Content(
-                                schema = @Schema(implementation = CreateCommitResponse.class),
+                                schema = @Schema(implementation = MergeResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = @ExampleObject(
                                         value = """
                                                 {
-                                                    "id": 15
+                                                    "branchId": 15,
+                                                    "saveId": 21
                                                 }
                                                 """
                                 )
@@ -99,58 +100,48 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "기록(commit) 병합 실패 - 잘못된 요청",
+                        description = "병합용 브랜치 생성 실패 - 잘못된 요청",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "기록 제목이 없는 경우",
+                                                name = "브랜치 이름이 없는 경우",
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "기록 제목을 입력해주세요.",
-                                                            "error": "UNEXPECTED_ERROR"
+                                                            "message": "브렌치 제목을 입력해주세요.",
+                                                            "error": "VALIDATION_FAILED"
                                                         }
                                                         """
                                         ),
                                         @ExampleObject(
-                                                name = "기록 제목이 30자를 넘는 경우",
+                                                name = "브랜치 이름이 100자를 넘는 경우",
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "기록 제목은 30자를 초과 할 수 없습니다.",
-                                                            "error": "UNEXPECTED_ERROR"
+                                                            "message": "브랜치이름은 100자를 초과 할 수 없습니다.",
+                                                            "error": "VALIDATION_FAILED"
                                                         }
                                                         """
                                         ),
                                         @ExampleObject(
-                                                name = "설명이 100자가 넘는 경우",
+                                                name = "동일한 커밋을 병합하는 경우",
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "기록에 대한 설명은 100자를 초과 할 수 없습니다.",
-                                                            "error": "UNEXPECTED_ERROR"
+                                                            "message": "동일한 커밋을 병합할 수 없습니다.",
+                                                            "error": "INVALID_MERGE_REQUEST"
                                                         }
                                                         """
                                         ),
                                         @ExampleObject(
-                                                name = "전달 받은 두 기록이 같은 버전안에 있는 경우",
+                                                name = "브랜치 이름이 중복되는 경우",
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "잘못된 요청입니다.",
-                                                            "error": "COMMIT_BAD_REQUEST"
-                                                        }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "Leaf Commit이 필요한 상황에 전달 받은 기록이 Leaf Commit이 아닌 경우",
-                                                value = """
-                                                        {
-                                                            "status": 400,
-                                                            "message": "버전의 마지막 기록이 아닙니다.",
-                                                            "error": "IS_NOT_LEAF_COMMIT"
+                                                            "message": "새로운 분기의 이름은 다른 버전의 이름과 중복될 수 없습니다.",
+                                                            "error": "BRANCH_NAME_DUPLICATED"
                                                         }
                                                         """
                                         )
@@ -176,7 +167,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "기록(commit) merge 실패 - 존재하지 않는 데이터",
+                        description = "병합용 브랜치 생성 실패 - 존재하지 않는 데이터",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -188,16 +179,6 @@ import org.springframework.http.MediaType;
                                                             "status": 404,
                                                             "message": "해당 기록을 찾을 수 없습니다.",
                                                             "error": "COMMIT_NOT_FOUND"
-                                                        }
-                                                        """
-                                        ),
-                                        @ExampleObject(
-                                                name = "해당 문서에 속한 버전이 아닐 경우",
-                                                value = """
-                                                        {
-                                                            "status": 404,
-                                                            "message": "해당 버전을 찾을 수 없습니다.",
-                                                            "error": "BRANCH_NOT_FOUND_OR_FORBIDDEN"
                                                         }
                                                         """
                                         ),
@@ -216,13 +197,23 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "기록 생성 실패 - MySQL 또는 MongoDB 데이터 처리 실패",
+                        description = "병합용 브랜치 생성 실패 - Mongo 또는 MySQL 처리 중 오류",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 examples = {
                                         @ExampleObject(
-                                                name = "MySQL 또는 MongoDB 데이터 처리 실패",
+                                                name = "병합용 브랜치와 작업장 생성 실패",
+                                                value = """
+                                                        {
+                                                            "status": 500,
+                                                            "message": "서버 오류로 인해 병합에 실패했습니다.",
+                                                            "error": "FAIL_MERGE"
+                                                        }
+                                                        """
+                                        ),
+                                        @ExampleObject(
+                                                name = "Mongo 저장 중 실패",
                                                 value = """
                                                         {
                                                             "status": 500,
@@ -236,6 +227,6 @@ import org.springframework.http.MediaType;
                 )
         }
 )
-public @interface MergeCommitDocs {
+public @interface MergeDocs {
 
 }

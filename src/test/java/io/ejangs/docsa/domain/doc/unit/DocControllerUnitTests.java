@@ -208,7 +208,7 @@ class DocControllerUnitTests {
         CommitGraphDto commit = new CommitGraphDto(11L, 101L, "커밋1", "설명1", LocalDateTime.now());
         EdgeDto edge = new EdgeDto(11L, 12L);
         BranchGraphDto
-                branch = new BranchGraphDto(101L, "main", LocalDateTime.now(), null, 11L, 13L, null);
+                branch = new BranchGraphDto(101L, "main", LocalDateTime.now(), null, null, 11L, 13L, null);
 
         GraphResponse response = new GraphResponse(
                 "문서 제목",
@@ -243,4 +243,3 @@ class DocControllerUnitTests {
                 .andDo(print());
     }
 }
-
