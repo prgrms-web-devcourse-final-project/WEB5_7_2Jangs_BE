@@ -20,15 +20,17 @@
 
 ## 1) Prepare users
 
-유저 생성은 애플리케이션의 `TestUserInitializer`를 사용합니다.
+유저 생성은 애플리케이션의 `PerfDataInitializer`를 사용합니다.
+API seed 스크립트로 문서를 만들 때는 여기서는 유저만 준비합니다.
 
 ```bash
 PERF_SEED_USER_COUNT=50
+PERF_SEED_DOCS_PER_USER=0
 ```
 
 유저 패턴:
 
-- `perfdel_u001@test.com` ~ `perfdel_u050@test.com`
+- `perfuser_u001@test.com` ~ `perfuser_u050@test.com`
 - 비밀번호: `Testtest1`
 
 ## 2) Seed dataset
@@ -39,11 +41,24 @@ PERF_SEED_USER_COUNT=50
 ```bash
 RUN_ID=read01 \
 BASE_URL=http://localhost:8080 \
-USER_PREFIX=perfdel USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
 USER_COUNT=50 DOCS_PER_USER=5 \
 MAIN_COMMITS=8 FEATURE_COMMITS=5 BLOCKS_PER_COMMIT=100 \
 SEED_VUS=20 \
 k6 run perf/delete/seed_dataset.js
+```
+
+애플리케이션 initializer로 DB에 직접 주입할 수도 있습니다. 이 방식은 API 호출 비용 없이
+문서, 브랜치, 커밋, 간선, save, Mongo block/commitBlockSequence/saveContent를 생성합니다.
+
+```bash
+PERF_SEED_RUN_ID=read01 \
+PERF_SEED_USER_COUNT=50 \
+PERF_SEED_DOCS_PER_USER=5 \
+PERF_SEED_BRANCHES_PER_DOC=2 \
+PERF_SEED_COMMITS_PER_BRANCH=8 \
+PERF_SEED_BLOCKS_PER_SAVE=100 \
+PERF_SEED_BLOCKS_PER_COMMIT=100
 ```
 
 권장 기준:
@@ -58,10 +73,18 @@ k6 run perf/delete/seed_dataset.js
 ```bash
 RUN_ID=read01 \
 BASE_URL=http://localhost:8080 \
-USER_PREFIX=perfdel USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
 USER_COUNT=50 DOCS_PER_USER=5 PAGE_SIZE=10 \
+SEARCH_PREFIX=PDEL \
 SIDEBAR_VUS=10 FULL_LIST_VUS=10 SEARCH_VUS=10 \
 k6 run perf/read/doc_list_benchmark.js
+```
+
+`PerfDataInitializer`로 직접 주입한 데이터는 문서 제목 prefix가 `PERF`이므로 검색 벤치에서
+아래처럼 맞춥니다.
+
+```bash
+SEARCH_PREFIX=PERF
 ```
 
 결과 파일:

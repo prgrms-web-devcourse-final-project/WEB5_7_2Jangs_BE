@@ -4,7 +4,7 @@ import { check } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
-const USER_PREFIX = __ENV.USER_PREFIX || 'perfdel';
+const USER_PREFIX = __ENV.USER_PREFIX || 'perfuser';
 const USER_DOMAIN = __ENV.USER_DOMAIN || 'test.com';
 const USER_PASSWORD = __ENV.USER_PASSWORD || 'Testtest1';
 const USER_COUNT = Number(__ENV.USER_COUNT || 50);
@@ -12,9 +12,10 @@ const DOCS_PER_USER = Number(__ENV.DOCS_PER_USER || 3);
 const PAGE_SIZE = Number(__ENV.PAGE_SIZE || 10);
 const RUN_ID = __ENV.RUN_ID;
 const RESULT_DIR = __ENV.RESULT_DIR || 'perf/read/results';
+const SEARCH_PREFIX = __ENV.SEARCH_PREFIX || 'PDEL';
 
 if (!RUN_ID) {
-  throw new Error('RUN_ID is required. Use the same RUN_ID that was used in perf/delete/seed_dataset.js');
+  throw new Error('RUN_ID is required. Use the same RUN_ID that was used for the read dataset seed');
 }
 
 export const options = {
@@ -68,7 +69,10 @@ function userEmail(userNo) {
 }
 
 function keywordForUser(userNo) {
-  return `PDEL-${RUN_ID}u${pad3(userNo)}`;
+  if (SEARCH_PREFIX === 'PERF') {
+    return `PERF-${RUN_ID}-u${pad3(userNo)}`;
+  }
+  return `${SEARCH_PREFIX}-${RUN_ID}u${pad3(userNo)}`;
 }
 
 function headers(cookie) {

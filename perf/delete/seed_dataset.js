@@ -4,7 +4,7 @@ import { check } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
-const USER_PREFIX = __ENV.USER_PREFIX || 'perfdel';
+const USER_PREFIX = __ENV.USER_PREFIX || 'perfuser';
 const USER_DOMAIN = __ENV.USER_DOMAIN || 'test.com';
 const USER_PASSWORD = __ENV.USER_PASSWORD || 'Testtest1';
 const USER_COUNT = Number(__ENV.USER_COUNT || 50);
@@ -132,12 +132,10 @@ function buildCommitBody(title, branchId) {
   for (let i = 0; i < BLOCKS_PER_COMMIT; i += 1) {
     const blockId = `${title}-b${i}-${Math.floor(Math.random() * 1e6)}`;
     blocks.push({
+      id: blockId,
+      type: 'paragraph',
       data: {
-        id: blockId,
-        type: 'paragraph',
-        data: {
-          text: `${title}-text-${i}`,
-        },
+        text: `${title}-text-${i}`,
       },
     });
     blockOrders.push(blockId);
