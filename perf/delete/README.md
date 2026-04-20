@@ -31,17 +31,31 @@ MONGO_URI='...' MYSQL_USERNAME='devbae' MYSQL_PASSWORD='' SPRING_PROFILES_ACTIVE
 MAIL_USERNAME='...' MAIL_PASSWORD='...'
 ```
 
-## 1) Prepare users (no script)
+## 1) Prepare users
 
-유저 생성은 애플리케이션의 `TestUserInitializer`를 사용합니다.
+유저 생성은 애플리케이션의 `PerfDataInitializer`를 사용합니다.
+삭제 벤치용으로 유저만 만들 때는 `DOCS_PER_USER`를 0으로 둡니다.
 
 ```bash
 PERF_SEED_USER_COUNT=100
+PERF_SEED_DOCS_PER_USER=0
+```
+
+`PerfDataInitializer`로 문서까지 직접 주입할 때는 아래 옵션도 같이 사용합니다.
+이 경우 문서, 브랜치, 커밋, 간선, save, Mongo block/commitBlockSequence/saveContent가 생성됩니다.
+
+```bash
+PERF_SEED_RUN_ID=run01
+PERF_SEED_DOCS_PER_USER=3
+PERF_SEED_BRANCHES_PER_DOC=2
+PERF_SEED_COMMITS_PER_BRANCH=6
+PERF_SEED_BLOCKS_PER_SAVE=20
+PERF_SEED_BLOCKS_PER_COMMIT=20
 ```
 
 유저 패턴:
 
-- `perfdel_u001@test.com` ~ `perfdel_u100@test.com`
+- `perfuser_u001@test.com` ~ `perfuser_u100@test.com`
 - 비밀번호: `Testtest1`
 
 ## 2) Seed realistic dataset
@@ -51,7 +65,7 @@ PERF_SEED_USER_COUNT=100
 ```bash
 RUN_ID=run01 \
 BASE_URL=http://localhost:8080 \
-USER_PREFIX=perfdel USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
 USER_COUNT=100 DOCS_PER_USER=3 \
 MAIN_COMMITS=6 FEATURE_COMMITS=4 BLOCKS_PER_COMMIT=20 \
 SEED_VUS=20 \
@@ -69,7 +83,7 @@ k6 run perf/delete/seed_dataset.js
 ```bash
 RUN_ID=run01 \
 BASE_URL=http://localhost:8080 \
-USER_PREFIX=perfdel USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
 USER_COUNT=100 DOCS_PER_USER=3 \
 DELETE_VUS=30 \
 k6 run perf/delete/delete_only_benchmark.js \
@@ -88,7 +102,7 @@ k6 run perf/delete/delete_only_benchmark.js \
 
 1. 브랜치 checkout
 2. 서버 실행
-3. 유저 준비(`PERF_SEED_USER_COUNT` 적용된 상태)
+3. 유저 준비(`PERF_SEED_USER_COUNT`, `PERF_SEED_DOCS_PER_USER=0` 적용된 상태)
 4. 데이터 생성 (`seed_dataset.js`)
 5. 삭제 벤치 실행 (`delete_only_benchmark.js`)
 6. 결과 파일 저장
@@ -120,7 +134,7 @@ node perf/delete/compare_delete_summary.mjs \
 ```bash
 BASE_URL=http://localhost:8080 \
 MODE=multi \
-USER_PREFIX=perfdel USER_DOMAIN=test.com USER_COUNT=100 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_COUNT=100 \
 USER_PASSWORD=Testtest1 \
 bash perf/cleanup_perf_docs.sh
 ```
@@ -131,7 +145,7 @@ staging HTTPS(자체 서명 인증서)면:
 BASE_URL=https://<stg-domain-or-ip>:8443 \
 INSECURE_TLS=1 \
 MODE=multi \
-USER_PREFIX=perfdel USER_DOMAIN=test.com USER_COUNT=100 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_COUNT=100 \
 USER_PASSWORD=Testtest1 \
 bash perf/cleanup_perf_docs.sh
 ```

@@ -141,12 +141,10 @@ function buildCommitBody(title, branchId) {
   for (let i = 0; i < BLOCKS_PER_COMMIT; i += 1) {
     const blockId = `${title}-b${i}-${Math.floor(Math.random() * 1e6)}`;
     blocks.push({
+      id: blockId,
+      type: 'paragraph',
       data: {
-        id: blockId,
-        type: 'paragraph',
-        data: {
-          text: `${title}-text-${i}`,
-        },
+        text: `${title}-text-${i}`,
       },
     });
     blockOrders.push(blockId);

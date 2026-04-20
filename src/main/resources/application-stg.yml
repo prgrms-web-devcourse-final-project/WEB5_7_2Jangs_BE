@@ -47,7 +47,16 @@ app:
 
 perf:
   seed:
+    run-id: ${PERF_SEED_RUN_ID:perf-stg}
+    user-prefix: ${PERF_SEED_USER_PREFIX:perfuser}
+    user-domain: ${PERF_SEED_USER_DOMAIN:test.com}
     user-count: ${PERF_SEED_USER_COUNT:0}
+    docs-per-user: ${PERF_SEED_DOCS_PER_USER:20}
+    branches-per-doc: ${PERF_SEED_BRANCHES_PER_DOC:1}
+    commits-per-branch: ${PERF_SEED_COMMITS_PER_BRANCH:3}
+    blocks-per-save: ${PERF_SEED_BLOCKS_PER_SAVE:50}
+    blocks-per-commit: ${PERF_SEED_BLOCKS_PER_COMMIT:50}
+    clean-before: ${PERF_SEED_CLEAN_BEFORE:true}
 
 springdoc:
   api-docs:
@@ -58,3 +67,24 @@ springdoc:
     servers:
       - url: ${SWAGGER_SERVER_URL}
         description: Production Server
+
+
+decorator:
+  datasource:
+    datasource-proxy:
+      enabled: true
+      logging: slf4j
+      multiline: true
+      format-sql: true
+      count-query: true
+      query:
+        enable-logging: true
+        log-level: debug
+      slow-query:
+        enable-logging: true
+        log-level: warn
+        threshold: 100
+
+logging:
+  level:
+    net.ttddyy.dsproxy.listener: DEBUG

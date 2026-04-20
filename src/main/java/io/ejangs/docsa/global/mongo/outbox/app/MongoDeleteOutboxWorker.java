@@ -8,12 +8,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(
+        prefix = "mongo.delete.outbox.worker",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class MongoDeleteOutboxWorker {
 
     private static final Duration PROCESSING_TIMEOUT = Duration.ofMinutes(5);
@@ -36,7 +43,6 @@ public class MongoDeleteOutboxWorker {
 
         List<MongoDeleteOutbox> outboxes = mongoDeleteOutboxRepository
                 .findTop100ByStatusOrderByCreatedAtAsc(MongoDeleteOutbox.OutboxStatus.OPEN);
-        log.info("[Outbox Worker] Target size : {}", outboxes.size());
         if (outboxes.isEmpty()) {
             return;
         }
