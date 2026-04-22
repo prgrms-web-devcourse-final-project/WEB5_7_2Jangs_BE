@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.branch.app.create;
+package io.ejangs.docsa.domain.branch.dto;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
@@ -9,9 +9,7 @@ public record BranchCreateContext(
         Branch fromBranch,
         Commit fromCommit,
         String branchName,
-        String fromCommitMongoId,
-        boolean leafCommit,
-        boolean createNewBranch
+        String fromCommitMongoId
 ) {
 
 }

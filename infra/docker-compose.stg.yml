@@ -52,6 +52,8 @@ services:
     container_name: docsa-mysql-stg
     restart: unless-stopped
     env_file: .stg.env
+    ports:
+      - "127.0.0.1:3307:3306"
     volumes:
       - stg_mysql_data:/var/lib/mysql
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro

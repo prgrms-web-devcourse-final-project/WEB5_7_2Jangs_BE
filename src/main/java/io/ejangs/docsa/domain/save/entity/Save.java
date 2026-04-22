@@ -26,10 +26,11 @@ public class Save extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String saveMongoId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "branch_id")
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "branch_id", nullable = false, unique = true)
     private Branch branch;
 
     @Builder

@@ -35,6 +35,7 @@ public class GraphMapper {
                 branch.getName(),
                 branch.getCreatedAt(),
                 branch.getFromCommit() != null ? branch.getFromCommit().getId() : null,
+                branch.getMergeTargetCommit() != null ? branch.getMergeTargetCommit().getId() : null,
                 branch.getRootCommit() != null ? branch.getRootCommit().getId() : null,
                 branch.getLeafCommit() != null ? branch.getLeafCommit().getId() : null,
                 branch.getSave() != null ? branch.getSave().getId() : null

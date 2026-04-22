@@ -15,7 +15,7 @@ MODE="${MODE:-all}" # single | multi | all
 USER_PASSWORD="${USER_PASSWORD:-Testtest1}"
 TEST_EMAIL="${TEST_EMAIL:-test@test.com}"
 
-USER_PREFIX="${USER_PREFIX:-perfdel}"
+USER_PREFIX="${USER_PREFIX:-perfuser}"
 USER_DOMAIN="${USER_DOMAIN:-test.com}"
 USER_COUNT="${USER_COUNT:-100}"
 SEARCH_PAGE_SIZE="${SEARCH_PAGE_SIZE:-100}"

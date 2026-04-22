@@ -36,3 +36,11 @@ auth:
 
 default:
   branch: main
+
+cloud:
+  aws:
+    region: ${AWS_REGION}
+    s3:
+      bucket: ${AWS_BUCKET}
+      presigned-expire-minutes: ${AWS_PRESIGNED_EXPIRE_MIN:5}
+      public-base-url: ${CDN_URL}

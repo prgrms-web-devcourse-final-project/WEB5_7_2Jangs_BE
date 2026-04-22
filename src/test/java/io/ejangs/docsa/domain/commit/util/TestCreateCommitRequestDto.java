@@ -1,10 +1,10 @@
 package io.ejangs.docsa.domain.commit.util;
 
-import io.ejangs.docsa.domain.block.dto.response.BlockDto;
 import java.util.List;
+import java.util.Map;
 
 public record TestCreateCommitRequestDto(
-        List<BlockDto> blocks,
+        List<Map<String, Object>> blocks,
         List<String> blockOrders
 ) {
 

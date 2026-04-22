@@ -54,3 +54,8 @@ springdoc:
     servers:
       - url: ${SWAGGER_SERVER_URL}
         description: Production Server
+
+
+decorator:
+  datasource:
+    enabled: false

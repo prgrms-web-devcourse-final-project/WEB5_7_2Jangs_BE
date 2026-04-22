@@ -34,11 +34,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -140,62 +139,20 @@ class SaveServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("deleteSave 성공")
-    void deleteSave_success() throws Exception {
-        SaveIdentifierDto dto = new SaveIdentifierDto(doc.getId(), save.getId(), user.getId());
-        saveService.deleteSave(dto);
+    @DisplayName("저장 생성 실패 - saveMongoId는 null일 수 없다")
+    void createSave_shouldFail_whenSaveMongoIdIsNull() {
+        Branch newBranch = Branch.builder()
+                .doc(doc)
+                .name("null-save-mongo-id")
+                .build();
+        branchRepository.saveAndFlush(newBranch);
 
-        Optional<Save> optionalSave = saveRepository.findById(save.getId());
-        assertThat(optionalSave.isEmpty()).isTrue();
+        Save invalidSave = Save.builder()
+                .branch(newBranch)
+                .build();
 
-        Optional<SaveContent> optionalSaveContent = saveContentRepository.findById(
-                saveContent.getId());
-        assertThat(optionalSaveContent.isEmpty()).isTrue();
+        assertThatThrownBy(() -> saveRepository.saveAndFlush(invalidSave))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    @Test
-    @DisplayName("deleteSave 실패 - main 브랜치에서 커밋도 없는 상태에서는 저장을 삭제할 수 없다")
-    void deleteSave_fails_whenMain_and_commits_not_found() throws Exception {
-        // 강제로 branch 에 있는 커밋들 전부 삭제
-        branch.getCommits().clear();
-
-        // 테스트
-        SaveIdentifierDto dto = new SaveIdentifierDto(doc.getId(), save.getId(), user.getId());
-        assertThatThrownBy(() -> saveService.deleteSave(dto))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining(
-                        SaveErrorCode.CANNOT_DELETE_SAVE_WITH_NO_COMMIT.getMessage());
-    }
-
-    @Test
-    @DisplayName("저장 삭제 실패 - 존재하지 않는 저장")
-    void deleteSave_shouldFail_whenSaveNotFound() {
-        // given
-        SaveIdentifierDto dto = new SaveIdentifierDto(
-                999L, // 존재하지 않는 Save ID
-                1L,
-                1L
-        );
-
-        // when & then
-        assertThatThrownBy(() -> saveService.deleteSave(dto))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining(SaveErrorCode.SAVE_NOT_FOUND.getMessage());
-    }
-
-    @Test
-    @DisplayName("저장 삭제 실패 - 해당 유저의 저장이 아니다")
-    void deleteSave_shouldFail_whenUserIsNotOwner() {
-        // given
-        SaveIdentifierDto dto = new SaveIdentifierDto(
-                999L,   // 다른 사용자의 save
-                save.getId(),
-                user.getId()
-        );
-
-        // when & then
-        assertThatThrownBy(() -> saveService.deleteSave(dto))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining(SaveErrorCode.SAVE_NOT_OWNER.getMessage());
-    }
 }

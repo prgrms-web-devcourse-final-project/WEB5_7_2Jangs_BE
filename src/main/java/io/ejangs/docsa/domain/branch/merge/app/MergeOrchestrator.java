@@ -1,10 +1,12 @@
-package io.ejangs.docsa.domain.commit.app.merge;
+package io.ejangs.docsa.domain.branch.merge.app;
 
-import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.global.mongo.outbox.dto.CommitMongoIdsDto;
-import io.ejangs.docsa.domain.commit.dto.request.MergeCommitRequest;
+import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
+import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.mongo.outbox.dto.MongoIdsDto;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox.OriginType;
@@ -24,31 +26,29 @@ public class MergeOrchestrator {
     private final MergeMySqlTxService mergeMySqlTxService;
     private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
 
-    public Commit merge(Doc doc, Branch baseBranch, Branch targetBranch, MergeCommitRequest request) {
-        CommitMongoIdsDto compensateTarget = mergeMongoTxService.createMongoPart(request.content());
+    public MergeResponse merge(MergeContext context, MergeRequest request) {
+        String saveMongoId = mergeMongoTxService.createMongoPart(request.content());
         try {
             return mergeMySqlTxService.createMySqlPart(
-                    doc,
-                    baseBranch,
-                    targetBranch,
+                    context,
                     request,
-                    compensateTarget.cbsId()
+                    saveMongoId
             );
         } catch (Exception e) {
-            log.warn("[SAGA] 머지 커밋 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
+            log.warn("[SAGA] 머지용 브랜치/작업장 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
             MongoIdsDto compensateMongoIds = new MongoIdsDto(
+                    List.of(saveMongoId),
                     null,
-                    List.of(compensateTarget.cbsId()),
-                    compensateTarget.blockIds()
+                    null
             );
             mongoDeleteOutboxFactory.create(
                     TriggerType.COMPENSATE,
-                    DomainType.COMMIT,
-                    OriginType.CBS_ID,
-                    compensateTarget.cbsId(),
+                    DomainType.MERGE,
+                    OriginType.SAVE_ID,
+                    saveMongoId,
                     compensateMongoIds
             );
-            throw e;
+            throw new CustomException(CommitErrorCode.FAIL_MERGE);
         }
     }
 }

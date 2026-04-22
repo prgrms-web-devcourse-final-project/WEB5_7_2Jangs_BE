@@ -90,6 +90,7 @@ import org.springframework.http.MediaType;
                                                 				    "name": "main",
                                                 				    "createdAt": "2025-07-07T12:00:00",
                                                 				    "fromCommitId": null,
+                                                				    "mergeTargetCommitId": null,
                                                 				    "rootCommitId": 11,
                                                 				    "leafCommitId": 13,
                                                 				    "saveId": null
@@ -99,9 +100,20 @@ import org.springframework.http.MediaType;
                                                 				    "name": "sub1",
                                                 				    "createdAt": "2025-07-07T20:00:00",
                                                 				    "fromCommitId": 12,
+                                                				    "mergeTargetCommitId": null,
                                                 				    "rootCommitId": 14,
                                                 				    "leafCommitId": 14,
                                                 				    "saveId": 1001
+                                                		    },
+                                                		    {
+                                                				    "id": 103,
+                                                				    "name": "merge-branch",
+                                                				    "createdAt": "2025-07-07T21:00:00",
+                                                				    "fromCommitId": 12,
+                                                				    "mergeTargetCommitId": 14,
+                                                				    "rootCommitId": null,
+                                                				    "leafCommitId": null,
+                                                				    "saveId": 1002
                                                 		    }
                                                     ]
                                                 

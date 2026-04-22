@@ -45,7 +45,7 @@ class BranchControllerTest {
         BranchCreateRequest request = new BranchCreateRequest("기능 브랜치", 100L);
         BranchCreateResponse response = new BranchCreateResponse(200L, 300L);
 
-        Mockito.when(branchService.createBranchOrSave(eq(documentId), any(), eq(mockUserId)))
+        Mockito.when(branchService.createBranch(eq(documentId), any(), eq(mockUserId)))
                 .thenReturn(response);
 
         // when + then
