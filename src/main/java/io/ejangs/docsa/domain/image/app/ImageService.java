@@ -64,6 +64,7 @@ public class ImageService {
                 .objectKey(objectKey)
                 .contentType(request.contentType())
                 .size(request.size())
+                .purpose(request.purpose())
                 .build());
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
