@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.doc.entity;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.edge.entity.Edge;
+import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;
@@ -14,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.ArrayList;
@@ -48,6 +50,9 @@ public class Doc extends BaseEntity {
 
     @OneToMany(mappedBy = "doc", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Edge> edges;
+
+    @OneToOne(mappedBy = "doc", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Thumbnail thumbnail;
 
     @Builder
     private Doc(String title, User user) {

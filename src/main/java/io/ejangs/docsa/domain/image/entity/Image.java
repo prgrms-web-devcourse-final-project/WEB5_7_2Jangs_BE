@@ -26,6 +26,11 @@ public class Image extends BaseEntity {
         FAILED
     }
 
+    public enum Purpose {
+        DOC_CONTENT,
+        DOC_THUMBNAIL
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -52,14 +57,19 @@ public class Image extends BaseEntity {
     @Column(nullable = false)
     private ImageStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Purpose purpose;
+
     @Builder
-    private Image(Long userId, Long docId, String originalFileName, String objectKey, String contentType, Long size) {
+    private Image(Long userId, Long docId, String originalFileName, String objectKey, String contentType, Long size, Purpose purpose) {
         this.userId = userId;
         this.docId = docId;
         this.originalFileName = originalFileName;
         this.objectKey = objectKey;
         this.contentType = contentType;
         this.size = size;
+        this.purpose = purpose;
         this.status = ImageStatus.PENDING;
     }
 
