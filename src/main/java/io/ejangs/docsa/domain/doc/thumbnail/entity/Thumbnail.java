@@ -19,6 +19,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import jakarta.persistence.Version;
 
 @Entity
 @Getter
@@ -28,7 +29,7 @@ public class Thumbnail extends BaseEntity {
 
     public enum ThumbnailStatus {
         EMPTY,
-        UPDATING,
+        PENDING,
         READY,
         FAILED
     }
@@ -62,6 +63,9 @@ public class Thumbnail extends BaseEntity {
     @Column(length = 500)
     private String lastError;
 
+    @Version
+    private Long version;
+
     @Builder
     private Thumbnail(Doc doc) {
         this.doc = doc;
@@ -71,9 +75,12 @@ public class Thumbnail extends BaseEntity {
 
     public Long requestUpdate() {
         this.requestToken++;
-        this.status = ThumbnailStatus.UPDATING;
+        if (this.currentImage == null) {
+            this.status = ThumbnailStatus.PENDING;
+        }
         this.requestedAt = LocalDateTime.now();
         this.lastError = null;
+
         return this.requestToken;
     }
 
