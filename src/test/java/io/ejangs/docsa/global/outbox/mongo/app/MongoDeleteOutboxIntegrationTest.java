@@ -48,7 +48,8 @@ class MongoDeleteOutboxIntegrationTest {
 
     @BeforeEach
     void cleanOutbox() {
-        mongoDeleteOutboxRepository.deleteAll();
+        mongoDeleteOutboxRepository.deleteAllInBatch();
+        mongoDeleteOutboxRepository.flush();
     }
 
     @Test
