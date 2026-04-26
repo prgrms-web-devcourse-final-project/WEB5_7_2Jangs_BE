@@ -62,4 +62,10 @@ public abstract class BaseOutboxEntity extends BaseEntity {
         this.status = OutboxStatus.OPEN;
         updateTimestamp();
     }
+
+    public void recoverProcessingTimeout(String errorMessage) {
+        this.status = OutboxStatus.OPEN;
+        this.lastError = errorMessage;
+        updateTimestamp();
+    }
 }

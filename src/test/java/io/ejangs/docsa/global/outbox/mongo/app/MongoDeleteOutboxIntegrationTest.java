@@ -120,7 +120,7 @@ class MongoDeleteOutboxIntegrationTest {
     }
 
     @Test
-    @DisplayName("PROCESSING timeout 건은 run() 시작 시 복구되어 재처리된다")
+    @DisplayName("PROCESSING timeout 건은 retryCount 증가 없이 복구되어 재처리된다")
     void workerRecoversTimedOutProcessingBeforeDelete() {
         MongoDeleteOutbox outbox = createOpenOutbox();
         mongoDeleteOutboxLifecycleService.claimOpen(outbox.getId());
@@ -138,7 +138,7 @@ class MongoDeleteOutboxIntegrationTest {
 
         MongoDeleteOutbox done = mongoDeleteOutboxRepository.findById(outbox.getId()).orElseThrow();
         assertThat(done.getStatus()).isEqualTo(OutboxStatus.DONE);
-        assertThat(done.getRetryCount()).isEqualTo(1);
+        assertThat(done.getRetryCount()).isEqualTo(0);
     }
 
     @Test

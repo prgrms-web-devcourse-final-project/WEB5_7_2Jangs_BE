@@ -21,6 +21,17 @@ public interface S3DeleteOutboxRepository extends JpaRepository<S3DeleteOutbox, 
 
     Optional<S3DeleteOutbox> findByIdAndStatus(Long id, OutboxStatus status);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            update s3_delete_outbox
+            set status = 'PROCESSING',
+                updated_at = current_timestamp,
+                version = version + 1
+            where id = :outboxId
+              and status = 'OPEN'
+            """, nativeQuery = true)
+    int claimOpenById(@Param("outboxId") Long outboxId);
+
     @Modifying
     @Query(value = """
             insert into s3_delete_outbox

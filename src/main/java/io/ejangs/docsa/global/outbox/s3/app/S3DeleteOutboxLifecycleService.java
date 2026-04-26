@@ -20,15 +20,18 @@ public class S3DeleteOutboxLifecycleService {
     private final ImageRepository imageRepository;
 
     public S3DeleteTarget claimOpen(Long outboxId) {
+        int claimed = s3DeleteOutboxRepository.claimOpenById(outboxId);
+        if (claimed == 0) {
+            return null;
+        }
+
         S3DeleteOutbox targetOutbox = s3DeleteOutboxRepository
-                .findByIdAndStatus(outboxId, OutboxStatus.OPEN)
+                .findByIdAndStatus(outboxId, OutboxStatus.PROCESSING)
                 .orElse(null);
         if (targetOutbox == null) {
             return null;
         }
 
-        targetOutbox.markProcessing();
-        s3DeleteOutboxRepository.save(targetOutbox);
         return new S3DeleteTarget(targetOutbox.getImageId(), targetOutbox.getObjectKey());
     }
 
@@ -71,7 +74,7 @@ public class S3DeleteOutboxLifecycleService {
             return 0;
         }
 
-        stuckOutboxes.forEach(outbox -> outbox.markRetry(outbox.getLastError() + " (recovered)"));
+        stuckOutboxes.forEach(outbox -> outbox.recoverProcessingTimeout("PROCESSING timeout recovered"));
         s3DeleteOutboxRepository.saveAll(stuckOutboxes);
         return stuckOutboxes.size();
     }

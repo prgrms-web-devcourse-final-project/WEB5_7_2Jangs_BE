@@ -20,15 +20,18 @@ public class MongoDeleteOutboxLifecycleService {
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
     public MongoIdsDto claimOpen(Long outboxId) {
+        int claimed = mongoDeleteOutboxRepository.claimOpenById(outboxId);
+        if (claimed == 0) {
+            return null;
+        }
+
         MongoDeleteOutbox targetOutbox = mongoDeleteOutboxRepository
-                .findByIdAndStatus(outboxId, OutboxStatus.OPEN)
+                .findByIdAndStatus(outboxId, OutboxStatus.PROCESSING)
                 .orElse(null);
         if (targetOutbox == null) {
             return null;
         }
 
-        targetOutbox.markProcessing();
-        mongoDeleteOutboxRepository.save(targetOutbox);
         return new MongoIdsDto(
                 targetOutbox.getSaveContentIds(),
                 targetOutbox.getCommitBlockSequenceIds(),
@@ -70,7 +73,7 @@ public class MongoDeleteOutboxLifecycleService {
             return 0;
         }
 
-        stuckOutboxes.forEach(outbox -> outbox.markRetry(outbox.getLastError() + " (recovered)"));
+        stuckOutboxes.forEach(outbox -> outbox.recoverProcessingTimeout("PROCESSING timeout recovered"));
         mongoDeleteOutboxRepository.saveAll(stuckOutboxes);
         return stuckOutboxes.size();
     }
