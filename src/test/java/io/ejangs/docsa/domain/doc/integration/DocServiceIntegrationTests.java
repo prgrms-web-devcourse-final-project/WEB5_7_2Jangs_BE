@@ -36,8 +36,9 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
-import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.outbox.OutboxStatus;
+import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -213,7 +214,7 @@ public class DocServiceIntegrationTests {
             assertThat(outbox.getTriggerType()).isEqualTo(MongoDeleteOutbox.TriggerType.COMPENSATE);
             assertThat(outbox.getDomainType()).isEqualTo(MongoDeleteOutbox.DomainType.DOC);
             assertThat(outbox.getOriginType()).isEqualTo(MongoDeleteOutbox.OriginType.SAVE_CONTENT_ID);
-            assertThat(outbox.getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
+            assertThat(outbox.getStatus()).isEqualTo(OutboxStatus.OPEN);
         }
     }
     @Nested
@@ -251,7 +252,7 @@ public class DocServiceIntegrationTests {
 
             List<MongoDeleteOutbox> outboxes = mongoDeleteOutboxRepository.findAll();
             assertThat(outboxes).hasSize(1);
-            assertThat(outboxes.getFirst().getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
+            assertThat(outboxes.getFirst().getStatus()).isEqualTo(OutboxStatus.OPEN);
             assertThat(outboxes.getFirst().getRetryCount()).isEqualTo(0);
         }
     }

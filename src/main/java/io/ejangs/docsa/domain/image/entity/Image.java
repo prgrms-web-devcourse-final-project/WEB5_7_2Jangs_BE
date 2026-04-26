@@ -23,6 +23,8 @@ public class Image extends BaseEntity {
     public enum ImageStatus {
         PENDING,
         ACTIVE,
+        DELETING,
+        DELETED,
         FAILED
     }
 
@@ -75,6 +77,14 @@ public class Image extends BaseEntity {
 
     public void activate() {
         this.status = ImageStatus.ACTIVE;
+    }
+
+    public void markDeleting() {
+        this.status = ImageStatus.DELETING;
+    }
+
+    public void markDeleted() {
+        this.status = ImageStatus.DELETED;
     }
 
     public void fail() {
