@@ -6,6 +6,7 @@ import io.ejangs.docsa.domain.image.dto.request.ImageUploadUrlRequest;
 import io.ejangs.docsa.domain.image.dto.response.ImageUploadCompleteResponse;
 import io.ejangs.docsa.domain.image.dto.response.ImageUploadUrlResponse;
 import io.ejangs.docsa.domain.image.entity.Image;
+import io.ejangs.docsa.domain.image.entity.Image.Purpose;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.ImageErrorCode;
 import java.time.Duration;
@@ -55,7 +56,8 @@ public class ImageService {
         validateImage(request.contentType(), request.size());
 
         String extension = extensionOf(request.contentType());
-        String objectKey = "users/%d/docs/%d/images/%s.%s"
+
+        String objectKey = objectKeyOf(request.purpose())
                 .formatted(userId, request.docId(), UUID.randomUUID(), extension);
 
         Image image = imageRepository.save(Image.builder()
@@ -134,6 +136,13 @@ public class ImageService {
             case "image/webp" -> "webp";
             case "image/gif" -> "gif";
             default -> throw new CustomException(ImageErrorCode.INVALID_IMAGE_CONTENT_TYPE);
+        };
+    }
+
+    private String objectKeyOf(Purpose purpose) {
+        return switch (purpose) {
+            case DOC_CONTENT -> "users/%d/docs/%d/images/%s.%s";
+            case DOC_THUMBNAIL -> "users/%d/docs/%d/thumbnails/%s.%s";
         };
     }
 
