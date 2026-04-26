@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.mongodb.DuplicateKeyException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
@@ -115,7 +114,10 @@ class SaveServiceIntegrationTest {
         @Transactional(propagation = Propagation.NOT_SUPPORTED)
         void updateSave_fails_whenMongoSaveFails_thenMysqlDeleted() throws Exception {
             // given
-            LocalDateTime beforeUpdatedAt = save.getUpdatedAt();
+            saveRepository.flush();
+            em.clear();
+            Save before = saveRepository.findById(save.getId()).orElseThrow();
+            LocalDateTime beforeUpdatedAt = before.getUpdatedAt();
 
             SaveIdentifierDto dto = new SaveIdentifierDto(doc.getId(), save.getId(), user.getId());
             SaveUpdateRequest request = new SaveUpdateRequest(data);
