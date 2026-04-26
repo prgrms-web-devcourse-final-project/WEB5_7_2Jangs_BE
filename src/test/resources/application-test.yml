@@ -60,6 +60,14 @@ mongo:
         fixed-delay: PT1M
         initial-delay: PT24H
 
+s3:
+  delete:
+    outbox:
+      worker:
+        fixed-delay: PT1M
+        initial-delay: PT24H
+
+
 cloud:
   aws:
     region: ap-northeast-2
