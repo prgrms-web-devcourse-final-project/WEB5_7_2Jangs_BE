@@ -31,6 +31,7 @@ public class ImageService {
     private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
     private final ImageRepository imageRepository;
+    private final ImageQueryService imageQueryService;
     private final DocQueryService docQueryService;
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
@@ -89,14 +90,11 @@ public class ImageService {
                 "PUT",
                 expireMinutes * 60
         );
-
-
     }
 
     @Transactional
     public ImageUploadCompleteResponse complete(Long userId, Long imageId) {
-        Image image = imageRepository.findByIdAndUserId(imageId, userId)
-                .orElseThrow(() -> new CustomException(ImageErrorCode.IMAGE_NOT_FOUND));
+        Image image = imageQueryService.getByIdAndUserId(imageId, userId);
 
         String objectKey = image.getObjectKey();
 

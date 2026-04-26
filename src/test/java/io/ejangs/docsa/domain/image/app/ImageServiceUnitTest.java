@@ -21,7 +21,6 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.ImageErrorCode;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +45,9 @@ class ImageServiceUnitTest {
     private ImageRepository imageRepository;
 
     @Mock
+    private ImageQueryService imageQueryService;
+
+    @Mock
     private DocQueryService docQueryService;
 
     @Mock
@@ -61,7 +63,8 @@ class ImageServiceUnitTest {
 
     @BeforeEach
     void setUp() {
-        imageService = new ImageService(imageRepository, docQueryService, s3Presigner, s3Client);
+        imageService = new ImageService(imageRepository, imageQueryService, docQueryService,
+                s3Presigner, s3Client);
         ReflectionTestUtils.setField(imageService, "bucket", "docsa-image-bucket");
         ReflectionTestUtils.setField(imageService, "expireMinutes", 5L);
         ReflectionTestUtils.setField(imageService, "cdnUrl", "https://cdn.example.com");
@@ -143,7 +146,7 @@ class ImageServiceUnitTest {
                 .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageRepository.findByIdAndUserId(imageId, userId)).thenReturn(Optional.of(image));
+        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(
                 HeadObjectResponse.builder()
                         .contentType("image/png")
@@ -182,7 +185,7 @@ class ImageServiceUnitTest {
                 .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageRepository.findByIdAndUserId(imageId, userId)).thenReturn(Optional.of(image));
+        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenThrow(
                 S3Exception.builder()
                         .statusCode(404)

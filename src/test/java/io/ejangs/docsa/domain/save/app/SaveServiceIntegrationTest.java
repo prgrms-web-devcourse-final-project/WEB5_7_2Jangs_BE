@@ -38,6 +38,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -111,7 +112,7 @@ class SaveServiceIntegrationTest {
 
         @Test
         @DisplayName("Mongo 저장 실패 시 updateSave 롤백")
-        //@Transactional(propagation = Propagation.NOT_SUPPORTED)
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
         void updateSave_fails_whenMongoSaveFails_thenMysqlDeleted() throws Exception {
             // given
             LocalDateTime beforeUpdatedAt = save.getUpdatedAt();
