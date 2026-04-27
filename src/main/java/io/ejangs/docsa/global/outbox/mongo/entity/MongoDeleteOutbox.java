@@ -10,6 +10,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -26,6 +27,10 @@ import lombok.NoArgsConstructor;
                         name = "uk_mongo_delete_outbox_trigger_domain_origin",
                         columnNames = {"trigger_type", "domain_type", "origin_type", "origin_id"}
                 )
+        },
+        indexes = {
+                @Index(name = "idx_mongo_delete_outbox_status_created_at", columnList = "status, created_at"),
+                @Index(name = "idx_mongo_delete_outbox_status_updated_at", columnList = "status, updated_at")
         }
 )
 @Getter

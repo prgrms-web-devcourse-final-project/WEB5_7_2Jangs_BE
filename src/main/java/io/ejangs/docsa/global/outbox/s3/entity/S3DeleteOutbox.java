@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
@@ -17,6 +18,10 @@ import lombok.NoArgsConstructor;
         name = "s3_delete_outbox",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_s3_delete_outbox_object_key", columnNames = "object_key")
+        },
+        indexes = {
+                @Index(name = "idx_s3_delete_outbox_status_created_at", columnList = "status, created_at"),
+                @Index(name = "idx_s3_delete_outbox_status_updated_at", columnList = "status, updated_at")
         }
 )
 @Getter
