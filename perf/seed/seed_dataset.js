@@ -13,6 +13,7 @@ const MAIN_COMMITS = Number(__ENV.MAIN_COMMITS || 6);
 const FEATURE_COMMITS = Number(__ENV.FEATURE_COMMITS || 4);
 const BLOCKS_PER_COMMIT = Number(__ENV.BLOCKS_PER_COMMIT || 20);
 const RUN_ID = __ENV.RUN_ID || Math.floor(Date.now() / 1000).toString(36);
+const RESULT_DIR = __ENV.RESULT_DIR || '';
 
 const TOTAL_DOCS = USER_COUNT * DOCS_PER_USER;
 
@@ -220,8 +221,13 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  return {
+  const summary = {
     stdout: `\n[seed-dataset] run_id=${RUN_ID}, users=${USER_COUNT}, docs_per_user=${DOCS_PER_USER}, total_docs=${TOTAL_DOCS}\n`,
-    'perf/delete/results/seed_dataset_summary.json': JSON.stringify(data, null, 2),
   };
+
+  if (RESULT_DIR) {
+    summary[`${RESULT_DIR}/seed_dataset_summary.json`] = JSON.stringify(data, null, 2);
+  }
+
+  return summary;
 }
