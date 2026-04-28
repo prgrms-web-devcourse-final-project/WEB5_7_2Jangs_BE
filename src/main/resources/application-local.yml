@@ -27,13 +27,13 @@ spring:
     properties:
       hibernate:
         show_sql: false
-        format_sql: true
-        highlight_sql: true
+        format_sql: false
+        highlight_sql: false
 
 decorator:
   datasource:
     datasource-proxy:
-      enabled: true
+      enabled: false
       logging: slf4j
       multiline: true
       format-sql: true
@@ -48,7 +48,7 @@ decorator:
 
 logging:
   level:
-    net.ttddyy.dsproxy.listener: DEBUG
+    net.ttddyy.dsproxy.listener: OFF
 
 server:
   port: 8080
