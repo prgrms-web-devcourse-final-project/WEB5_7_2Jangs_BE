@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.mongodb.DuplicateKeyException;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
@@ -37,7 +38,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -111,13 +111,10 @@ class SaveServiceIntegrationTest {
 
         @Test
         @DisplayName("Mongo 저장 실패 시 updateSave 롤백")
-        @Transactional(propagation = Propagation.NOT_SUPPORTED)
+        //@Transactional(propagation = Propagation.NOT_SUPPORTED)
         void updateSave_fails_whenMongoSaveFails_thenMysqlDeleted() throws Exception {
             // given
-            saveRepository.flush();
-            em.clear();
-            Save before = saveRepository.findById(save.getId()).orElseThrow();
-            LocalDateTime beforeUpdatedAt = before.getUpdatedAt();
+            LocalDateTime beforeUpdatedAt = save.getUpdatedAt();
 
             SaveIdentifierDto dto = new SaveIdentifierDto(doc.getId(), save.getId(), user.getId());
             SaveUpdateRequest request = new SaveUpdateRequest(data);

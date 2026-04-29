@@ -8,8 +8,8 @@
 
 ## Files
 
-- `perf/seed/seed_dataset.js`
-  - 유저별 문서/커밋/브랜치 데이터 생성. delete/read/thumbnail E2E에서 공용으로 사용
+- `perf/delete/seed_dataset.js`
+  - 유저별 문서/커밋/브랜치 데이터 생성
 - `perf/delete/delete_only_benchmark.js`
   - 생성된 문서를 찾아 삭제만 수행
 - `perf/delete/compare_delete_summary.mjs`
@@ -69,7 +69,7 @@ USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
 USER_COUNT=100 DOCS_PER_USER=3 \
 MAIN_COMMITS=6 FEATURE_COMMITS=4 BLOCKS_PER_COMMIT=20 \
 SEED_VUS=20 \
-k6 run perf/seed/seed_dataset.js
+k6 run perf/delete/seed_dataset.js
 ```
 
 생성 규칙:
@@ -103,7 +103,7 @@ k6 run perf/delete/delete_only_benchmark.js \
 1. 브랜치 checkout
 2. 서버 실행
 3. 유저 준비(`PERF_SEED_USER_COUNT`, `PERF_SEED_DOCS_PER_USER=0` 적용된 상태)
-4. 데이터 생성 (`perf/seed/seed_dataset.js`)
+4. 데이터 생성 (`seed_dataset.js`)
 5. 삭제 벤치 실행 (`delete_only_benchmark.js`)
 6. 결과 파일 저장
 

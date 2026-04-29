@@ -1,8 +1,6 @@
 package io.ejangs.docsa.domain.save.app;
 
 import com.mongodb.DuplicateKeyException;
-import io.ejangs.docsa.domain.doc.thumbnail.app.ThumbnailService;
-import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
@@ -26,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class SaveService {
 
     private final SaveQueryService saveQueryService;
-    private final ThumbnailService thumbnailService;
 
     @Transactional(readOnly = true)
     public SaveGetResponse getSave(SaveIdentifierDto dto) {
@@ -44,11 +41,6 @@ public class SaveService {
         RenewUpdatedAtHelper.touch(findSave);
         saveQueryService.saveSave(findSave);
 
-        ThumbnailSyncResponse thumbnailSyncResponse = thumbnailService.requestUpdate(
-                dto.userId(),
-                dto.documentId()
-        );
-
         // MongoDB 저장
         try {
             SaveContent saveContent = saveQueryService.getSaveContentById(findSave.getSaveMongoId());
@@ -63,13 +55,14 @@ public class SaveService {
             throw new CustomException(SaveErrorCode.FAIL_TO_SAVE);
         }
 
-        return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt(), thumbnailSyncResponse);
+        return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt());
     }
 
     private Save getValidSave(SaveIdentifierDto dto) {
-
+        // 존재하는 user, document 인지 검사
         Save findSave = saveQueryService.getSaveById(dto.saveId());
 
+        // SAVE 소유자인지 검사
         saveQueryService.checkSaveAndDocOwner(findSave, dto.userId(), dto.documentId());
         return findSave;
     }

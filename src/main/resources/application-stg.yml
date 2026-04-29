@@ -5,11 +5,6 @@ spring:
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
 
-  flyway:
-    enabled: ${FLYWAY_ENABLED:true}
-    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
-    baseline-version: ${FLYWAY_BASELINE_VERSION:1}
-
   mail:
     host: mailpit
     port: 1025
@@ -77,13 +72,18 @@ springdoc:
 decorator:
   datasource:
     datasource-proxy:
-      enabled: false
+      enabled: true
+      logging: slf4j
+      multiline: true
+      format-sql: true
+      count-query: true
       query:
-        enable-logging: false
+        enable-logging: true
+        log-level: debug
       slow-query:
         enable-logging: true
         log-level: warn
-        threshold: 300
+        threshold: 100
 
 logging:
   level:

@@ -9,8 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
-import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import io.ejangs.docsa.domain.save.app.SaveService;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
@@ -68,7 +66,7 @@ class SaveControllerTest {
         Long saveId = 1L;
 
         when(saveService.updateSave(dto, request)).thenReturn(new SaveUpdateResponse(
-                LocalDateTime.now(), new ThumbnailSyncResponse(10L, "wow", ThumbnailStatus.READY)));
+                LocalDateTime.now()));
 
         mockMvc.perform(
                         put("/api/document/{documentId}/save/{saveId}", documentId, saveId)

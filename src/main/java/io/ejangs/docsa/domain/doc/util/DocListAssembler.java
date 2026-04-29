@@ -1,19 +1,21 @@
 package io.ejangs.docsa.domain.doc.util;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.thumbnail.dao.ThumbnailRepository;
-import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
+import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
+import io.ejangs.docsa.domain.save.document.SaveContent;
+import io.ejangs.docsa.domain.save.entity.Save;
+import io.ejangs.docsa.global.exception.CustomException;
+import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
@@ -21,53 +23,20 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DocListAssembler {
 
-    private final ThumbnailRepository thumbnailRepository;
+    private final CommitContentAssembler commitContentAssembler;
+    private final SaveContentRepository saveContentRepository;
 
-    @Value("${cloud.aws.s3.public-base-url}")
-    private String cdnUrl;
+    private static final String DEFAULT_PREVIEW = "미리보기 없음";
 
     public Page<DocPageResponse> assembleDocList(Page<Doc> docs) {
-        List<Long> docIds = docs.getContent().stream()
-                .map(Doc::getId)
-                .toList();
-
-        Map<Long, Thumbnail> thumbnailByDocId = thumbnailRepository
-                .findAllByDocIdInWithCurrentImage(docIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        thumbnail -> thumbnail.getDoc().getId(),
-                        Function.identity()
-                ));
-
-        return docs.map(doc -> {
-            Branch recentBranch = getMostRecentBranch(doc);
-            RecentActivityDto recent = getRecentActivity(recentBranch);
-            Thumbnail thumbnail = thumbnailByDocId.get(doc.getId());
-
-            return DocMapper.toListResponse(
-                    doc,
-                    buildThumbnailUrl(thumbnail),
-                    thumbnailStatusOf(thumbnail),
-                    recent
-            );
-        });
+        return docs
+                .map(doc -> {
+                    Branch recentBranch = getMostRecentBranch(doc);
+                    RecentActivityDto recent = getRecentActivity(recentBranch);
+                    String preview = extractPreviewSafe(recentBranch, recent);
+                    return DocMapper.toListResponse(doc, preview, recent);
+                });
     }
-
-    private String buildThumbnailUrl(Thumbnail thumbnail) {
-        if (thumbnail == null || thumbnail.getCurrentImage() == null) {
-            return null;
-        }
-
-        return "%s/%s".formatted(cdnUrl, thumbnail.getCurrentImage().getObjectKey());
-    }
-
-    private Thumbnail.ThumbnailStatus thumbnailStatusOf(Thumbnail thumbnail) {
-        if (thumbnail == null) {
-            return Thumbnail.ThumbnailStatus.EMPTY;
-        }
-        return thumbnail.getStatus();
-    }
-
 
     public Page<DocSimplePageResponse> assembleDocListSimple(Page<Doc> docs) {
         return docs
@@ -77,6 +46,41 @@ public class DocListAssembler {
                     return DocMapper.toListSimpleResponse(doc, recent);
                 });
     }
+
+    private String extractPreviewSafe(Branch branch, RecentActivityDto recent) {
+        if (branch == null || recent == null) {
+            return DEFAULT_PREVIEW;
+        }
+
+        return switch (recent.recentType()) {
+            case COMMIT -> extractPreviewFromCommit(branch.getLeafCommit());
+            case SAVE -> extractPreviewFromSave(branch.getSave());
+            default -> DEFAULT_PREVIEW;
+        };
+    }
+
+    private String extractPreviewFromCommit(Commit commit) {
+        if (commit == null) {
+            return DEFAULT_PREVIEW;
+        }
+
+        List<Map<String, Object>> content = commitContentAssembler.assemble(
+                commit.getCommitMongoId());
+        return PreviewExtractor.doExtractPreview(content);
+    }
+
+    private String extractPreviewFromSave(Save save) {
+        if (save == null) {
+            return DEFAULT_PREVIEW;
+        }
+
+        SaveContent saveContent = saveContentRepository.findById(save.getSaveMongoId())
+                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
+
+        List<Map<String, Object>> content = saveContent.getContent();
+        return PreviewExtractor.doExtractPreview(content);
+    }
+
 
     private Branch getMostRecentBranch(Doc doc) {
         return doc.getBranches().stream()

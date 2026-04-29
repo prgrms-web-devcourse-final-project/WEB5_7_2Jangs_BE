@@ -25,7 +25,7 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
-import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
+import io.ejangs.docsa.global.mongo.outbox.util.MongoIdsCollector;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

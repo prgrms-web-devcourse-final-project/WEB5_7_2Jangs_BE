@@ -20,19 +20,19 @@ import org.springframework.http.MediaType;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Operation(
-        summary = "브랜치 이름 변경",
-        description = "브랜치의 이름을 수정합니다. 메인 브랜치의 이름은 수정할 수 없습니다.",
+        summary = "버전 이름 변경",
+        description = "버전의 이름을 수정합니다. 메인버전의 이름은 수정할 수 없습니다.",
         parameters = {
                 @Parameter(
                         name = "docId",
-                        description = "수정하려는 브랜치가 속한 문서 id",
+                        description = "수정하려는 버전이 속한 문서 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
                 ),
                 @Parameter(
                         name = "branchId",
-                        description = "수정하려는 브랜치의 id",
+                        description = "수정하려는 버전의 id",
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
@@ -43,9 +43,9 @@ import org.springframework.http.MediaType;
                         schema = @Schema(implementation = BranchRenameRequest.class),
                         mediaType = MediaType.APPLICATION_JSON_VALUE,
                         examples = @ExampleObject(
-                                        value = """
+                                value = """
                                         {
-                                        	"newName" : "수정한 브랜치 이름"
+                                        	"newName" : "수정한 버전 이름"
                                         }
                                         """
                         )
@@ -54,7 +54,7 @@ import org.springframework.http.MediaType;
         responses = {
                 @ApiResponse(
                         responseCode = "200",
-                        description = "브랜치 이름 수정 성공",
+                        description = "버전 이름 수정 성공",
                         content = @Content(
                                 schema = @Schema(implementation = BranchRenameResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -62,7 +62,7 @@ import org.springframework.http.MediaType;
                                         value = """
                                                 {
                                                 	"id" : 1,
-                                                	"name": "수정한 브랜치 이름"
+                                                	"name": "수정한 버전 이름"
                                                 }
                                                 """
                                 )
@@ -70,7 +70,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "400",
-                        description = "브랜치 이름 수정 실패 - 해당 문서에 속한 브랜치가 아님",
+                        description = "버전 이름 수정 실패 - 해당 문서에 속한 버전이 아님",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -79,7 +79,7 @@ import org.springframework.http.MediaType;
                                         value = """
                                                 {
                                                    "status": 400,
-                                                   "message": "해당 브랜치를 찾을 수 없습니다.",
+                                                   "message": "해당 버전을 찾을 수 없습니다.",
                                                    "error": "BRANCH_NOT_FOUND_OR_FORBIDDEN"
                                                 }
                                                 """
@@ -106,7 +106,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "404",
-                        description = "브랜치 이름 수정 실패 - 해당 id를 가진 브랜치 없음",
+                        description = "버전 이름 수정 실패 - 해당 id를 가진 버전 없음",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -115,7 +115,7 @@ import org.springframework.http.MediaType;
                                         value = """
                                                 {
                                                    "status": 404,
-                                                   "message": "해당 브랜치를 찾을 수 없습니다.",
+                                                   "message": "해당 버전을 찾을 수 없습니다.",
                                                    "error": "BRANCH_NOT_FOUND"
                                                 }
                                                 """
@@ -124,7 +124,7 @@ import org.springframework.http.MediaType;
                 ),
                 @ApiResponse(
                         responseCode = "500",
-                        description = "브랜치 이름 수정 실패 - MySQL 또는 MongoDB 저장 실패",
+                        description = "버전 이름 수정 실패 - MySQL 또는 MongoDB 저장 실패",
                         content = @Content(
                                 schema = @Schema(implementation = ErrorResponse.class),
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,

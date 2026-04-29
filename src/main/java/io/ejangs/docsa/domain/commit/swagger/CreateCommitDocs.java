@@ -171,7 +171,7 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                         {
                                                             "status": 404,
-                                                            "message": "해당 브랜치를 찾을 수 없습니다.",
+                                                            "message": "해당 버전을 찾을 수 없습니다.",
                                                             "error": "BRANCH_NOT_FOUND_OR_FORBIDDEN"
                                                         }
                                                         """
@@ -191,7 +191,7 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                         {
                                                             "status": 404,
-                                                            "message": "해당 브랜치를 찾을 수 없습니다.",
+                                                            "message": "해당 버전을 찾을 수 없습니다.",
                                                             "error": "BRANCH_NOT_FOUND"
                                                         }
                                                         """

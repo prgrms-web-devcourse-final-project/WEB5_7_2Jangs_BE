@@ -23,14 +23,7 @@ public class Image extends BaseEntity {
     public enum ImageStatus {
         PENDING,
         ACTIVE,
-        DELETING,
-        DELETED,
         FAILED
-    }
-
-    public enum Purpose {
-        DOC_CONTENT,
-        DOC_THUMBNAIL
     }
 
     @Id
@@ -59,32 +52,19 @@ public class Image extends BaseEntity {
     @Column(nullable = false)
     private ImageStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Purpose purpose;
-
     @Builder
-    private Image(Long userId, Long docId, String originalFileName, String objectKey, String contentType, Long size, Purpose purpose) {
+    private Image(Long userId, Long docId, String originalFileName, String objectKey, String contentType, Long size) {
         this.userId = userId;
         this.docId = docId;
         this.originalFileName = originalFileName;
         this.objectKey = objectKey;
         this.contentType = contentType;
         this.size = size;
-        this.purpose = purpose;
         this.status = ImageStatus.PENDING;
     }
 
     public void activate() {
         this.status = ImageStatus.ACTIVE;
-    }
-
-    public void markDeleting() {
-        this.status = ImageStatus.DELETING;
-    }
-
-    public void markDeleted() {
-        this.status = ImageStatus.DELETED;
     }
 
     public void fail() {

@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.doc.dto.response;
 
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
-import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import java.time.LocalDateTime;
 
 public record DocPageResponse(
@@ -9,13 +8,17 @@ public record DocPageResponse(
         String title,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        String thumbnailUrl,
-        ThumbnailStatus thumbnailStatus,
+        String preview,
         RecentActivityDto recent
 ) {
 
-    public DocPageResponse {
-        createdAt = createdAt.plusHours(9L);
-        updatedAt = updatedAt.plusHours(9L);
+    public DocPageResponse(Long id, String title, LocalDateTime createdAt,
+            LocalDateTime updatedAt, String preview, RecentActivityDto recent) {
+        this.id = id;
+        this.title = title;
+        this.createdAt = createdAt.plusHours(9L);
+        this.updatedAt = updatedAt.plusHours(9L);
+        this.preview = preview;
+        this.recent = recent;
     }
 }

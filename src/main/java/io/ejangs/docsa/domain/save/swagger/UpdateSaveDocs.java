@@ -94,12 +94,7 @@ import org.springframework.http.MediaType;
                                 examples = @ExampleObject(
                                         value = """
                                                 {
-                                                  "updatedAt": "2026-04-26T21:30:00",
-                                                  "thumbnail": {
-                                                    "requestToken": 12,
-                                                    "signature": "9f0c1dd5d7e8b8f2a1f4c3d2e6a7b8c9",
-                                                    "status": "PENDING"
-                                                  }
+                                                    "updatedAt": "2025-07-07T14:21:00"
                                                 }
                                                 """
                                 )
