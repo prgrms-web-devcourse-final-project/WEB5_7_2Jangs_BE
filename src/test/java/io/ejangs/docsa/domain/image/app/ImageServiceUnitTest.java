@@ -16,11 +16,11 @@ import io.ejangs.docsa.domain.image.dto.response.ImageUploadCompleteResponse;
 import io.ejangs.docsa.domain.image.dto.response.ImageUploadUrlResponse;
 import io.ejangs.docsa.domain.image.entity.Image;
 import io.ejangs.docsa.domain.image.entity.Image.ImageStatus;
+import io.ejangs.docsa.domain.image.entity.Image.Purpose;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.ImageErrorCode;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +45,9 @@ class ImageServiceUnitTest {
     private ImageRepository imageRepository;
 
     @Mock
+    private ImageQueryService imageQueryService;
+
+    @Mock
     private DocQueryService docQueryService;
 
     @Mock
@@ -60,7 +63,8 @@ class ImageServiceUnitTest {
 
     @BeforeEach
     void setUp() {
-        imageService = new ImageService(imageRepository, docQueryService, s3Presigner, s3Client);
+        imageService = new ImageService(imageRepository, imageQueryService, docQueryService,
+                s3Presigner, s3Client);
         ReflectionTestUtils.setField(imageService, "bucket", "docsa-image-bucket");
         ReflectionTestUtils.setField(imageService, "expireMinutes", 5L);
         ReflectionTestUtils.setField(imageService, "cdnUrl", "https://cdn.example.com");
@@ -72,7 +76,7 @@ class ImageServiceUnitTest {
         Long userId = 1L;
         Long docId = 2L;
         ImageUploadUrlRequest request =
-                new ImageUploadUrlRequest(docId, "sample.png", "image/png", 1024L);
+                new ImageUploadUrlRequest(docId, "sample.png", "image/png", 1024L, Purpose.DOC_CONTENT);
 
         when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
         when(imageRepository.save(any(Image.class))).thenAnswer(invocation -> {
@@ -108,12 +112,46 @@ class ImageServiceUnitTest {
     }
 
     @Test
+    @DisplayName("썸네일 업로드 URL 생성 시 thumbnails prefix로 S3 key를 만든다")
+    void createUploadUrl_success_whenPurposeIsThumbnail() throws Exception {
+        Long userId = 1L;
+        Long docId = 2L;
+        ImageUploadUrlRequest request =
+                new ImageUploadUrlRequest(docId, "thumbnail.webp", "image/webp", 1024L, Purpose.DOC_THUMBNAIL);
+
+        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
+        when(imageRepository.save(any(Image.class))).thenAnswer(invocation -> {
+            Image image = invocation.getArgument(0);
+            ReflectionTestUtils.setField(image, "id", 10L);
+            return image;
+        });
+        when(presignedPutObjectRequest.url())
+                .thenReturn(URI.create("https://s3.example.com/upload").toURL());
+        when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
+                .thenReturn(presignedPutObjectRequest);
+
+        ImageUploadUrlResponse response = imageService.createUploadUrl(userId, request);
+
+        assertThat(response.objectKey())
+                .startsWith("users/1/docs/2/thumbnails/")
+                .endsWith(".webp");
+
+        ArgumentCaptor<PutObjectPresignRequest> presignCaptor =
+                ArgumentCaptor.forClass(PutObjectPresignRequest.class);
+        verify(s3Presigner).presignPutObject(presignCaptor.capture());
+
+        PutObjectRequest putObjectRequest = presignCaptor.getValue().putObjectRequest();
+        assertThat(putObjectRequest.key()).isEqualTo(response.objectKey());
+        assertThat(putObjectRequest.contentType()).isEqualTo("image/webp");
+    }
+
+    @Test
     @DisplayName("지원하지 않는 이미지 형식이면 업로드 URL을 생성하지 않는다")
     void createUploadUrl_fail_whenContentTypeInvalid() {
         Long userId = 1L;
         Long docId = 2L;
         ImageUploadUrlRequest request =
-                new ImageUploadUrlRequest(docId, "sample.svg", "image/svg+xml", 1024L);
+                new ImageUploadUrlRequest(docId, "sample.svg", "image/svg+xml", 1024L, Purpose.DOC_CONTENT);
 
         when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
 
@@ -139,9 +177,10 @@ class ImageServiceUnitTest {
                 .objectKey(objectKey)
                 .contentType("image/png")
                 .size(1024L)
+                .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageRepository.findByIdAndUserId(imageId, userId)).thenReturn(Optional.of(image));
+        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(
                 HeadObjectResponse.builder()
                         .contentType("image/png")
@@ -177,9 +216,10 @@ class ImageServiceUnitTest {
                 .objectKey("users/1/docs/2/images/image.png")
                 .contentType("image/png")
                 .size(1024L)
+                .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageRepository.findByIdAndUserId(imageId, userId)).thenReturn(Optional.of(image));
+        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenThrow(
                 S3Exception.builder()
                         .statusCode(404)

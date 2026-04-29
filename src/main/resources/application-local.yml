@@ -16,19 +16,24 @@ spring:
     starttls-enable: ${STARTTLS_ENABLE:false}
     starttls-required: ${STARTTLS_REQUIRED:false}
 
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
+    baseline-version: ${FLYWAY_BASELINE_VERSION:1}
+
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: ${DDL_AUTO:create-drop}
     properties:
       hibernate:
         show_sql: false
-        format_sql: true
-        highlight_sql: true
+        format_sql: false
+        highlight_sql: false
 
 decorator:
   datasource:
     datasource-proxy:
-      enabled: true
+      enabled: false
       logging: slf4j
       multiline: true
       format-sql: true
@@ -43,7 +48,7 @@ decorator:
 
 logging:
   level:
-    net.ttddyy.dsproxy.listener: DEBUG
+    net.ttddyy.dsproxy.listener: OFF
 
 server:
   port: 8080

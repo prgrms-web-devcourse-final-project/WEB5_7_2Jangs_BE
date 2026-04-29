@@ -9,6 +9,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.ejangs.docsa.domain.doc.thumbnail.app.ThumbnailService;
+import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
+import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.dto.SaveIdentifierDto;
 import io.ejangs.docsa.domain.save.dto.request.SaveUpdateRequest;
@@ -36,6 +39,8 @@ class SaveServiceUnitTest {
 
     @Mock
     private SaveQueryService saveQueryService;
+    @Mock
+    private ThumbnailService thumbnailService;
     @Mock
     private Save mockSave;
     @Mock
@@ -108,7 +113,10 @@ class SaveServiceUnitTest {
     @Test
     @DisplayName("성공적인 updateSave")
     void updateSave_success() {
-        SaveUpdateResponse expectedResponse = new SaveUpdateResponse(LocalDateTime.now());
+        ThumbnailSyncResponse thumbnailSyncResponse = new ThumbnailSyncResponse(10L, "wow",
+                ThumbnailStatus.READY);
+        SaveUpdateResponse expectedResponse = new SaveUpdateResponse(LocalDateTime.now(),
+                thumbnailSyncResponse);
 
         when(saveQueryService.getSaveById(idDto.saveId())).thenReturn(mockSave);
         doNothing().when(saveQueryService)
@@ -116,9 +124,12 @@ class SaveServiceUnitTest {
         when(mockSave.getSaveMongoId()).thenReturn("mongo-1");
         when(saveQueryService.getSaveContentById("mongo-1")).thenReturn(mockSaveContent);
         when(mockSave.getUpdatedAt()).thenReturn(LocalDateTime.now());
+        when(thumbnailService.requestUpdate(idDto.userId(), idDto.documentId()))
+                .thenReturn(thumbnailSyncResponse);
 
         try (MockedStatic<SaveMapper> mockedMapper = mockStatic(SaveMapper.class)) {
-            mockedMapper.when(() -> SaveMapper.toSaveUpdateResponse(mockSave.getUpdatedAt()))
+            mockedMapper.when(() -> SaveMapper.toSaveUpdateResponse(mockSave.getUpdatedAt(),
+                            thumbnailSyncResponse))
                     .thenReturn(expectedResponse);
 
             SaveUpdateResponse actualResponse = saveService.updateSave(idDto, request);

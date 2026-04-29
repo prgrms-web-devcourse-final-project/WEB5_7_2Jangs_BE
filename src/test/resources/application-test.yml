@@ -9,6 +9,9 @@ spring:
     mongodb:
       uri: ${MONGO_URI:mongodb://localhost:27017/docsa-test}
 
+  flyway:
+    enabled: false
+
   jpa:
     hibernate:
       ddl-auto: create
@@ -59,6 +62,14 @@ mongo:
       worker:
         fixed-delay: PT1M
         initial-delay: PT24H
+
+s3:
+  delete:
+    outbox:
+      worker:
+        fixed-delay: PT1M
+        initial-delay: PT24H
+
 
 cloud:
   aws:
