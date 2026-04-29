@@ -10,7 +10,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.domain.edge.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveQueryService;
-import io.ejangs.docsa.global.mongo.outbox.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

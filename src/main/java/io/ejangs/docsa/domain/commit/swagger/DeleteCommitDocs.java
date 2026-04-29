@@ -25,9 +25,9 @@ import org.springframework.http.MediaType;
                 
                 삭제 조건은 아래와 같습니다:
                 
-                - 각 버전의 LeafCommit만 삭제 가능
-                - 어느 버전의 FromCommit이면 삭제 불가
-                - 버전의 RootCommit은 삭제 불가(RootCommit까지 삭제하고 싶은 경우 버전 삭제를 권장합니다)
+                - 각 브랜치의 LeafCommit만 삭제 가능
+                - 어느 브랜치의 FromCommit이면 삭제 불가
+                - 브랜치의 RootCommit은 삭제 불가(RootCommit까지 삭제하고 싶은 경우 브랜치 삭제를 권장합니다)
                 """,
         parameters = {
                 @Parameter(
@@ -62,7 +62,7 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "버전의 마지막 기록이 아닙니다.",
+                                                            "message": "브랜치의 마지막 기록이 아닙니다.",
                                                             "error": "IS_NOT_LEAF_COMMIT"
                                                         }
                                                         """
