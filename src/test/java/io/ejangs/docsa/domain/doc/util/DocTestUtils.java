@@ -13,7 +13,6 @@ import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -366,7 +365,7 @@ public class DocTestUtils {
                     String title = doc.getTitle();
                     LocalDateTime createdAt = doc.getCreatedAt();
                     LocalDateTime updatedAt = doc.getUpdatedAt();
-                    String thumbnailUrl = null;
+                    String preview = "미리보기 없음";
 
                     // 최근 활동 (SAVE > COMMIT 우선)
                     RecentActivityDto recent = doc.getBranches().stream()
@@ -388,8 +387,7 @@ public class DocTestUtils {
                             .findFirst()
                             .orElse(null);
 
-                    return new DocPageResponse(docId, title, createdAt, updatedAt, thumbnailUrl,
-                            ThumbnailStatus.EMPTY, recent);
+                    return new DocPageResponse(docId, title, createdAt, updatedAt, preview, recent);
                 })
                 .toList();
 

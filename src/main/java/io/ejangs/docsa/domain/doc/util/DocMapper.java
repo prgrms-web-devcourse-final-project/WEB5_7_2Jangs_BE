@@ -6,7 +6,6 @@ import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import io.ejangs.docsa.domain.save.entity.Save;
 
 public class DocMapper {
@@ -33,16 +32,14 @@ public class DocMapper {
         );
     }
 
-    public static DocPageResponse toListResponse(Doc doc, String thumbnailUrl,
-            ThumbnailStatus thumbnailStatus,
+    public static DocPageResponse toListResponse(Doc doc, String preview,
             RecentActivityDto recent) {
         return new DocPageResponse(
                 doc.getId(),
                 doc.getTitle(),
                 doc.getCreatedAt(),
                 doc.getUpdatedAt(),
-                thumbnailUrl,
-                thumbnailStatus,
+                preview,
                 recent
         );
     }

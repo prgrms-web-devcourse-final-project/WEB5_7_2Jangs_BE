@@ -8,7 +8,7 @@
 
 ## Files
 
-- `perf/seed/seed_dataset.js`
+- `perf/delete/seed_dataset.js`
   - 목록 테스트에 사용할 문서/브랜치/커밋 데이터를 생성
 - `perf/read/doc_list_benchmark.js`
   - `sidebar`, `full list`, `search` 읽기 성능 측정
@@ -35,7 +35,7 @@ PERF_SEED_DOCS_PER_USER=0
 
 ## 2) Seed dataset
 
-공용 seed 스크립트를 사용합니다.
+삭제 벤치에서 쓰던 seed 스크립트를 그대로 재사용합니다.
 중요한 건 목록 조회 시 문서별 branch/commit이 충분히 많아지도록 데이터를 만드는 것입니다.
 
 ```bash
@@ -45,7 +45,7 @@ USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
 USER_COUNT=50 DOCS_PER_USER=5 \
 MAIN_COMMITS=8 FEATURE_COMMITS=5 BLOCKS_PER_COMMIT=100 \
 SEED_VUS=20 \
-k6 run perf/seed/seed_dataset.js
+k6 run perf/delete/seed_dataset.js
 ```
 
 애플리케이션 initializer로 DB에 직접 주입할 수도 있습니다. 이 방식은 API 호출 비용 없이
@@ -89,7 +89,7 @@ SEARCH_PREFIX=PERF
 
 결과 파일:
 
-- `perf/read/results/<test-name>/.../*.json`
+- `perf/read/results/doc_list_benchmark_<RUN_ID>.json`
 
 핵심 지표:
 

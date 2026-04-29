@@ -23,7 +23,6 @@ import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
@@ -36,9 +35,8 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
-import io.ejangs.docsa.global.outbox.OutboxStatus;
-import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -214,7 +212,7 @@ public class DocServiceIntegrationTests {
             assertThat(outbox.getTriggerType()).isEqualTo(MongoDeleteOutbox.TriggerType.COMPENSATE);
             assertThat(outbox.getDomainType()).isEqualTo(MongoDeleteOutbox.DomainType.DOC);
             assertThat(outbox.getOriginType()).isEqualTo(MongoDeleteOutbox.OriginType.SAVE_CONTENT_ID);
-            assertThat(outbox.getStatus()).isEqualTo(OutboxStatus.OPEN);
+            assertThat(outbox.getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
         }
     }
     @Nested
@@ -252,7 +250,7 @@ public class DocServiceIntegrationTests {
 
             List<MongoDeleteOutbox> outboxes = mongoDeleteOutboxRepository.findAll();
             assertThat(outboxes).hasSize(1);
-            assertThat(outboxes.getFirst().getStatus()).isEqualTo(OutboxStatus.OPEN);
+            assertThat(outboxes.getFirst().getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
             assertThat(outboxes.getFirst().getRetryCount()).isEqualTo(0);
         }
     }
@@ -341,11 +339,11 @@ public class DocServiceIntegrationTests {
 
         assertEquals("문서 1", second.title());
         assertEquals(RecentType.COMMIT, second.recent().recentType());
-        assertEquals(ThumbnailStatus.EMPTY, second.thumbnailStatus());
+        assertTrue(second.preview().startsWith("문단 5: 몰라어쩌구저꺼궁롱ㄹ라알이;ㅇㄹ")); // preview 포함
 
         assertEquals("문서 2", first.title());
         assertEquals(RecentType.SAVE, first.recent().recentType());
-        assertEquals(ThumbnailStatus.EMPTY, first.thumbnailStatus());
+        assertTrue(first.preview().startsWith("문단 3: 테스트 코드가 너무 싫어서 미치겠다는 문단")); // preview 포함
     }
 
     @Test

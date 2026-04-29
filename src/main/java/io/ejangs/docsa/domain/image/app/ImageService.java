@@ -6,7 +6,6 @@ import io.ejangs.docsa.domain.image.dto.request.ImageUploadUrlRequest;
 import io.ejangs.docsa.domain.image.dto.response.ImageUploadCompleteResponse;
 import io.ejangs.docsa.domain.image.dto.response.ImageUploadUrlResponse;
 import io.ejangs.docsa.domain.image.entity.Image;
-import io.ejangs.docsa.domain.image.entity.Image.Purpose;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.ImageErrorCode;
 import java.time.Duration;
@@ -32,7 +31,6 @@ public class ImageService {
     private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
     private final ImageRepository imageRepository;
-    private final ImageQueryService imageQueryService;
     private final DocQueryService docQueryService;
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
@@ -56,8 +54,7 @@ public class ImageService {
         validateImage(request.contentType(), request.size());
 
         String extension = extensionOf(request.contentType());
-
-        String objectKey = objectKeyOf(request.purpose())
+        String objectKey = "users/%d/docs/%d/images/%s.%s"
                 .formatted(userId, request.docId(), UUID.randomUUID(), extension);
 
         Image image = imageRepository.save(Image.builder()
@@ -67,7 +64,6 @@ public class ImageService {
                 .objectKey(objectKey)
                 .contentType(request.contentType())
                 .size(request.size())
-                .purpose(request.purpose())
                 .build());
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -92,11 +88,14 @@ public class ImageService {
                 "PUT",
                 expireMinutes * 60
         );
+
+
     }
 
     @Transactional
     public ImageUploadCompleteResponse complete(Long userId, Long imageId) {
-        Image image = imageQueryService.getByIdAndUserId(imageId, userId);
+        Image image = imageRepository.findByIdAndUserId(imageId, userId)
+                .orElseThrow(() -> new CustomException(ImageErrorCode.IMAGE_NOT_FOUND));
 
         String objectKey = image.getObjectKey();
 
@@ -136,13 +135,6 @@ public class ImageService {
             case "image/webp" -> "webp";
             case "image/gif" -> "gif";
             default -> throw new CustomException(ImageErrorCode.INVALID_IMAGE_CONTENT_TYPE);
-        };
-    }
-
-    private String objectKeyOf(Purpose purpose) {
-        return switch (purpose) {
-            case DOC_CONTENT -> "users/%d/docs/%d/images/%s.%s";
-            case DOC_THUMBNAIL -> "users/%d/docs/%d/thumbnails/%s.%s";
         };
     }
 

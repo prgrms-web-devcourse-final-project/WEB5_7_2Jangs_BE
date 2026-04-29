@@ -11,7 +11,6 @@ const USER_COUNT = Number(__ENV.USER_COUNT || 50);
 const DOCS_PER_USER = Number(__ENV.DOCS_PER_USER || 3);
 const PAGE_SIZE = Number(__ENV.PAGE_SIZE || 10);
 const RUN_ID = __ENV.RUN_ID;
-const DATASET_RUN_ID = __ENV.DATASET_RUN_ID || RUN_ID;
 const RESULT_DIR = __ENV.RESULT_DIR || 'perf/read/results';
 const SEARCH_PREFIX = __ENV.SEARCH_PREFIX || 'PDEL';
 
@@ -20,7 +19,6 @@ if (!RUN_ID) {
 }
 
 export const options = {
-  summaryTrendStats: ['min', 'med', 'avg', 'p(90)', 'p(95)', 'p(99)', 'max'],
   scenarios: {
     sidebar_list: {
       executor: 'constant-vus',
@@ -72,9 +70,9 @@ function userEmail(userNo) {
 
 function keywordForUser(userNo) {
   if (SEARCH_PREFIX === 'PERF') {
-    return `PERF-${DATASET_RUN_ID}-u${pad3(userNo)}`;
+    return `PERF-${RUN_ID}-u${pad3(userNo)}`;
   }
-  return `${SEARCH_PREFIX}-${DATASET_RUN_ID}u${pad3(userNo)}`;
+  return `${SEARCH_PREFIX}-${RUN_ID}u${pad3(userNo)}`;
 }
 
 function headers(cookie) {
