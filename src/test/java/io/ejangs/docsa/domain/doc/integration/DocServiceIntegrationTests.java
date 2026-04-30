@@ -17,7 +17,6 @@ import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateMySqlTxService;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
@@ -288,7 +287,7 @@ public class DocServiceIntegrationTests {
     }
 
     @Test
-    @DisplayName("사이드바 문서리스트 조회 - 최근 활동이 커밋 또는 저장 중 최신으로 설정됨")
+    @DisplayName("사이드바 문서리스트 조회 - 최근 저장 id가 설정됨")
     void getSimpleDocumentList() throws Exception {
         // given
         User user = userRepository.save(DocTestUtils.createUser());
@@ -309,13 +308,11 @@ public class DocServiceIntegrationTests {
         DocSimplePageResponse first = results.get(0);  // 최신 updatedAt 기준으로 정렬되었다고 가정
         DocSimplePageResponse second = results.get(1);
 
-        // 저장이 없음 -> 최신 커밋
         assertEquals("문서 1", first.title());
-        assertEquals(RecentType.COMMIT, first.recent().recentType());
+        assertThat(first.recentSaveId()).isNotNull();
 
-        // 저장이 있음
         assertEquals("문서 2", second.title());
-        assertEquals(RecentType.SAVE, second.recent().recentType());
+        assertThat(second.recentSaveId()).isNotNull();
     }
 
     @Test
@@ -340,12 +337,51 @@ public class DocServiceIntegrationTests {
         DocPageResponse second = results.getContent().get(1);
 
         assertEquals("문서 1", second.title());
-        assertEquals(RecentType.COMMIT, second.recent().recentType());
         assertEquals(ThumbnailStatus.EMPTY, second.thumbnailStatus());
+        assertThat(second.recentSaveId()).isNotNull();
 
         assertEquals("문서 2", first.title());
-        assertEquals(RecentType.SAVE, first.recent().recentType());
         assertEquals(ThumbnailStatus.EMPTY, first.thumbnailStatus());
+        assertThat(first.recentSaveId()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("문서 리스트 조회 - 최신 브랜치의 저장 id를 응답한다")
+    void getDocListReturnsLatestBranchSaveId() {
+        // given
+        User user = userRepository.save(DocTestUtils.createUser());
+        Doc doc = Doc.builder()
+                .title("최신 저장 id 테스트")
+                .user(user)
+                .build();
+        Branch firstBranch = Branch.builder()
+                .name(defaultBranchName)
+                .doc(doc)
+                .build();
+        Save.builder()
+                .branch(firstBranch)
+                .saveMongoId("save-content-1")
+                .build();
+
+        Branch secondBranch = Branch.builder()
+                .name("feature")
+                .doc(doc)
+                .build();
+        Save latestSave = Save.builder()
+                .branch(secondBranch)
+                .saveMongoId("save-content-2")
+                .build();
+
+        docRepository.saveAndFlush(doc);
+
+        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
+
+        // when
+        Page<DocPageResponse> result = docService.getPage(user.getId(), pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().recentSaveId()).isEqualTo(latestSave.getId());
     }
 
     @Test

@@ -17,8 +17,6 @@ import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.edge.dao.mysql.EdgeRepository;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
@@ -153,14 +151,14 @@ public class DocServiceUnitTests {
                         "테스트 문서 1",
                         LocalDateTime.of(2025, 7, 16, 2, 0),
                         LocalDateTime.of(2025, 7, 16, 2, 0),
-                        new RecentActivityDto(RecentType.SAVE, 10L)
+                        10L
                 ),
                 new DocSimplePageResponse(
                         2L,
                         "테스트 문서 2",
                         LocalDateTime.of(2025, 7, 16, 3, 0),
                         LocalDateTime.of(2025, 7, 16, 3, 0),
-                        new RecentActivityDto(RecentType.COMMIT, 200L)
+                        200L
                 )
         );
         Page<DocSimplePageResponse> dummyPage = new PageImpl<>(expectedResponses, pageable,
@@ -177,12 +175,10 @@ public class DocServiceUnitTests {
         assertEquals(2, result.size());
 
         assertEquals("테스트 문서 1", result.get(0).title());
-        assertEquals(RecentType.SAVE, result.get(0).recent().recentType());
-        assertEquals(10L, result.get(0).recent().recentTypeId());
+        assertEquals(10L, result.get(0).recentSaveId());
 
         assertEquals("테스트 문서 2", result.get(1).title());
-        assertEquals(RecentType.COMMIT, result.get(1).recent().recentType());
-        assertEquals(200L, result.get(1).recent().recentTypeId());
+        assertEquals(200L, result.get(1).recentSaveId());
 
         verify(docQueryService).getPageByUserId(userId, pageable);
         verify(docListAssembler).assembleDocListSimple(docs);

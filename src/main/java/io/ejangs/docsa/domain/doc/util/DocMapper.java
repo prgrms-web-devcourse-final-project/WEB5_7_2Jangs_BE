@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.doc.util;
 
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
@@ -23,19 +22,18 @@ public class DocMapper {
         );
     }
 
-    public static DocSimplePageResponse toListSimpleResponse(Doc doc, RecentActivityDto recent) {
+    public static DocSimplePageResponse toListSimpleResponse(Doc doc, Long recentSaveId) {
         return new DocSimplePageResponse(
                 doc.getId(),
                 doc.getTitle(),
                 doc.getCreatedAt(),
                 doc.getUpdatedAt(),
-                recent
+                recentSaveId
         );
     }
 
     public static DocPageResponse toListResponse(Doc doc, String thumbnailUrl,
-            ThumbnailStatus thumbnailStatus,
-            RecentActivityDto recent) {
+            ThumbnailStatus thumbnailStatus, Long recentSaveId) {
         return new DocPageResponse(
                 doc.getId(),
                 doc.getTitle(),
@@ -43,7 +41,7 @@ public class DocMapper {
                 doc.getUpdatedAt(),
                 thumbnailUrl,
                 thumbnailStatus,
-                recent
+                recentSaveId
         );
     }
 }

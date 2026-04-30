@@ -10,6 +10,7 @@ import io.ejangs.docsa.domain.doc.util.DocMapper;
 import io.ejangs.docsa.domain.save.app.SaveQueryService;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +35,7 @@ public class DocCreateMySqlTxService {
         Doc doc = docQueryService.create(user, title);
         Branch defaultBranch = branchQueryService.createBranch(doc, defaultBranchName);
         Save defaultSave = saveQueryService.createSave(defaultBranch, saveContentId);
+        RenewUpdatedAtHelper.touch(defaultSave);
         thumbnailRepository.save(Thumbnail.builder()
                 .doc(doc)
                 .build());

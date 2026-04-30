@@ -66,10 +66,7 @@ import org.springframework.http.MediaType;
                                                             "createdAt": "2025-07-22T04:48:43.036421+09:00",
                                                             "updatedAt": "2025-07-22T04:48:43.065674+09:00",
                                                             "preview": "이문서의 마지막 저장or커밋의 일부분미리보기 부분~~",
-                                                            "recent": {
-                                                                "recentType": "SAVE",
-                                                                "recentTypeId": 3
-                                                            }
+                                                            "recentSaveId": 3
                                                         },
                                                         {
                                                             "id": 2,
@@ -77,10 +74,7 @@ import org.springframework.http.MediaType;
                                                             "createdAt": "2025-07-22T04:48:40.02776+09:00",
                                                             "updatedAt": "2025-07-22T04:48:40.056721+09:00",
                                                             "preview": "미리보기 없음",
-                                                            "recent": {
-                                                                "recentType": "SAVE",
-                                                                "recentTypeId": 2
-                                                            }
+                                                            "recentSaveId": 2
                                                         },
                                                         {
                                                             "id": 1,
@@ -88,10 +82,7 @@ import org.springframework.http.MediaType;
                                                             "createdAt": "2025-07-22T04:48:35.242338+09:00",
                                                             "updatedAt": "2025-07-22T04:48:35.348708+09:00",
                                                             "preview": "미리보기 없음",
-                                                            "recent": {
-                                                                "recentType": "SAVE",
-                                                                "recentTypeId": 1
-                                                            }
+                                                            "recentSaveId": 1
                                                         }
                                                     ],
                                                     "pageable": {

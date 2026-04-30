@@ -14,8 +14,6 @@ import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocService;
 import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.edge.dto.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
@@ -101,14 +99,14 @@ class DocControllerUnitTests {
                         "마이크로소프트",
                         LocalDateTime.of(2025, 7, 6, 12, 0),
                         LocalDateTime.of(2025, 7, 7, 9, 0),
-                        new RecentActivityDto(RecentType.SAVE, 10L)
+                        10L
                 ),
                 new DocSimplePageResponse(
                         2L,
                         "구글",
                         LocalDateTime.of(2025, 6, 28, 15, 30),
                         LocalDateTime.of(2025, 7, 1, 10, 45),
-                        new RecentActivityDto(RecentType.COMMIT, 11L)
+                        11L
                 )
         );
 
@@ -127,11 +125,9 @@ class DocControllerUnitTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[0].title").value("마이크로소프트"))
-                .andExpect(jsonPath("$.content[0].recent.recentType").value("SAVE"))
-                .andExpect(jsonPath("$.content[0].recent.recentTypeId").value(10))
+                .andExpect(jsonPath("$.content[0].recentSaveId").value(10))
                 .andExpect(jsonPath("$.content[1].title").value("구글"))
-                .andExpect(jsonPath("$.content[1].recent.recentType").value("COMMIT"))
-                .andExpect(jsonPath("$.content[1].recent.recentTypeId").value(11))
+                .andExpect(jsonPath("$.content[1].recentSaveId").value(11))
                 .andDo(print());
     }
 
