@@ -240,7 +240,6 @@ public class CreateCommitIntegrationTest {
                     .anySatisfy(outbox -> {
                         assertThat(outbox.getTriggerType()).isEqualTo(MongoDeleteOutbox.TriggerType.COMPENSATE);
                         assertThat(outbox.getDomainType()).isEqualTo(MongoDeleteOutbox.DomainType.COMMIT);
-                        assertThat(outbox.getOriginType()).isEqualTo(MongoDeleteOutbox.OriginType.CBS_ID);
                         assertThat(outbox.getStatus()).isEqualTo(OutboxStatus.OPEN);
                         assertThat(outbox.getOriginId()).isNotBlank();
                     });

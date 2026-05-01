@@ -30,7 +30,6 @@ import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import java.util.HashSet;
 import java.util.List;
@@ -180,7 +179,6 @@ class BranchCreateConsistencyIntegrationTest {
 
             assertThat(outbox.getTriggerType()).isEqualTo(TriggerType.COMPENSATE);
             assertThat(outbox.getDomainType()).isEqualTo(DomainType.BRANCH);
-            assertThat(outbox.getOriginType()).isEqualTo(OriginType.SAVE_CONTENT_ID);
             assertThat(outbox.getOriginId()).isEqualTo(persistedSaveContentId);
             assertThat(loadOutboxSaveContentIds(outbox.getId())).containsExactly(persistedSaveContentId);
         }

@@ -18,9 +18,6 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -282,10 +279,7 @@ class BranchServiceTest {
 
         // Outbox 적재 검증
         ArgumentCaptor<MongoIdsDto> captor = ArgumentCaptor.forClass(MongoIdsDto.class);
-        verify(mongoDeleteOutboxFactory).create(
-                eq(TriggerType.DELETE),
-                eq(DomainType.BRANCH),
-                eq(OriginType.BRANCH_ID),
+        verify(mongoDeleteOutboxFactory).createBranchDelete(
                 eq(branchId),
                 captor.capture()
         );

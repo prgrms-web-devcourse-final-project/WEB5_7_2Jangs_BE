@@ -1,16 +1,11 @@
 package io.ejangs.docsa.domain.branch.merge.app;
 
 import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
-import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
 import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -41,13 +36,7 @@ public class MergeOrchestrator {
                     null,
                     null
             );
-            mongoDeleteOutboxFactory.create(
-                    TriggerType.COMPENSATE,
-                    DomainType.MERGE,
-                    OriginType.SAVE_ID,
-                    saveMongoId,
-                    compensateMongoIds
-            );
+            mongoDeleteOutboxFactory.createMergeCompensation(saveMongoId, compensateMongoIds);
             throw new CustomException(CommitErrorCode.FAIL_MERGE);
         }
     }

@@ -18,9 +18,6 @@ import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +56,7 @@ class DocCreateOrchestratorTest {
         DocCreateResponse result = orchestrator.create("doc", user);
 
         assertThat(result).isEqualTo(expected);
-        verify(mongoDeleteOutboxFactory, never()).create(any(), any(), any(), anyString(), any());
+        verify(mongoDeleteOutboxFactory, never()).createDocCreateCompensation(anyString(), any());
     }
 
     @Test
@@ -77,10 +74,7 @@ class DocCreateOrchestratorTest {
                 .isInstanceOf(CustomException.class)
                 .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
-        verify(mongoDeleteOutboxFactory).create(
-                eq(TriggerType.COMPENSATE),
-                eq(DomainType.DOC),
-                eq(OriginType.SAVE_CONTENT_ID),
+        verify(mongoDeleteOutboxFactory).createDocCreateCompensation(
                 eq("save-1"),
                 argThat(ids ->
                         ids.saveContentsIds().contains("save-1")

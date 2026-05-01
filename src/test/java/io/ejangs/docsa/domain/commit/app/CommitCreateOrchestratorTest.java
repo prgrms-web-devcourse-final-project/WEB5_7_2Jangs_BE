@@ -17,9 +17,6 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import java.util.Collections;
@@ -60,7 +57,7 @@ class CommitCreateOrchestratorTest {
         Commit result = orchestrator.create(request, "base-cbs", doc, branch);
 
         assertThat(result).isEqualTo(commit);
-        verify(mongoDeleteOutboxFactory, never()).create(any(), any(), any(), any(String.class), any());
+        verify(mongoDeleteOutboxFactory, never()).createCommitCreateCompensation(any(String.class), any());
     }
 
     @Test
@@ -79,10 +76,7 @@ class CommitCreateOrchestratorTest {
                 .isInstanceOf(CustomException.class)
                 .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
-        verify(mongoDeleteOutboxFactory).create(
-                eq(TriggerType.COMPENSATE),
-                eq(DomainType.COMMIT),
-                eq(OriginType.CBS_ID),
+        verify(mongoDeleteOutboxFactory).createCommitCreateCompensation(
                 eq("cbs-1"),
                 eq(ids)
         );

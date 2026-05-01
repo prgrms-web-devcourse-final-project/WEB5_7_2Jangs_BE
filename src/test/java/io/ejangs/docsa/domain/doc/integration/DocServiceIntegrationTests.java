@@ -212,7 +212,7 @@ public class DocServiceIntegrationTests {
             MongoDeleteOutbox outbox = outboxes.getFirst();
             assertThat(outbox.getTriggerType()).isEqualTo(MongoDeleteOutbox.TriggerType.COMPENSATE);
             assertThat(outbox.getDomainType()).isEqualTo(MongoDeleteOutbox.DomainType.DOC);
-            assertThat(outbox.getOriginType()).isEqualTo(MongoDeleteOutbox.OriginType.SAVE_CONTENT_ID);
+            assertThat(outbox.getOriginId()).isNotBlank();
             assertThat(outbox.getStatus()).isEqualTo(OutboxStatus.OPEN);
         }
     }

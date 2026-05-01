@@ -11,7 +11,6 @@ import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -40,14 +39,12 @@ class MongoDeleteOutboxFactoryUnitTest {
     void createReturnsExistingOutboxWhenUniqueConflictOccurs() {
         TriggerType triggerType = TriggerType.COMPENSATE;
         DomainType domainType = DomainType.DOC;
-        OriginType originType = OriginType.DOC_ID;
         String originId = "race-origin-1";
         MongoIdsDto ids = new MongoIdsDto(List.of("save-1"), List.of(), List.of());
 
         MongoDeleteOutbox existing = MongoDeleteOutbox.open(
                 triggerType,
                 domainType,
-                originType,
                 originId,
                 ids.saveContentsIds(),
                 ids.commitBlockSequenceIds(),
@@ -55,30 +52,25 @@ class MongoDeleteOutboxFactoryUnitTest {
         );
         ReflectionTestUtils.setField(existing, "id", 99L);
 
-        when(mongoDeleteOutboxRepository.findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(
+        when(mongoDeleteOutboxRepository.findByTriggerTypeAndDomainTypeAndOriginId(
                 triggerType,
                 domainType,
-                originType,
                 originId
         )).thenReturn(java.util.Optional.empty(), java.util.Optional.of(existing));
         doThrow(new DataIntegrityViolationException("duplicate key"))
                 .when(mongoDeleteOutboxCreateService)
                 .tryCreate(any(MongoDeleteOutbox.class));
 
-        MongoDeleteOutbox result = mongoDeleteOutboxFactory.create(
-                triggerType,
-                domainType,
-                originType,
+        MongoDeleteOutbox result = mongoDeleteOutboxFactory.createDocCreateCompensation(
                 originId,
                 ids
         );
 
         assertThat(result.getId()).isEqualTo(99L);
         verify(mongoDeleteOutboxRepository, times(2))
-                .findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(
+                .findByTriggerTypeAndDomainTypeAndOriginId(
                         triggerType,
                         domainType,
-                        originType,
                         originId
                 );
         verify(mongoDeleteOutboxCreateService).tryCreate(any(MongoDeleteOutbox.class));

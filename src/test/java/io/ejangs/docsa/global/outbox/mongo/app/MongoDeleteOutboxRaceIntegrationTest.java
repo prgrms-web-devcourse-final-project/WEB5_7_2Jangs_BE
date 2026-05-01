@@ -5,9 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,10 +57,7 @@ class MongoDeleteOutboxRaceIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         Callable<CreateAttempt> task = () -> {
             try {
-                MongoDeleteOutbox outbox = mongoDeleteOutboxFactory.create(
-                        TriggerType.COMPENSATE,
-                        DomainType.DOC,
-                        OriginType.DOC_ID,
+                MongoDeleteOutbox outbox = mongoDeleteOutboxFactory.createDocCreateCompensation(
                         originId,
                         ids
                 );
@@ -119,11 +113,11 @@ class MongoDeleteOutboxRaceIntegrationTest {
             RaceBarrierAspect.barrier = null;
         }
 
-        @Around("execution(* io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository.findByTriggerTypeAndDomainTypeAndOriginTypeAndOriginId(..))")
+        @Around("execution(* io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository.findByTriggerTypeAndDomainTypeAndOriginId(..))")
         Object awaitAfterEmptyLookup(ProceedingJoinPoint joinPoint) throws Throwable {
             @SuppressWarnings("unchecked")
             Optional<MongoDeleteOutbox> result = (Optional<MongoDeleteOutbox>) joinPoint.proceed();
-            String originIdArg = (String) joinPoint.getArgs()[3];
+            String originIdArg = (String) joinPoint.getArgs()[2];
             CyclicBarrier currentBarrier = barrier;
             if (currentBarrier != null && originIdArg.equals(armedOriginId) && result.isEmpty()) {
                 currentBarrier.await(5, TimeUnit.SECONDS);
