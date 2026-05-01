@@ -5,6 +5,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,8 +18,10 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     boolean existsByIdAndUserId(Long Id, Long userId);
 
+    @EntityGraph(attributePaths = {"thumbnail", "thumbnail.currentImage"})
     Page<Doc> findAllByUserId(Long userId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"thumbnail", "thumbnail.currentImage"})
     @Query("""
             SELECT d
             FROM Doc d

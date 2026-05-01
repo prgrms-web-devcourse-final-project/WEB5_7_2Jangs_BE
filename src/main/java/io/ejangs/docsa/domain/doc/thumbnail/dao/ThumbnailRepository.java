@@ -21,13 +21,4 @@ public interface ThumbnailRepository extends JpaRepository<Thumbnail, Long> {
             where t.doc.id = :docId
             """)
     Optional<Thumbnail> findByDocIdForUpdate(@Param("docId") Long docId);
-
-
-    @Query("""
-            select t
-            from Thumbnail t
-            left join fetch t.currentImage
-            where t.doc.id in :docIds
-            """)
-    List<Thumbnail> findAllByDocIdInWithCurrentImage(@Param("docIds") Collection<Long> docIds);
 }

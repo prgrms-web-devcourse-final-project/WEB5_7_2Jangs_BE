@@ -9,7 +9,6 @@ import io.ejangs.docsa.domain.doc.thumbnail.dao.ThumbnailRepository;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Component;
 public class DocListAssembler {
 
     private final BranchRepository branchRepository;
-    private final ThumbnailRepository thumbnailRepository;
 
     @Value("${cloud.aws.s3.public-base-url}")
     private String cdnUrl;
@@ -32,16 +30,9 @@ public class DocListAssembler {
                 .toList();
 
         Map<Long, Long> latestSaveIdByDocId = latestSaveIdByDocId(docIds);
-        Map<Long, Thumbnail> thumbnailByDocId = thumbnailRepository
-                .findAllByDocIdInWithCurrentImage(docIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        thumbnail -> thumbnail.getDoc().getId(),
-                        Function.identity()
-                ));
 
         return docs.map(doc -> {
-            Thumbnail thumbnail = thumbnailByDocId.get(doc.getId());
+            Thumbnail thumbnail = doc.getThumbnail();
 
             return DocMapper.toListResponse(
                     doc,
@@ -92,6 +83,4 @@ public class DocListAssembler {
                         LatestSaveIdDto::saveId
                 ));
     }
-
-
 }
