@@ -23,20 +23,17 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class MongoDeleteOutboxFactoryUnitTest {
+class MongoDeleteJobEnqueuerUnitTest {
 
     @Mock
     private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
-    @Mock
-    private MongoDeleteOutboxCreateService mongoDeleteOutboxCreateService;
-
     @InjectMocks
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @Test
     @DisplayName("유니크 충돌 시 재조회하여 기존 outbox를 반환한다")
-    void createReturnsExistingOutboxWhenUniqueConflictOccurs() {
+    void enqueueReturnsExistingOutboxWhenUniqueConflictOccurs() {
         TriggerType triggerType = TriggerType.COMPENSATE;
         DomainType domainType = DomainType.DOC;
         String originId = "race-origin-1";
@@ -58,10 +55,10 @@ class MongoDeleteOutboxFactoryUnitTest {
                 originId
         )).thenReturn(java.util.Optional.empty(), java.util.Optional.of(existing));
         doThrow(new DataIntegrityViolationException("duplicate key"))
-                .when(mongoDeleteOutboxCreateService)
-                .tryCreate(any(MongoDeleteOutbox.class));
+                .when(mongoDeleteOutboxRepository)
+                .saveAndFlush(any(MongoDeleteOutbox.class));
 
-        MongoDeleteOutbox result = mongoDeleteOutboxFactory.createDocCreateCompensation(
+        MongoDeleteOutbox result = mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(
                 originId,
                 ids
         );
@@ -73,6 +70,6 @@ class MongoDeleteOutboxFactoryUnitTest {
                         domainType,
                         originId
                 );
-        verify(mongoDeleteOutboxCreateService).tryCreate(any(MongoDeleteOutbox.class));
+        verify(mongoDeleteOutboxRepository).saveAndFlush(any(MongoDeleteOutbox.class));
     }
 }

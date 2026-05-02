@@ -18,7 +18,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +59,7 @@ class BranchServiceTest {
     private BranchCreateOrchestrator branchCreateOrchestrator;
 
     @Mock
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @Test
     @DisplayName("새 브랜치 이름이 중복되면 BRANCH_NAME_DUPLICATED")
@@ -279,7 +279,7 @@ class BranchServiceTest {
 
         // Outbox 적재 검증
         ArgumentCaptor<MongoIdsDto> captor = ArgumentCaptor.forClass(MongoIdsDto.class);
-        verify(mongoDeleteOutboxFactory).createBranchDelete(
+        verify(mongoDeleteJobEnqueuer).enqueueBranchDeletion(
                 eq(branchId),
                 captor.capture()
         );

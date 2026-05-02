@@ -6,7 +6,7 @@ import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ public class MergeOrchestrator {
 
     private final MergeMongoTxService mergeMongoTxService;
     private final MergeMySqlTxService mergeMySqlTxService;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     public MergeResponse merge(MergeContext context, MergeRequest request) {
         String saveMongoId = mergeMongoTxService.createMongoPart(request.content());
@@ -36,7 +36,7 @@ public class MergeOrchestrator {
                     null,
                     null
             );
-            mongoDeleteOutboxFactory.createMergeCompensation(saveMongoId, compensateMongoIds);
+            mongoDeleteJobEnqueuer.enqueueMergeCompensation(saveMongoId, compensateMongoIds);
             throw new CustomException(CommitErrorCode.FAIL_MERGE);
         }
     }

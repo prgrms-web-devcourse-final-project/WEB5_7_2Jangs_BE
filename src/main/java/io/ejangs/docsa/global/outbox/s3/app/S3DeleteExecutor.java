@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 @RequiredArgsConstructor
-public class S3DeleteService {
+public class S3DeleteExecutor {
 
     private final S3Client s3Client;
 

@@ -14,7 +14,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
@@ -37,7 +37,7 @@ public class CommitService {
     private final CommitCreateOrchestrator commitCreateOrchestrator;
     private final CommitContentAssembler assembler;
     private final MongoIdsCollector mongoIdsCollector;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     public CreateCommitResponse createCommit(Long docId,
             CreateCommitRequest request,
@@ -99,7 +99,7 @@ public class CommitService {
 
         commitQueryService.deleteById(commit.getId());
 
-        mongoDeleteOutboxFactory.createCommitDelete(commitId, commitDeleteMongoIds);
+        mongoDeleteJobEnqueuer.enqueueCommitDeletion(commitId, commitDeleteMongoIds);
     }
 
     private void checkFromOrMergeTargetCommit(Commit commit) {

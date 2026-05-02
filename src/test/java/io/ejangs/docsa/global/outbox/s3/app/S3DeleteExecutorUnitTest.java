@@ -21,17 +21,17 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @ExtendWith(MockitoExtension.class)
-class S3DeleteServiceUnitTest {
+class S3DeleteExecutorUnitTest {
 
     @Mock
     private S3Client s3Client;
 
-    private S3DeleteService s3DeleteService;
+    private S3DeleteExecutor s3DeleteExecutor;
 
     @BeforeEach
     void setUp() {
-        s3DeleteService = new S3DeleteService(s3Client);
-        ReflectionTestUtils.setField(s3DeleteService, "bucket", "docsa-image-bucket");
+        s3DeleteExecutor = new S3DeleteExecutor(s3Client);
+        ReflectionTestUtils.setField(s3DeleteExecutor, "bucket", "docsa-image-bucket");
     }
 
     @Test
@@ -41,7 +41,7 @@ class S3DeleteServiceUnitTest {
         when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
                 .thenReturn(DeleteObjectResponse.builder().build());
 
-        s3DeleteService.deleteTarget(target);
+        s3DeleteExecutor.deleteTarget(target);
 
         ArgumentCaptor<DeleteObjectRequest> captor =
                 ArgumentCaptor.forClass(DeleteObjectRequest.class);
@@ -58,7 +58,7 @@ class S3DeleteServiceUnitTest {
         when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
                 .thenThrow(S3Exception.builder().statusCode(404).build());
 
-        s3DeleteService.deleteTarget(target);
+        s3DeleteExecutor.deleteTarget(target);
     }
 
     @Test
@@ -68,7 +68,7 @@ class S3DeleteServiceUnitTest {
         RuntimeException s3Exception = S3Exception.builder().statusCode(500).build();
         when(s3Client.deleteObject(any(DeleteObjectRequest.class))).thenThrow(s3Exception);
 
-        assertThatThrownBy(() -> s3DeleteService.deleteTarget(target))
+        assertThatThrownBy(() -> s3DeleteExecutor.deleteTarget(target))
                 .isSameAs(s3Exception);
     }
 }

@@ -2,14 +2,13 @@ package io.ejangs.docsa.global.outbox.s3.app;
 
 import io.ejangs.docsa.domain.image.entity.Image;
 import io.ejangs.docsa.global.outbox.s3.dao.S3DeleteOutboxRepository;
-import io.ejangs.docsa.global.outbox.s3.entity.S3DeleteOutbox;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class S3DeleteOutboxFactory {
+public class S3DeleteJobEnqueuer {
 
     private final S3DeleteOutboxRepository s3DeleteOutboxRepository;
 

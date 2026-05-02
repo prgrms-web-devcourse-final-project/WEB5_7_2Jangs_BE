@@ -7,7 +7,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ public class CommitCreateOrchestrator {
 
     private final CommitMySqlTxService commitMySqlTxService;
     private final CommitMongoTxService commitMongoTxService;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
     public Commit create(CreateCommitRequest request, String baseCommitCbsMongoId, Doc doc, Branch branch) {
         MongoIdsDto compensateTarget = commitMongoTxService.createMongoPart(request, baseCommitCbsMongoId);
 
@@ -31,7 +31,7 @@ public class CommitCreateOrchestrator {
                     request, createdCbsId);
         } catch (Exception e) {
             log.warn("[SAGA] 커밋 생성 실패 -> Mongo 삭제 Outbox 기록. ", e);
-            mongoDeleteOutboxFactory.createCommitCreateCompensation(createdCbsId, compensateTarget);
+            mongoDeleteJobEnqueuer.enqueueCommitCreateCompensation(createdCbsId, compensateTarget);
             throw new CustomException(CommitErrorCode.FAIL_CREATE_COMMIT);
         }
     }

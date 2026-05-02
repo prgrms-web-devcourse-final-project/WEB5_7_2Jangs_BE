@@ -27,7 +27,7 @@ public class MongoDeleteOutboxWorker {
     private static final Duration PROCESSING_TIMEOUT = Duration.ofMinutes(5);
 
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
-    private final MongoDeleteService mongoDeleteService;
+    private final MongoDeleteExecutor mongoDeleteExecutor;
     private final MongoDeleteOutboxLifecycleService mongoDeleteOutboxLifecycleService;
 
     @Scheduled(
@@ -58,7 +58,7 @@ public class MongoDeleteOutboxWorker {
                 continue;
             }
             try {
-                mongoDeleteService.deleteTarget(target);
+                mongoDeleteExecutor.deleteTarget(target);
                 mongoDeleteOutboxLifecycleService.done(outbox.getId());
             } catch (Exception e) {
                 log.error("[Outbox Worker] Error : {}", e.getMessage(), e);

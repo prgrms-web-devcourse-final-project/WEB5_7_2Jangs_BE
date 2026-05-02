@@ -27,7 +27,7 @@ public class S3DeleteOutboxWorker {
     private static final Duration PROCESSING_TIMEOUT = Duration.ofMinutes(5);
 
     private final S3DeleteOutboxRepository s3DeleteOutboxRepository;
-    private final S3DeleteService s3DeleteService;
+    private final S3DeleteExecutor s3DeleteExecutor;
     private final S3DeleteOutboxLifecycleService s3DeleteOutboxLifecycleService;
 
     @Scheduled(
@@ -60,7 +60,7 @@ public class S3DeleteOutboxWorker {
             }
 
             try {
-                s3DeleteService.deleteTarget(target);
+                s3DeleteExecutor.deleteTarget(target);
                 s3DeleteOutboxLifecycleService.done(outbox.getId());
             } catch (Exception e) {
                 log.error("[S3 Outbox Worker] Error : {}", e.getMessage(), e);

@@ -14,9 +14,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class MongoDeleteOutboxFactory {
+public class MongoDeleteJobEnqueuer {
 
-    private final MongoDeleteOutboxCreateService mongoDeleteOutboxCreateService;
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
 
     /*
@@ -25,35 +24,35 @@ public class MongoDeleteOutboxFactory {
      * - 삭제 outbox: 삭제 요청의 기준이 된 MySQL id
      * - 보상 outbox: Mongo에 먼저 생성된 데이터의 id
      */
-    public MongoDeleteOutbox createDocDelete(Long docId, MongoIdsDto ids) {
-        return create(TriggerType.DELETE, DomainType.DOC, docId, ids);
+    public MongoDeleteOutbox enqueueDocDeletion(Long docId, MongoIdsDto ids) {
+        return enqueue(TriggerType.DELETE, DomainType.DOC, docId, ids);
     }
 
-    public MongoDeleteOutbox createBranchDelete(Long branchId, MongoIdsDto ids) {
-        return create(TriggerType.DELETE, DomainType.BRANCH, branchId, ids);
+    public MongoDeleteOutbox enqueueBranchDeletion(Long branchId, MongoIdsDto ids) {
+        return enqueue(TriggerType.DELETE, DomainType.BRANCH, branchId, ids);
     }
 
-    public MongoDeleteOutbox createCommitDelete(Long commitId, MongoIdsDto ids) {
-        return create(TriggerType.DELETE, DomainType.COMMIT, commitId, ids);
+    public MongoDeleteOutbox enqueueCommitDeletion(Long commitId, MongoIdsDto ids) {
+        return enqueue(TriggerType.DELETE, DomainType.COMMIT, commitId, ids);
     }
 
-    public MongoDeleteOutbox createDocCreateCompensation(String saveContentId, MongoIdsDto ids) {
-        return create(TriggerType.COMPENSATE, DomainType.DOC, saveContentId, ids);
+    public MongoDeleteOutbox enqueueDocCreateCompensation(String saveContentId, MongoIdsDto ids) {
+        return enqueue(TriggerType.COMPENSATE, DomainType.DOC, saveContentId, ids);
     }
 
-    public MongoDeleteOutbox createBranchCreateCompensation(String saveContentId, MongoIdsDto ids) {
-        return create(TriggerType.COMPENSATE, DomainType.BRANCH, saveContentId, ids);
+    public MongoDeleteOutbox enqueueBranchCreateCompensation(String saveContentId, MongoIdsDto ids) {
+        return enqueue(TriggerType.COMPENSATE, DomainType.BRANCH, saveContentId, ids);
     }
 
-    public MongoDeleteOutbox createCommitCreateCompensation(String commitBlockSequenceId, MongoIdsDto ids) {
-        return create(TriggerType.COMPENSATE, DomainType.COMMIT, commitBlockSequenceId, ids);
+    public MongoDeleteOutbox enqueueCommitCreateCompensation(String commitBlockSequenceId, MongoIdsDto ids) {
+        return enqueue(TriggerType.COMPENSATE, DomainType.COMMIT, commitBlockSequenceId, ids);
     }
 
-    public MongoDeleteOutbox createMergeCompensation(String saveMongoId, MongoIdsDto ids) {
-        return create(TriggerType.COMPENSATE, DomainType.MERGE, saveMongoId, ids);
+    public MongoDeleteOutbox enqueueMergeCompensation(String saveMongoId, MongoIdsDto ids) {
+        return enqueue(TriggerType.COMPENSATE, DomainType.MERGE, saveMongoId, ids);
     }
 
-    private MongoDeleteOutbox create(
+    private MongoDeleteOutbox enqueue(
             TriggerType triggerType,
             DomainType domainType,
             Long originId,
@@ -63,10 +62,10 @@ public class MongoDeleteOutboxFactory {
         if (originId <= 0) {
             throw new IllegalArgumentException("originId must be positive");
         }
-        return create(triggerType, domainType, String.valueOf(originId), ids);
+        return enqueue(triggerType, domainType, String.valueOf(originId), ids);
     }
 
-    private MongoDeleteOutbox create(
+    private MongoDeleteOutbox enqueue(
             TriggerType triggerType,
             DomainType domainType,
             String originId,
@@ -109,7 +108,7 @@ public class MongoDeleteOutboxFactory {
         );
 
         try {
-            mongoDeleteOutboxCreateService.tryCreate(newOutbox);
+            mongoDeleteOutboxRepository.saveAndFlush(newOutbox);
         } catch (DataIntegrityViolationException e) {
             return mongoDeleteOutboxRepository
                     .findByTriggerTypeAndDomainTypeAndOriginId(

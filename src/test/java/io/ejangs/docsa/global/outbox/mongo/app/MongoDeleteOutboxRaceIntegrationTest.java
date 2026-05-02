@@ -36,7 +36,7 @@ class MongoDeleteOutboxRaceIntegrationTest {
     }
 
     @Autowired
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @Autowired
     private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
@@ -57,7 +57,7 @@ class MongoDeleteOutboxRaceIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         Callable<CreateAttempt> task = () -> {
             try {
-                MongoDeleteOutbox outbox = mongoDeleteOutboxFactory.createDocCreateCompensation(
+                MongoDeleteOutbox outbox = mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(
                         originId,
                         ids
                 );

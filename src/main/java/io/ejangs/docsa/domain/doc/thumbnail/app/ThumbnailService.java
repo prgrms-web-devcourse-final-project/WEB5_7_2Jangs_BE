@@ -7,7 +7,7 @@ import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
 import io.ejangs.docsa.domain.image.app.ImageQueryService;
 import io.ejangs.docsa.domain.image.entity.Image;
-import io.ejangs.docsa.global.outbox.s3.app.S3DeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.s3.app.S3DeleteJobEnqueuer;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.ImageErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.ThumbnailErrorCode;
@@ -23,7 +23,7 @@ public class ThumbnailService {
     private final ThumbnailQueryService thumbnailQueryService;
     private final DocQueryService docQueryService;
     private final ImageQueryService imageQueryService;
-    private final S3DeleteOutboxFactory s3DeleteOutboxFactory;
+    private final S3DeleteJobEnqueuer s3DeleteJobEnqueuer;
 
     @Value("${cloud.aws.s3.public-base-url}")
     private String cdnUrl;
@@ -94,6 +94,6 @@ public class ThumbnailService {
             return;
         }
 
-        s3DeleteOutboxFactory.enqueueImageDeletion(previousImage);
+        s3DeleteJobEnqueuer.enqueueImageDeletion(previousImage);
     }
 }

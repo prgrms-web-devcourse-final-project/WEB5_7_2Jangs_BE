@@ -25,7 +25,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +47,7 @@ public class DocService {
     private final EdgeService edgeService;
 
     private final DocCreateOrchestrator docCreateOrchestrator;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     private final DocListAssembler docListAssembler;
     private final MongoIdsCollector mongoIdsCollector;
@@ -123,7 +123,7 @@ public class DocService {
 
         user.removeDocument(doc);
 
-        mongoDeleteOutboxFactory.createDocDelete(docId, docDeleteMongoIds);
+        mongoDeleteJobEnqueuer.enqueueDocDeletion(docId, docDeleteMongoIds);
     }
 
 }

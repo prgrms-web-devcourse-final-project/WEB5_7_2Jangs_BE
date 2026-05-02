@@ -10,7 +10,7 @@ import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.domain.edge.util.EdgeMapper;
 import io.ejangs.docsa.domain.save.app.SaveQueryService;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class CommitMySqlTxService {
     private final CommitQueryService commitQueryService;
     private final SaveQueryService saveQueryService;
     private final EdgeService edgeService;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @Transactional(rollbackFor = Exception.class)
     public Commit createMySqlPart(Doc doc, Branch branch, CreateCommitRequest request, String commitCbsMongoId) {

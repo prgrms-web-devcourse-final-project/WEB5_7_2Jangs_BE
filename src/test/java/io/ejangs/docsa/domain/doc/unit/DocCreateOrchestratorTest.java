@@ -18,7 +18,7 @@ import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,7 @@ class DocCreateOrchestratorTest {
     private DocCreateMySqlTxService docCreateMySqlTxService;
 
     @Mock
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @InjectMocks
     private DocCreateOrchestrator orchestrator;
@@ -56,7 +56,7 @@ class DocCreateOrchestratorTest {
         DocCreateResponse result = orchestrator.create("doc", user);
 
         assertThat(result).isEqualTo(expected);
-        verify(mongoDeleteOutboxFactory, never()).createDocCreateCompensation(anyString(), any());
+        verify(mongoDeleteJobEnqueuer, never()).enqueueDocCreateCompensation(anyString(), any());
     }
 
     @Test
@@ -74,7 +74,7 @@ class DocCreateOrchestratorTest {
                 .isInstanceOf(CustomException.class)
                 .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
-        verify(mongoDeleteOutboxFactory).createDocCreateCompensation(
+        verify(mongoDeleteJobEnqueuer).enqueueDocCreateCompensation(
                 eq("save-1"),
                 argThat(ids ->
                         ids.saveContentsIds().contains("save-1")

@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class MongoDeleteService {
+public class MongoDeleteExecutor {
 
     private final SaveContentRepository saveContentRepository;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;

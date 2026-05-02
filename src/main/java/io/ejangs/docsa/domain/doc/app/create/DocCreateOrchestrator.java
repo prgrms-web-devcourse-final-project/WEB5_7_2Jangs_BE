@@ -7,7 +7,7 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ public class DocCreateOrchestrator {
 
     private final SaveQueryService saveQueryService;
     private final DocCreateMySqlTxService docCreateMySqlTxService;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     public DocCreateResponse create(String title, User user) {
         // 문서 생성에 경우 SaveContent 1개의 문서만 insert하여 단일 문서 트랜잭션은 보장되어 별도의 트랜잭션 처리 필요없음.
@@ -40,6 +40,6 @@ public class DocCreateOrchestrator {
     private void compensateMongo(String saveContentId) {
 
         MongoIdsDto dto = new MongoIdsDto(List.of(saveContentId), null, null);
-        mongoDeleteOutboxFactory.createDocCreateCompensation(saveContentId, dto);
+        mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(saveContentId, dto);
     }
 }

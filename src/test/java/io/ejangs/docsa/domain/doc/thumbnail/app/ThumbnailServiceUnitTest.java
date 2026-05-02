@@ -15,10 +15,9 @@ import io.ejangs.docsa.domain.image.app.ImageQueryService;
 import io.ejangs.docsa.domain.image.entity.Image;
 import io.ejangs.docsa.domain.image.entity.Image.ImageStatus;
 import io.ejangs.docsa.domain.image.entity.Image.Purpose;
-import io.ejangs.docsa.global.outbox.s3.app.S3DeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.s3.app.S3DeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.s3.dao.S3DeleteOutboxRepository;
 import io.ejangs.docsa.global.outbox.s3.entity.S3DeleteOutbox;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,13 +45,13 @@ class ThumbnailServiceUnitTest {
 
     @BeforeEach
     void setUp() {
-        S3DeleteOutboxFactory s3DeleteOutboxFactory =
-                new S3DeleteOutboxFactory(s3DeleteOutboxRepository);
+        S3DeleteJobEnqueuer s3DeleteJobEnqueuer =
+                new S3DeleteJobEnqueuer(s3DeleteOutboxRepository);
         thumbnailService = new ThumbnailService(
                 thumbnailQueryService,
                 docQueryService,
                 imageQueryService,
-                s3DeleteOutboxFactory
+                s3DeleteJobEnqueuer
         );
         ReflectionTestUtils.setField(thumbnailService, "cdnUrl", "https://cdn.example.com");
     }
