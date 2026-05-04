@@ -26,9 +26,9 @@ spring:
       ddl-auto: ${DDL_AUTO:create-drop}
     properties:
       hibernate:
-        show_sql: false
-        format_sql: false
-        highlight_sql: false
+        show_sql: true
+        format_sql: true
+        highlight_sql: true
 
 decorator:
   datasource:

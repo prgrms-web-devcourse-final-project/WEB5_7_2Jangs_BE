@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.doc.dao.mysql;
 
-import io.ejangs.docsa.domain.doc.dto.response.DocTitleOnlyResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
