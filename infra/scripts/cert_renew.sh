@@ -11,18 +11,20 @@ ENV_FILE="$ROOT/docsa-alert.env"
 notify_slack () {
   local msg="$1"
   [[ -z "${SLACK_WEBHOOK_URL:-}" ]] && return 0
+
+  local payload
+  payload="$(python3 -c 'import json, sys; print(json.dumps({"text": sys.argv[1]}))' "$msg")"
+
   curl -sS -X POST -H 'Content-type: application/json' \
-    --data "{\"text\":${msg@Q}}" \
+    --data "$payload" \
     "$SLACK_WEBHOOK_URL" >/dev/null 2>&1 || true
 }
 
 # ---- 1) certbot renew 실행 ----
 out="$(
   docker compose run --rm --no-deps certbot_renew \
-    certbot renew --webroot -w /var/www/certbot 2>&1 || true
+    renew --webroot -w /var/www/certbot 2>&1 || true
 )"
-
-echo "$out"
 
 # ---- 2) 실패 감지 ----
 # certbot이 실패할 때 자주 나오는 문구 위주로 (오탐 줄임)
