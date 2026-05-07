@@ -5,6 +5,8 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateOrchestrator;
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocCreatedPayload;
+import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
@@ -24,9 +26,13 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
+import io.ejangs.docsa.global.outbox.event.model.AggregateType;
+import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
+import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +57,8 @@ public class DocService {
 
     private final DocListAssembler docListAssembler;
     private final MongoIdsCollector mongoIdsCollector;
+
+    private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     public DocCreateResponse create(DocTitleRequest request, Long userId) {
         User user = docQueryService.getUserOrThrow(userId);
@@ -89,6 +97,10 @@ public class DocService {
 
         docQueryService.checkTitleDuplicate(userId, title);
         doc.updateTitle(title);
+        doc.updateTimestamp();
+
+        domainEventOutboxPublisher.publish(DomainEventType.DOC_TITLE_CHANGED, AggregateType.DOC,
+                doc.getId(), DocPayloadFactory.titleChanged(doc));
 
         return DocMapper.toUpdateResponse(doc);
     }

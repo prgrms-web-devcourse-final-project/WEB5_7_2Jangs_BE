@@ -6,6 +6,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
@@ -33,6 +35,9 @@ import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
+import io.ejangs.docsa.global.outbox.event.model.AggregateType;
+import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -90,6 +95,9 @@ public class DocServiceUnitTests {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     @Test
     @DisplayName("문서 생성 성공 - QueryService 검증 후 Orchestrator 호출(CQRS 분리)")
@@ -257,6 +265,12 @@ public class DocServiceUnitTests {
         //then
         verify(docQueryService).checkTitleDuplicate(userId, newTitle);
         verify(docQueryService).getByIdAndUserId(docId, userId);
+        verify(domainEventOutboxPublisher).publish(
+                eq(DomainEventType.DOC_TITLE_CHANGED),
+                eq(AggregateType.DOC),
+                eq(docId),
+                any()
+        );
         assertEquals(newTitle, doc.getTitle());
         assertEquals(response.id(), doc.getId());
         assertEquals(response.title(), result.title());
