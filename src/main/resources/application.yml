@@ -66,5 +66,5 @@ domain:
     outbox:
       worker:
         enabled: true
-        fixed-delay: PT5S
-        initial-delay: PT3S
+        fixed-delay: PT10S
+        initial-delay: PT5S
