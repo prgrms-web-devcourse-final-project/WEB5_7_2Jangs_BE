@@ -1,5 +1,6 @@
 package io.ejangs.docsa.global.outbox.event.app;
 
+import io.ejangs.docsa.global.config.AsyncConfig;
 import io.ejangs.docsa.global.outbox.event.dto.DomainEventOutboxWakeUpEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
@@ -13,10 +14,9 @@ public class DomainEventOutboxWakeUpListener {
 
     private final DomainEventOutboxRelay relay;
 
-    @Async
+    @Async(AsyncConfig.OUTBOX_WAKE_UP_EXECUTOR)
     @TransactionalEventListener(
-            phase = TransactionPhase.AFTER_COMMIT,
-            fallbackExecution = true
+            phase = TransactionPhase.AFTER_COMMIT
     )
     public void handle(DomainEventOutboxWakeUpEvent event) {
         relay.run(event.outboxId());
