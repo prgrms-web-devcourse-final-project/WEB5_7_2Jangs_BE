@@ -4,7 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.doc.readmodel.dao.mongodb.DocListReadModelRepository;
 import io.ejangs.docsa.domain.doc.readmodel.document.DocListReadModel;
-import io.ejangs.docsa.domain.doc.readmodel.dto.DocListPayload;
+import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocActivityChangedPayload;
+import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocCreatedPayload;
+import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocDeletedPayload;
+import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocThumbnailChangedPayload;
+import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocTitleChangedPayload;
 import io.ejangs.docsa.global.outbox.event.dto.DomainEventMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,39 +21,69 @@ public class DocListProjector {
     private final ObjectMapper objectMapper;
 
     public void project(DomainEventMessage message) {
-        DocListPayload payload = readPayload(message);
-
         switch (message.eventType()) {
-            case DOC_CREATED -> docListReadModelRepository.save(DocListReadModel.create(payload, message.eventId()));
-            case DOC_TITLE_CHANGED, DOC_ACTIVITY_CHANGED, DOC_THUMBNAIL_CHANGED -> upsert(payload, message.eventId());
-            case DOC_DELETED -> markDeleted(payload.docId(), message.eventId());
+            case DOC_CREATED -> create(message);
+            case DOC_TITLE_CHANGED -> changeTitle(message);
+            case DOC_ACTIVITY_CHANGED -> changeActivity(message);
+            case DOC_THUMBNAIL_CHANGED -> changeThumbnail(message);
+            case DOC_DELETED -> delete(message);
         }
     }
 
-    private DocListPayload readPayload(DomainEventMessage message) {
+    private <T> T readPayload(DomainEventMessage message, Class<T> payloadType) {
         try {
-            return objectMapper.readValue(message.payload(), DocListPayload.class);
+            return objectMapper.readValue(message.payload(), payloadType);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Domain event payload deserialize failed", e);
         }
     }
 
-    private void upsert(DocListPayload payload, Long eventId) {
-        DocListReadModel model = docListReadModelRepository.findById(payload.docId())
-                .orElseGet(() -> DocListReadModel.create(payload, eventId));
+    private void create(DomainEventMessage message) {
+        DocCreatedPayload payload = readPayload(message, DocCreatedPayload.class);
 
-        if (model.getLastProjectedEventId() != null && model.getLastProjectedEventId() >= eventId) {
+        if (docListReadModelRepository.existsById(payload.docId())) {
             return;
         }
 
-        model.apply(payload, eventId);
-        docListReadModelRepository.save(model);
+        docListReadModelRepository.save(DocListReadModel.create(payload, message.eventId()));
     }
 
-    private void markDeleted(Long docId, Long eventId) {
-        docListReadModelRepository.findById(docId)
+    private void changeTitle(DomainEventMessage message) {
+        DocTitleChangedPayload payload = readPayload(message, DocTitleChangedPayload.class);
+
+        docListReadModelRepository.findById(payload.docId())
                 .ifPresent(model -> {
-                    model.markDeleted(eventId);
+                    model.changeTitle(payload, message.eventId());
+                    docListReadModelRepository.save(model);
+                });
+    }
+
+    private void changeActivity(DomainEventMessage message) {
+        DocActivityChangedPayload payload = readPayload(message, DocActivityChangedPayload.class);
+
+        docListReadModelRepository.findById(payload.docId())
+                .ifPresent(model -> {
+                    model.changeActivity(payload, message.eventId());
+                    docListReadModelRepository.save(model);
+                });
+    }
+
+    private void changeThumbnail(DomainEventMessage message) {
+        DocThumbnailChangedPayload payload = readPayload(message, DocThumbnailChangedPayload.class);
+
+        docListReadModelRepository.findById(payload.docId())
+                .ifPresent(model -> {
+                    model.changeThumbnail(payload, message.eventId());
+                    docListReadModelRepository.save(model);
+                });
+    }
+
+    private void delete(DomainEventMessage message) {
+        DocDeletedPayload payload = readPayload(message, DocDeletedPayload.class);
+
+        docListReadModelRepository.findById(payload.docId())
+                .ifPresent(model -> {
+                    model.markDeleted();
                     docListReadModelRepository.save(model);
                 });
     }
