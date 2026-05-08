@@ -51,40 +51,49 @@ public class DocListReadModel {
         return model;
     }
 
-    public void changeTitle(DocTitleChangedPayload payload, Long eventId) {
+    public boolean changeTitle(DocTitleChangedPayload payload, Long eventId) {
         if (isAlreadyProjected(eventId)) {
-            return;
+            return false;
         }
 
         this.title = payload.title();
         this.updatedAt = payload.updatedAt();
         this.deleted = false;
         this.lastProjectedEventId = eventId;
+        return true;
     }
 
-    public void changeActivity(DocActivityChangedPayload payload, Long eventId) {
+    public boolean changeActivity(DocActivityChangedPayload payload, Long eventId) {
         if (isAlreadyProjected(eventId)) {
-            return;
+            return false;
         }
 
         this.recentSaveId = payload.recentSaveId();
         this.updatedAt = payload.updatedAt();
         this.deleted = false;
         this.lastProjectedEventId = eventId;
+        return true;
     }
 
-    public void changeThumbnail(DocThumbnailChangedPayload payload, Long eventId) {
+    public boolean changeThumbnail(DocThumbnailChangedPayload payload, Long eventId) {
         if (isAlreadyProjected(eventId)) {
-            return;
+            return false;
         }
 
         this.thumbnailObjectKey = payload.thumbnailObjectKey();
         this.thumbnailStatus = payload.thumbnailStatus();
         this.lastProjectedEventId = eventId;
+        return true;
     }
 
-    public void markDeleted() {
+    public boolean markDeleted(Long eventId) {
+        if (isAlreadyProjected(eventId)) {
+            return false;
+        }
+
         this.deleted = true;
+        this.lastProjectedEventId = eventId;
+        return true;
     }
 
     private boolean isAlreadyProjected(Long eventId) {

@@ -53,8 +53,9 @@ public class DocListProjector {
 
         docListReadModelRepository.findById(payload.docId())
                 .ifPresent(model -> {
-                    model.changeTitle(payload, message.eventId());
-                    docListReadModelRepository.save(model);
+                    if (model.changeTitle(payload, message.eventId())) {
+                        docListReadModelRepository.save(model);
+                    }
                 });
     }
 
@@ -63,8 +64,9 @@ public class DocListProjector {
 
         docListReadModelRepository.findById(payload.docId())
                 .ifPresent(model -> {
-                    model.changeActivity(payload, message.eventId());
-                    docListReadModelRepository.save(model);
+                    if (model.changeActivity(payload, message.eventId())) {
+                        docListReadModelRepository.save(model);
+                    }
                 });
     }
 
@@ -73,8 +75,9 @@ public class DocListProjector {
 
         docListReadModelRepository.findById(payload.docId())
                 .ifPresent(model -> {
-                    model.changeThumbnail(payload, message.eventId());
-                    docListReadModelRepository.save(model);
+                    if (model.changeThumbnail(payload, message.eventId())) {
+                        docListReadModelRepository.save(model);
+                    }
                 });
     }
 
@@ -83,8 +86,9 @@ public class DocListProjector {
 
         docListReadModelRepository.findById(payload.docId())
                 .ifPresent(model -> {
-                    model.markDeleted();
-                    docListReadModelRepository.save(model);
+                    if (model.markDeleted(message.eventId())) {
+                        docListReadModelRepository.save(model);
+                    }
                 });
     }
 }
