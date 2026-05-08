@@ -7,6 +7,7 @@ import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocDeletedPayload;
 import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocThumbnailChangedPayload;
 import io.ejangs.docsa.domain.doc.readmodel.dto.payload.DocTitleChangedPayload;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
+import io.ejangs.docsa.domain.save.entity.Save;
 
 public final class DocPayloadFactory {
 
@@ -34,21 +35,25 @@ public final class DocPayloadFactory {
         );
     }
 
-    public static DocActivityChangedPayload activityChanged(Doc doc, Long recentSaveId) {
+    public static DocActivityChangedPayload activityChanged(
+            Long docId,
+            Save save
+    ) {
         return new DocActivityChangedPayload(
-                doc.getId(),
-                recentSaveId,
-                doc.getUpdatedAt()
+                docId,
+                save.getId(),
+                save.getUpdatedAt()
         );
     }
 
+
     public static DocThumbnailChangedPayload thumbnailChanged(
-            Doc doc,
+            Long docId,
             String thumbnailObjectKey,
             ThumbnailStatus thumbnailStatus
     ) {
         return new DocThumbnailChangedPayload(
-                doc.getId(),
+                docId,
                 thumbnailObjectKey,
                 thumbnailStatus
         );

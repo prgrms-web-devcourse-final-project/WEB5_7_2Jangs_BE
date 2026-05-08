@@ -2,11 +2,16 @@ package io.ejangs.docsa.domain.doc.thumbnail.app;
 
 import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
+import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import io.ejangs.docsa.domain.image.app.ImageQueryService;
 import io.ejangs.docsa.domain.image.entity.Image;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
+import io.ejangs.docsa.global.outbox.event.model.AggregateType;
+import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import io.ejangs.docsa.global.outbox.s3.app.S3DeleteJobEnqueuer;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.ImageErrorCode;
@@ -24,6 +29,8 @@ public class ThumbnailService {
     private final DocQueryService docQueryService;
     private final ImageQueryService imageQueryService;
     private final S3DeleteJobEnqueuer s3DeleteJobEnqueuer;
+
+    private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     @Value("${cloud.aws.s3.public-base-url}")
     private String cdnUrl;
@@ -65,7 +72,10 @@ public class ThumbnailService {
 
         Image previousImage = thumbnail.getCurrentImage();
         thumbnail.complete(image, signature);
+
         enqueuePreviousThumbnailDeletion(previousImage, image);
+        domainEventOutboxPublisher.publish(DomainEventType.DOC_THUMBNAIL_CHANGED, AggregateType.DOC, docId,
+                DocPayloadFactory.thumbnailChanged(docId, image.getObjectKey(), ThumbnailStatus.READY));
 
         return new ThumbnailResponse(
                 image.getId(),

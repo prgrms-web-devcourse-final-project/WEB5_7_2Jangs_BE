@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.save.app;
 
 import com.mongodb.DuplicateKeyException;
+import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
 import io.ejangs.docsa.domain.doc.thumbnail.app.ThumbnailService;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
 import io.ejangs.docsa.domain.save.document.SaveContent;
@@ -12,6 +13,9 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
+import io.ejangs.docsa.global.outbox.event.model.AggregateType;
+import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +31,8 @@ public class SaveService {
 
     private final SaveQueryService saveQueryService;
     private final ThumbnailService thumbnailService;
+
+    private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     @Transactional(readOnly = true)
     public SaveGetResponse getSave(SaveIdentifierDto dto) {
@@ -51,7 +57,8 @@ public class SaveService {
 
         // MongoDB 저장
         try {
-            SaveContent saveContent = saveQueryService.getSaveContentById(findSave.getSaveMongoId());
+            SaveContent saveContent = saveQueryService.getSaveContentById(
+                    findSave.getSaveMongoId());
             saveContent.updateContent(request.content());
             saveQueryService.saveSaveContent(saveContent);
         } catch (DuplicateKeyException e) {
@@ -62,6 +69,9 @@ public class SaveService {
             log.error("Mongo 저장 실패: {}", e.getMessage(), e);
             throw new CustomException(SaveErrorCode.FAIL_TO_SAVE);
         }
+
+        domainEventOutboxPublisher.publish(DomainEventType.DOC_ACTIVITY_CHANGED, AggregateType.DOC,
+                dto.documentId(), DocPayloadFactory.activityChanged(dto.documentId(), findSave));
 
         return SaveMapper.toSaveUpdateResponse(findSave.getUpdatedAt(), thumbnailSyncResponse);
     }

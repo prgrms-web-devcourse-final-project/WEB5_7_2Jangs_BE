@@ -133,6 +133,8 @@ public class DocService {
 
         user.removeDocument(doc);
 
+        domainEventOutboxPublisher.publish(DomainEventType.DOC_DELETED, AggregateType.DOC, docId,
+                DocPayloadFactory.deleted(docId));
         mongoDeleteJobEnqueuer.enqueueDocDeletion(docId, docDeleteMongoIds);
     }
 

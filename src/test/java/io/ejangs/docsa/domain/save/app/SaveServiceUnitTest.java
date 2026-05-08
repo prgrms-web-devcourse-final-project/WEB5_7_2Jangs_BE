@@ -21,6 +21,7 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,8 @@ class SaveServiceUnitTest {
     private Save mockSave;
     @Mock
     private SaveContent mockSaveContent;
+    @Mock
+    private DomainEventOutboxPublisher domainEventOutboxPublisher;
     @InjectMocks
     private SaveService saveService;
 

@@ -15,6 +15,7 @@ import io.ejangs.docsa.domain.image.app.ImageQueryService;
 import io.ejangs.docsa.domain.image.entity.Image;
 import io.ejangs.docsa.domain.image.entity.Image.ImageStatus;
 import io.ejangs.docsa.domain.image.entity.Image.Purpose;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import io.ejangs.docsa.global.outbox.s3.app.S3DeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.s3.dao.S3DeleteOutboxRepository;
 import io.ejangs.docsa.global.outbox.s3.entity.S3DeleteOutbox;
@@ -41,6 +42,9 @@ class ThumbnailServiceUnitTest {
     @Mock
     private S3DeleteOutboxRepository s3DeleteOutboxRepository;
 
+    @Mock
+    private DomainEventOutboxPublisher domainEventOutboxPublisher;
+
     private ThumbnailService thumbnailService;
 
     @BeforeEach
@@ -51,7 +55,8 @@ class ThumbnailServiceUnitTest {
                 thumbnailQueryService,
                 docQueryService,
                 imageQueryService,
-                s3DeleteJobEnqueuer
+                s3DeleteJobEnqueuer,
+                domainEventOutboxPublisher
         );
         ReflectionTestUtils.setField(thumbnailService, "cdnUrl", "https://cdn.example.com");
     }
