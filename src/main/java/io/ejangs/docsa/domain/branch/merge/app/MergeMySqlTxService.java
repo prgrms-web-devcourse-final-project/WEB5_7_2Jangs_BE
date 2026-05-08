@@ -3,8 +3,6 @@ package io.ejangs.docsa.domain.branch.merge.app;
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
-import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
 import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
 import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;

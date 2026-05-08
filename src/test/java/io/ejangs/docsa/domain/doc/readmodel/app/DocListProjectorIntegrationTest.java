@@ -15,7 +15,6 @@ import io.ejangs.docsa.global.outbox.event.model.AggregateType;
 import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

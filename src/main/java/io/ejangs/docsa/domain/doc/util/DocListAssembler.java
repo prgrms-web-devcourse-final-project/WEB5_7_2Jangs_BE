@@ -5,7 +5,6 @@ import io.ejangs.docsa.domain.doc.dto.LatestSaveIdDto;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.thumbnail.dao.ThumbnailRepository;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
 import java.util.List;
 import java.util.Map;
