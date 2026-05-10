@@ -85,3 +85,15 @@ cloud:
       bucket: docsa-test-bucket
       presigned-expire-minutes: 5
       public-base-url: https://cdn.test.invalid
+logging:
+  level:
+    root: WARN
+    io.ejangs.docsa: INFO
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.springframework: WARN
+    org.springframework.test: WARN
+    org.springframework.transaction: WARN
+    org.springframework.data.mongodb: WARN
+    org.mongodb.driver: WARN
+    com.zaxxer.hikari: WARN

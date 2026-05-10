@@ -87,4 +87,11 @@ decorator:
 
 logging:
   level:
-    net.ttddyy.dsproxy.listener: DEBUG
+    root: INFO
+    io.ejangs.docsa: INFO
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.springframework: WARN
+    org.mongodb.driver: WARN
+    com.zaxxer.hikari: WARN
+    net.ttddyy.dsproxy.listener: WARN

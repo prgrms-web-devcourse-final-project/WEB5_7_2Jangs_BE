@@ -4,22 +4,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
-import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
 import io.ejangs.docsa.domain.doc.app.DocCommandService;
 import io.ejangs.docsa.domain.doc.app.DocQueryService;
-import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
-import io.ejangs.docsa.domain.edge.dto.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocTitleUpdateResponse;
+import io.ejangs.docsa.domain.edge.dto.GraphResponse;
+import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
+import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
+import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
@@ -76,8 +75,7 @@ class DocControllerUnitTests {
                         .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(documentId))
-                .andExpect(jsonPath("$.saveId").value(saveId))
-                .andDo(print());
+                .andExpect(jsonPath("$.saveId").value(saveId));
     }
 
     @Test
@@ -89,8 +87,7 @@ class DocControllerUnitTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."));
     }
 
     @Test
@@ -131,8 +128,7 @@ class DocControllerUnitTests {
                 .andExpect(jsonPath("$.content[0].title").value("마이크로소프트"))
                 .andExpect(jsonPath("$.content[0].recentSaveId").value(10))
                 .andExpect(jsonPath("$.content[1].title").value("구글"))
-                .andExpect(jsonPath("$.content[1].recentSaveId").value(11))
-                .andDo(print());
+                .andExpect(jsonPath("$.content[1].recentSaveId").value(11));
     }
 
     @Test
@@ -194,8 +190,7 @@ class DocControllerUnitTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("문서제목은 50자를 초과 할 수 없습니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("문서제목은 50자를 초과 할 수 없습니다."));
     }
 
     @Test
@@ -225,8 +220,7 @@ class DocControllerUnitTests {
                 .andExpect(jsonPath("$.title").value("문서 제목"))
                 .andExpect(jsonPath("$.commits").isArray())
                 .andExpect(jsonPath("$.branches").isArray())
-                .andExpect(jsonPath("$.edges").isArray())
-                .andDo(print());
+                .andExpect(jsonPath("$.edges").isArray());
     }
 
     @Test
@@ -239,7 +233,6 @@ class DocControllerUnitTests {
                 .thenThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
         // when & then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph", docId))
-                .andExpect(status().isNotFound())
-                .andDo(print());
+                .andExpect(status().isNotFound());
     }
 }

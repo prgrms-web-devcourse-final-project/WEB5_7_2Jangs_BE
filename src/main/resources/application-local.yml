@@ -24,31 +24,37 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:create-drop}
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
-        show_sql: true
-        format_sql: true
-        highlight_sql: true
+        format_sql: ${HIBERNATE_FORMAT_SQL:false}
+        highlight_sql: ${HIBERNATE_HIGHLIGHT_SQL:false}
 
 decorator:
   datasource:
     datasource-proxy:
-      enabled: false
+      enabled: ${DATASOURCE_PROXY_ENABLED:false}
       logging: slf4j
       multiline: true
       format-sql: true
       count-query: true
       query:
-        enable-logging: true
+        enable-logging: ${SQL_QUERY_LOGGING_ENABLED:false}
         log-level: debug
       slow-query:
-        enable-logging: true
+        enable-logging: ${SLOW_QUERY_LOGGING_ENABLED:true}
         log-level: warn
         threshold: 100
 
 logging:
   level:
-    net.ttddyy.dsproxy.listener: OFF
+    root: INFO
+    io.ejangs.docsa: DEBUG
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:OFF}
+    org.hibernate.orm.jdbc.bind: ${LOG_LEVEL_HIBERNATE_BIND:OFF}
+    org.springframework: INFO
+    org.mongodb.driver: WARN
+    net.ttddyy.dsproxy.listener: ${LOG_LEVEL_DATASOURCE_PROXY:OFF}
 
 server:
   port: 8080
