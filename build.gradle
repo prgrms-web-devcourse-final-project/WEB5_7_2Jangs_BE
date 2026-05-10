@@ -25,7 +25,8 @@ repositories {
 
 test {
     testLogging {
-        events "passed", "skipped", "failed"
+        events "skipped", "failed"
+        showStandardStreams = false
         exceptionFormat "full"
         showCauses true
         showExceptions true
