@@ -14,20 +14,16 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.doc.app.create.DocCreateMySqlTxService;
-import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.app.DocCommandService;
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
-import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
-import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import io.ejangs.docsa.domain.doc.util.DocTestUtils;
 import io.ejangs.docsa.domain.save.dao.mongodb.SaveContentRepository;
 import io.ejangs.docsa.domain.save.dao.mysql.SaveRepository;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
-import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.dao.mysql.UserRepository;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -45,10 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -60,10 +52,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class DocServiceIntegrationTests {
+public class DocCommandServiceIntegrationTests {
 
     @Autowired
-    private DocService docService;
+    private DocCommandService docCommandService;
 
     @Autowired
     private DocRepository docRepository;
@@ -102,7 +94,7 @@ public class DocServiceIntegrationTests {
         DocTitleRequest request = new DocTitleRequest(title);
 
         // when: 문서 생성 요청
-        DocCreateResponse response = docService.create(request, user.getId());
+        DocCreateResponse response = docCommandService.create(request, user.getId());
 
         // then: 문서 저장 검증
         Doc savedDoc = docRepository.findById(response.id())
@@ -137,7 +129,7 @@ public class DocServiceIntegrationTests {
     class MongoFailureTest {
 
         @Autowired
-        private DocService docService;
+        private DocCommandService docCommandService;
         @Autowired
         private UserRepository userRepository;
         @Autowired
@@ -161,7 +153,7 @@ public class DocServiceIntegrationTests {
             when(saveContentRepository.save(any()))
                     .thenThrow(new MongoTimeoutException("Mongo 연결 실패"));
 
-            assertThatThrownBy(() -> docService.create(request, user.getId()))
+            assertThatThrownBy(() -> docCommandService.create(request, user.getId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
         }
@@ -172,7 +164,7 @@ public class DocServiceIntegrationTests {
     class MySqlFailureTest {
 
         @Autowired
-        private DocService docService;
+        private DocCommandService docCommandService;
 
         @Autowired
         private UserRepository userRepository;
@@ -199,7 +191,7 @@ public class DocServiceIntegrationTests {
                     .thenThrow(new RuntimeException("MySQL 생성 실패"));
 
             // when & then
-            assertThatThrownBy(() -> docService.create(request, user.getId()))
+            assertThatThrownBy(() -> docCommandService.create(request, user.getId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
@@ -220,7 +212,7 @@ public class DocServiceIntegrationTests {
     class MySqlFailureWithCompensateOutboxTest {
 
         @Autowired
-        private DocService docService;
+        private DocCommandService docCommandService;
 
         @Autowired
         private UserRepository userRepository;
@@ -244,7 +236,7 @@ public class DocServiceIntegrationTests {
                     .thenThrow(new RuntimeException("MySQL 생성 실패"));
 
             // when & then
-            assertThatThrownBy(() -> docService.create(request, user.getId()))
+            assertThatThrownBy(() -> docCommandService.create(request, user.getId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
@@ -262,10 +254,10 @@ public class DocServiceIntegrationTests {
         // given
         User user = userRepository.save(DocTestUtils.createUser());
         String title = "중복 제목 테스트";
-        docService.create(new DocTitleRequest(title), user.getId()); // 첫 번째 저장
+        docCommandService.create(new DocTitleRequest(title), user.getId()); // 첫 번째 저장
 
         // when & then
-        assertThatThrownBy(() -> docService.create(new DocTitleRequest(title), user.getId()))
+        assertThatThrownBy(() -> docCommandService.create(new DocTitleRequest(title), user.getId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("이미 사용중인 제목입니다.");
     }
@@ -279,154 +271,10 @@ public class DocServiceIntegrationTests {
 
         // when & then
         CustomException ex = assertThrows(CustomException.class, () ->
-                docService.create(request, nonexistentUserId)
+                docCommandService.create(request, nonexistentUserId)
         );
 
         assertEquals(UserErrorCode.USER_NOT_FOUND, ex.getErrorCode());
     }
 
-    @Test
-    @DisplayName("사이드바 문서리스트 조회 - 최근 저장 id가 설정됨")
-    void getSimpleDocumentList() throws Exception {
-        // given
-        User user = userRepository.save(DocTestUtils.createUser());
-
-        List<Doc> docs = DocTestUtils.createDocumentListForIntegrationTest(user,
-                saveContentRepository, commitBlockSequenceRepository, blockRepository);
-        docRepository.saveAll(docs);
-
-        Pageable pageable = PageableFactory.create("updatedAt", "asc", 0, 10);
-
-        // when
-        Page<DocSimplePageResponse> page = docService.getSimplePage(user.getId(), pageable);
-        List<DocSimplePageResponse> results = page.getContent();
-
-        // then
-        assertEquals(2, results.size());
-
-        DocSimplePageResponse first = results.get(0);  // 최신 updatedAt 기준으로 정렬되었다고 가정
-        DocSimplePageResponse second = results.get(1);
-
-        assertEquals("문서 1", first.title());
-        assertThat(first.recentSaveId()).isNotNull();
-
-        assertEquals("문서 2", second.title());
-        assertThat(second.recentSaveId()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("문서 리스트 조회 - 최신 활동 기준 정렬 및 미리보기 제공")
-    void getDocListWithPreview() throws Exception {
-        // given
-        User user = userRepository.save(DocTestUtils.createUser());
-
-        List<Doc> docs = DocTestUtils.createDocumentListForIntegrationTest(user,
-                saveContentRepository, commitBlockSequenceRepository, blockRepository);
-        docRepository.saveAll(docs);
-
-        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
-
-        // when
-        Page<DocPageResponse> results = docService.getPage(user.getId(), pageable);
-
-        // then
-        assertEquals(2, results.getContent().size());
-
-        DocPageResponse first = results.getContent().getFirst();  // updatedAt 기준 최신
-        DocPageResponse second = results.getContent().get(1);
-
-        assertEquals("문서 1", second.title());
-        assertEquals(ThumbnailStatus.EMPTY, second.thumbnailStatus());
-        assertThat(second.recentSaveId()).isNotNull();
-
-        assertEquals("문서 2", first.title());
-        assertEquals(ThumbnailStatus.EMPTY, first.thumbnailStatus());
-        assertThat(first.recentSaveId()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("문서 리스트 조회 - 최신 브랜치의 저장 id를 응답한다")
-    void getDocListReturnsLatestBranchSaveId() {
-        // given
-        User user = userRepository.save(DocTestUtils.createUser());
-        Doc doc = Doc.builder()
-                .title("최신 저장 id 테스트")
-                .user(user)
-                .build();
-        Branch firstBranch = Branch.builder()
-                .name(defaultBranchName)
-                .doc(doc)
-                .build();
-        Save.builder()
-                .branch(firstBranch)
-                .saveMongoId("save-content-1")
-                .build();
-
-        Branch secondBranch = Branch.builder()
-                .name("feature")
-                .doc(doc)
-                .build();
-        Save latestSave = Save.builder()
-                .branch(secondBranch)
-                .saveMongoId("save-content-2")
-                .build();
-
-        docRepository.saveAndFlush(doc);
-
-        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
-
-        // when
-        Page<DocPageResponse> result = docService.getPage(user.getId(), pageable);
-
-        // then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().getFirst().recentSaveId()).isEqualTo(latestSave.getId());
-    }
-
-    @Test
-    @DisplayName("문서 리스트 조회 - 페이지네이션 테스트 100개의 문서를 만들고 페이지 0에서는 10개만 조회한다.")
-    void getDocListInPage() throws Exception {
-        //given
-        User user = userRepository.save(DocTestUtils.createUser());
-        List<Doc> docs = DocTestUtils.createDocList(100, user);
-        docRepository.saveAll(docs);
-
-        Pageable pageable = PageableFactory.create("updatedAt", "desc", 0, 10);
-
-        //when
-        Page<DocPageResponse> result = docService.getPage(user.getId(), pageable);
-
-        //then
-        assertEquals(10, result.getContent().size());
-        DocPageResponse first = result.getContent().getFirst();
-        assertEquals("문서 keyword포함100", first.title());
-        assertEquals(100L, first.id());
-
-        DocPageResponse last = result.getContent().getLast();
-        assertEquals("테스트 문서 91", last.title());
-        assertEquals(91L, last.id());
-    }
-
-    @Test
-    @DisplayName("문서 리스트 검색 - 300개의 전체 문서중 150개의 키워드포함 문서를 검색하여 페이지로 응답한다.")
-    void searchListSuccess() {
-        // given
-        User user = userRepository.save(DocTestUtils.createUser());
-
-        List<Doc> docs = DocTestUtils.createDocList(300, user);
-        docRepository.saveAll(docs);
-
-        String keyword = "keyword";
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("updatedAt").descending());
-
-        // when
-        Page<DocPageResponse> result = docService.searchList(user.getId(), keyword, pageable);
-
-        // then
-        assertThat(result.getContent()).hasSize(10);
-        assertThat(result.getContent())
-                .extracting(DocPageResponse::title)
-                .allMatch(title -> title.contains("keyword"));
-        assertThat(result.getContent().getFirst().id()).isEqualTo(300);
-    }
 }

@@ -17,7 +17,7 @@ import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.save.app.SaveService;
@@ -46,7 +46,7 @@ class CommitServiceMockTest {
     private CommitBlockSequenceRepository cbsRepository;
 
     @Mock
-    private DocQueryService docQueryService;
+    private DocReader docReader;
 
     @Mock
     private CommitQueryService commitQueryService;
@@ -108,7 +108,7 @@ class CommitServiceMockTest {
     @Test
     @DisplayName("커밋 생성 성공 - leafCommit 기반으로 오케스트레이터 호출")
     void createCommit_success_withLeafCommit() {
-        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("leaf-cbs-id");
         when(createdCommit.getId()).thenReturn(101L);
@@ -127,7 +127,7 @@ class CommitServiceMockTest {
     @Test
     @DisplayName("커밋 생성 성공 - leafCommit이 null이면 fromCommit을 base로 사용")
     void createCommit_success_useFromCommitWhenLeafCommitIsNull() {
-        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("from-cbs-id");
         when(createdCommit.getId()).thenReturn(101L);
@@ -143,7 +143,7 @@ class CommitServiceMockTest {
     @Test
     @DisplayName("커밋 생성 성공 - 최초 커밋이면 baseCommitCbsMongoId는 null")
     void createCommit_success_initialCommit_baseIsNull() {
-        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn(null);
         when(createdCommit.getId()).thenReturn(101L);
@@ -165,7 +165,7 @@ class CommitServiceMockTest {
         assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docQueryService, never()).getById(docId);
+        verify(docReader, never()).getById(docId);
         verify(branchQueryService, never()).getById(branchId);
         verifyNoInteractions(commitCreateOrchestrator);
     }
@@ -173,7 +173,7 @@ class CommitServiceMockTest {
     @Test
     @DisplayName("커밋 생성 실패 - 브랜치 조회 실패 시 오케스트레이터 미호출")
     void createCommit_fail_whenBranchLookupFails() {
-        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(docReader.getById(docId)).thenReturn(doc);
         doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
                 .when(branchQueryService).getById(branchId);
 
@@ -186,7 +186,7 @@ class CommitServiceMockTest {
     @Test
     @DisplayName("커밋 생성 실패 - base commit 조회 중 repository 예외 전파")
     void createCommit_fail_whenBaseCommitLookupFails() {
-        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
         doThrow(new RuntimeException("repo fail"))
                 .when(commitQueryService).resolveBaseCommitCbsMongoId(branch);
@@ -201,7 +201,7 @@ class CommitServiceMockTest {
     @Test
     @DisplayName("커밋 생성 실패 - 오케스트레이터 예외는 그대로 전파")
     void createCommit_fail_whenOrchestratorThrows() {
-        when(docQueryService.getById(docId)).thenReturn(doc);
+        when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
         when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("base-cbs-id");
         doThrow(new RuntimeException("orchestrator fail"))

@@ -10,7 +10,7 @@ import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BranchService {
 
-    private final DocQueryService docQueryService;
+    private final DocReader docReader;
     private final BranchQueryService branchQueryService;
     private final CommitQueryService commitQueryService;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
@@ -52,7 +52,7 @@ public class BranchService {
 
     private BranchCreateContext prepareBranchCreateContext(Long documentId,
             BranchCreateRequest request, Long userId) {
-        docQueryService.checkByIdAndUserId(documentId, userId);
+        docReader.checkByIdAndUserId(documentId, userId);
 
         Long fromCommitId = request.fromCommitId();
 

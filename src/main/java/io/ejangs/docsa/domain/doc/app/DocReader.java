@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.app.create;
+package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.doc.dao.mysql.DocRepository;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -8,14 +8,12 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class DocQueryService {
+public class DocReader {
 
     private final UserRepository userRepository;
     private final DocRepository docRepository;
@@ -57,16 +55,6 @@ public class DocQueryService {
         if (!docRepository.existsByIdAndUserId(docId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
         }
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Doc> getPageByUserId(Long userId, Pageable pageable) {
-        return docRepository.findAllByUserId(userId, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Doc> searchByTitle(String keyword, Long userId, Pageable pageable) {
-        return docRepository.searchDocByTitle(keyword, userId, pageable);
     }
 
 }

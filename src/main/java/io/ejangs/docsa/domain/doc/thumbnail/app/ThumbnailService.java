@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.thumbnail.app;
 
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailResponse;
@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ThumbnailService {
 
     private final ThumbnailQueryService thumbnailQueryService;
-    private final DocQueryService docQueryService;
+    private final DocReader docReader;
     private final ImageQueryService imageQueryService;
     private final S3DeleteJobEnqueuer s3DeleteJobEnqueuer;
 
@@ -37,7 +37,7 @@ public class ThumbnailService {
 
     @Transactional
     public ThumbnailSyncResponse requestUpdate(Long userId, Long docId) {
-        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
+        Doc doc = docReader.getByIdAndUserId(docId, userId);
 
         Thumbnail thumbnail = thumbnailQueryService.getOrCreateByDocForUpdate(doc);
 
@@ -58,7 +58,7 @@ public class ThumbnailService {
             Long requestToken,
             String signature
     ) {
-        docQueryService.checkByIdAndUserId(docId, userId);
+        docReader.checkByIdAndUserId(docId, userId);
 
         Thumbnail thumbnail = thumbnailQueryService.getByDocIdForUpdate(docId);
 

@@ -12,7 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.domain.doc.api.DocController;
-import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.app.DocCommandService;
+import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.edge.dto.graph.EdgeDto;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.edge.dto.GraphResponse;
@@ -51,7 +52,10 @@ class DocControllerUnitTests {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private DocService docService;
+    private DocCommandService docCommandService;
+
+    @MockitoBean
+    private DocQueryService docQueryService;
 
     @Test
     @DisplayName("문서 생성 성공 컨트롤러 테스트")
@@ -63,7 +67,7 @@ class DocControllerUnitTests {
         Long saveId = 2L;
 
         //when, then
-        when(docService.create(any(DocTitleRequest.class), anyLong()))
+        when(docCommandService.create(any(DocTitleRequest.class), anyLong()))
                 .thenReturn(new DocCreateResponse(documentId, saveId));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
@@ -118,7 +122,7 @@ class DocControllerUnitTests {
                 content.size()
         );
 
-        when(docService.getSimplePage(anyLong(), any(Pageable.class))).thenReturn(responseList);
+        when(docQueryService.getSimplePage(anyLong(), any(Pageable.class))).thenReturn(responseList);
 
         // when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/sidebar"))
@@ -147,7 +151,7 @@ class DocControllerUnitTests {
                 LocalDateTime.now()
         );
 
-        when(docService.updateTitle(userId, docId, request)).thenReturn(response);
+        when(docCommandService.updateTitle(userId, docId, request)).thenReturn(response);
 
         //when & then
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/document/" + docId)
@@ -168,7 +172,7 @@ class DocControllerUnitTests {
 
         DocTitleRequest request = new DocTitleRequest(title);
 
-        when(docService.updateTitle(userId, documentId, request))
+        when(docCommandService.updateTitle(userId, documentId, request))
                 .thenThrow(new CustomException(DocErrorCode.TITLE_DUPLICATION));
 
         // when & then
@@ -213,7 +217,7 @@ class DocControllerUnitTests {
                 List.of(branch)
         );
 
-        when(docService.getGraph(userId, docId)).thenReturn(response);
+        when(docQueryService.getGraph(userId, docId)).thenReturn(response);
 
         // when & then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph", docId))
@@ -231,7 +235,7 @@ class DocControllerUnitTests {
         // given
         Long docId = 999L;
         Long userId = 1L;
-        when(docService.getGraph(userId, docId))
+        when(docQueryService.getGraph(userId, docId))
                 .thenThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND));
         // when & then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/document/{docId}/graph", docId))

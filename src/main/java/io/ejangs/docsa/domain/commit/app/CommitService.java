@@ -8,7 +8,7 @@ import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommitService {
 
-    private final DocQueryService docQueryService;
+    private final DocReader docReader;
     private final BranchQueryService branchQueryService;
     private final CommitQueryService commitQueryService;
     private final EdgeService edgeService;
@@ -45,7 +45,7 @@ public class CommitService {
 
         branchQueryService.checkBranchInDocOwnedByUser(docId, request.branchId(), userId);
 
-        Doc doc = docQueryService.getById(docId);
+        Doc doc = docReader.getById(docId);
         Branch branch = branchQueryService.getById(request.branchId());
 
         String baseCommitCbsMongoId = commitQueryService.resolveBaseCommitCbsMongoId(branch);
@@ -57,7 +57,7 @@ public class CommitService {
     }
 
     public CommitResponse getCommit(Long docId, Long commitId, Long userId) {
-        docQueryService.checkByIdAndUserId(docId, userId);
+        docReader.checkByIdAndUserId(docId, userId);
         List<Map<String, Object>> content = getWholeContent(commitId);
         return CommitMapper.toCommitResponse(content);
     }
@@ -69,7 +69,7 @@ public class CommitService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteCommit(Long docId, Long commitId, Long userId) {
-        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
+        Doc doc = docReader.getByIdAndUserId(docId, userId);
 
         Commit commit = commitQueryService.getById(commitId);
         // LeafCommit일 경우에만 삭제 가능

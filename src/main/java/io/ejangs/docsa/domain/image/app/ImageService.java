@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.image.app;
 
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.image.dao.ImageRepository;
 import io.ejangs.docsa.domain.image.dto.request.ImageUploadUrlRequest;
 import io.ejangs.docsa.domain.image.dto.response.ImageUploadCompleteResponse;
@@ -33,7 +33,7 @@ public class ImageService {
 
     private final ImageRepository imageRepository;
     private final ImageQueryService imageQueryService;
-    private final DocQueryService docQueryService;
+    private final DocReader docReader;
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
 
@@ -51,7 +51,7 @@ public class ImageService {
 
     @Transactional
     public ImageUploadUrlResponse createUploadUrl(Long userId, ImageUploadUrlRequest request) {
-        docQueryService.getByIdAndUserId(request.docId(), userId);
+        docReader.getByIdAndUserId(request.docId(), userId);
 
         validateImage(request.contentType(), request.size());
 

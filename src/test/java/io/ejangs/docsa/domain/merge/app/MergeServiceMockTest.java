@@ -19,7 +19,7 @@ import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
 import io.ejangs.docsa.domain.commit.app.CommitQueryService;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
 import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MergeServiceMockTest {
 
     @Mock
-    private DocQueryService docQueryService;
+    private DocReader docReader;
 
     @Mock
     private BranchQueryService branchQueryService;
@@ -80,7 +80,7 @@ class MergeServiceMockTest {
         Long baseCommitId = 11L;
         Long targetCommitId = 22L;
 
-        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(doc);
+        when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
         when(baseCommit.getId()).thenReturn(baseCommitId);
         when(targetCommit.getId()).thenReturn(targetCommitId);
         when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
@@ -117,7 +117,7 @@ class MergeServiceMockTest {
     void merge_fail_whenBranchNameDuplicated() {
         Long baseCommitId = 31L;
         Long targetCommitId = 32L;
-        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(doc);
+        when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
         doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
                 .when(branchQueryService).checkDuplicatedWithBranchName(docId, "merged-branch");
 
@@ -140,7 +140,7 @@ class MergeServiceMockTest {
     void merge_fail_whenBaseAndTargetAreSameCommit() {
         Long sameCommitId = 41L;
 
-        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(doc);
+        when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
         when(baseCommit.getId()).thenReturn(sameCommitId);
         when(commitQueryService.getById(sameCommitId)).thenReturn(baseCommit);
         doThrow(new CustomException(CommitErrorCode.INVALID_MERGE_REQUEST))
@@ -175,7 +175,7 @@ class MergeServiceMockTest {
         );
 
         doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
-                .when(docQueryService).getByIdAndUserId(docId, userId);
+                .when(docReader).getByIdAndUserId(docId, userId);
 
         assertThatThrownBy(() -> mergeService.merge(docId, request, userId))
                 .isInstanceOf(CustomException.class);

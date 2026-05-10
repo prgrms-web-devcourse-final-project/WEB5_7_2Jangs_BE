@@ -12,7 +12,7 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
@@ -36,7 +36,7 @@ class GetCommitMockTest {
     private CommitQueryService commitQueryService;
 
     @Mock
-    private DocQueryService docQueryService;
+    private DocReader docReader;
 
     @Mock
     private CommitContentAssembler assembler;
@@ -90,7 +90,7 @@ class GetCommitMockTest {
         assertThat(response).isNotNull();
         assertThat(response.content()).isEqualTo(mockContent);
 
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
+        verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitQueryService).getById(commitId);
         verify(assembler).assemble(commitMongoId);
     }
@@ -109,7 +109,7 @@ class GetCommitMockTest {
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
+        verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitQueryService).getById(commitId);
         verify(assembler, never()).assemble(any());
     }
@@ -122,13 +122,13 @@ class GetCommitMockTest {
         Long commitId = 1L;
 
         doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
-                .when(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
+                .when(docReader).checkByIdAndUserId(docId, userDetails.getId());
 
         // when & then
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
+        verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitQueryService, never()).getById(any());
         verify(assembler, never()).assemble(any());
     }

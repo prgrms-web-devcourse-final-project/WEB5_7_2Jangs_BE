@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
@@ -34,7 +34,7 @@ class ThumbnailServiceUnitTest {
     private ThumbnailQueryService thumbnailQueryService;
 
     @Mock
-    private DocQueryService docQueryService;
+    private DocReader docReader;
 
     @Mock
     private ImageQueryService imageQueryService;
@@ -53,7 +53,7 @@ class ThumbnailServiceUnitTest {
                 new S3DeleteJobEnqueuer(s3DeleteOutboxRepository);
         thumbnailService = new ThumbnailService(
                 thumbnailQueryService,
-                docQueryService,
+                docReader,
                 imageQueryService,
                 s3DeleteJobEnqueuer,
                 domainEventOutboxPublisher
