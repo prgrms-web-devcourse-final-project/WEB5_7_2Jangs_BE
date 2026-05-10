@@ -24,25 +24,25 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:create-drop}
-    show-sql: ${JPA_SHOW_SQL:false}
+    show-sql: false
     properties:
       hibernate:
-        format_sql: ${HIBERNATE_FORMAT_SQL:false}
-        highlight_sql: ${HIBERNATE_HIGHLIGHT_SQL:false}
+        format_sql: false
+        highlight_sql: false
 
 decorator:
   datasource:
     datasource-proxy:
-      enabled: ${DATASOURCE_PROXY_ENABLED:false}
+      enabled: false
       logging: slf4j
       multiline: true
       format-sql: true
       count-query: true
       query:
-        enable-logging: ${SQL_QUERY_LOGGING_ENABLED:false}
+        enable-logging: false
         log-level: debug
       slow-query:
-        enable-logging: ${SLOW_QUERY_LOGGING_ENABLED:true}
+        enable-logging: true
         log-level: warn
         threshold: 100
 
