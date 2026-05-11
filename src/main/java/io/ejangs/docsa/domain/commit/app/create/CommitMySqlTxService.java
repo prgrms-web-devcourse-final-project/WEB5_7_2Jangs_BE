@@ -1,7 +1,7 @@
 package io.ejangs.docsa.domain.commit.app.create;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitWriter;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommitMySqlTxService {
 
-    private final CommitQueryService commitQueryService;
+    private final CommitWriter commitWriter;
     private final EdgeService edgeService;
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
@@ -31,7 +31,7 @@ public class CommitMySqlTxService {
     public Commit createMySqlPart(Doc doc, Branch branch, CreateCommitRequest request, String commitCbsMongoId) {
         Commit newCommit = CommitMapper.toEntity(branch, request);
         newCommit.initializeCommitMongoId(commitCbsMongoId);
-        newCommit = commitQueryService.saveAndFlush(newCommit);
+        newCommit = commitWriter.saveAndFlush(newCommit);
 
         branch.updateRootCommit(newCommit);
 

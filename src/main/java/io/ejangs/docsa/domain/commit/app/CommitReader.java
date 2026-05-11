@@ -1,9 +1,7 @@
 package io.ejangs.docsa.domain.commit.app;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
-import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.edge.dto.graph.CommitGraphDto;
 import io.ejangs.docsa.global.exception.CustomException;
@@ -16,10 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class CommitQueryService {
+public class CommitReader {
 
     private final CommitRepository commitRepository;
-    private final CommitBlockSequenceRepository commitBlockSequenceRepository;
 
     @Transactional(readOnly = true)
     public Commit getById(Long commitId) {
@@ -68,17 +65,4 @@ public class CommitQueryService {
             throw new CustomException(CommitErrorCode.COMMIT_NOT_FOUND);
         }
     }
-
-    public Commit saveAndFlush(Commit commit) {
-        return commitRepository.saveAndFlush(commit);
-    }
-
-    public void deleteById(Long commitId) {
-        commitRepository.deleteById(commitId);
-    }
-
-    public CommitBlockSequence saveCommitBlockSequence(CommitBlockSequence commitBlockSequence) {
-        return commitBlockSequenceRepository.save(commitBlockSequence);
-    }
-
 }

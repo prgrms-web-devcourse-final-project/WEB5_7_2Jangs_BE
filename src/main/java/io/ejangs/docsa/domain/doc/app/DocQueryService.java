@@ -1,7 +1,7 @@
 package io.ejangs.docsa.domain.doc.app;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
 import io.ejangs.docsa.domain.doc.readmodel.dao.mongodb.DocListReadModelRepository;
@@ -31,7 +31,7 @@ public class DocQueryService {
 
     private final DocReader docReader;
     private final BranchQueryService branchQueryService;
-    private final CommitQueryService commitQueryService;
+    private final CommitReader commitReader;
     private final EdgeService edgeService;
 
     @Value("${cloud.aws.s3.public-base-url}")
@@ -71,7 +71,7 @@ public class DocQueryService {
         if (branches.isEmpty()) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
         }
-        List<CommitGraphDto> commits = commitQueryService.getCommitGraphList(documentId);
+        List<CommitGraphDto> commits = commitReader.getCommitGraphList(documentId);
         List<EdgeDto> edges = edgeService.getEdgeDtoByDocId(documentId);
 
         return GraphMapper.toCommitGraphResponse(docTitle, commits, edges, branches);

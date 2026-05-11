@@ -16,7 +16,7 @@ import io.ejangs.docsa.domain.branch.merge.app.MergeOrchestrator;
 import io.ejangs.docsa.domain.branch.merge.app.MergeService;
 import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocReader;
@@ -47,7 +47,7 @@ class MergeServiceMockTest {
     private BranchQueryService branchQueryService;
 
     @Mock
-    private CommitQueryService commitQueryService;
+    private CommitReader commitReader;
 
     @Mock
     private CommitContentAssembler commitContentAssembler;
@@ -83,8 +83,8 @@ class MergeServiceMockTest {
         when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
         when(baseCommit.getId()).thenReturn(baseCommitId);
         when(targetCommit.getId()).thenReturn(targetCommitId);
-        when(commitQueryService.getById(baseCommitId)).thenReturn(baseCommit);
-        when(commitQueryService.getById(targetCommitId)).thenReturn(targetCommit);
+        when(commitReader.getById(baseCommitId)).thenReturn(baseCommit);
+        when(commitReader.getById(targetCommitId)).thenReturn(targetCommit);
         MergeResponse expected = new MergeResponse(999L, 1001L);
         doReturn(expected)
                 .when(mergeOrchestrator)
@@ -101,7 +101,7 @@ class MergeServiceMockTest {
 
         assertThat(response).isEqualTo(expected);
         verify(branchQueryService).checkDuplicatedWithBranchName(docId, "merged-branch");
-        verify(commitQueryService)
+        verify(commitReader)
                 .checkTwoCommitsInDocOwnedByUser(baseCommitId, targetCommitId, docId, userId);
         verify(mergeOrchestrator).merge(
                 argThat(context ->
@@ -131,7 +131,7 @@ class MergeServiceMockTest {
         assertThatThrownBy(() -> mergeService.merge(docId, request, userId))
                 .isInstanceOf(CustomException.class);
 
-        verifyNoInteractions(commitQueryService);
+        verifyNoInteractions(commitReader);
         verifyNoInteractions(mergeOrchestrator);
     }
 
@@ -142,9 +142,9 @@ class MergeServiceMockTest {
 
         when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
         when(baseCommit.getId()).thenReturn(sameCommitId);
-        when(commitQueryService.getById(sameCommitId)).thenReturn(baseCommit);
+        when(commitReader.getById(sameCommitId)).thenReturn(baseCommit);
         doThrow(new CustomException(CommitErrorCode.INVALID_MERGE_REQUEST))
-                .when(commitQueryService)
+                .when(commitReader)
                 .checkTwoCommitsInDocOwnedByUser(sameCommitId, sameCommitId, docId, userId);
 
         MergeRequest request = new MergeRequest(
@@ -158,7 +158,7 @@ class MergeServiceMockTest {
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("동일한 커밋을 병합할 수 없습니다.");
 
-        verify(commitQueryService).checkTwoCommitsInDocOwnedByUser(
+        verify(commitReader).checkTwoCommitsInDocOwnedByUser(
                 sameCommitId, sameCommitId, docId, userId
         );
         verifyNoInteractions(mergeOrchestrator);

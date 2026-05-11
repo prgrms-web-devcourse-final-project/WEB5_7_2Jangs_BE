@@ -2,7 +2,7 @@ package io.ejangs.docsa.domain.branch.merge.app;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
 import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
@@ -18,7 +18,7 @@ public class MergeService {
 
     private final DocReader docReader;
     private final BranchQueryService branchQueryService;
-    private final CommitQueryService commitQueryService;
+    private final CommitReader commitReader;
     private final CommitContentAssembler commitContentAssembler;
     private final MergeOrchestrator mergeOrchestrator;
 
@@ -35,10 +35,10 @@ public class MergeService {
         Doc doc = docReader.getByIdAndUserId(docId, userId);
         branchQueryService.checkDuplicatedWithBranchName(docId, mergeRequest.branchName());
 
-        Commit baseCommit = commitQueryService.getById(mergeRequest.baseCommitId());
-        Commit targetCommit = commitQueryService.getById(mergeRequest.targetCommitId());
+        Commit baseCommit = commitReader.getById(mergeRequest.baseCommitId());
+        Commit targetCommit = commitReader.getById(mergeRequest.targetCommitId());
 
-        commitQueryService.checkTwoCommitsInDocOwnedByUser(
+        commitReader.checkTwoCommitsInDocOwnedByUser(
                 baseCommit.getId(),
                 targetCommit.getId(),
                 docId,

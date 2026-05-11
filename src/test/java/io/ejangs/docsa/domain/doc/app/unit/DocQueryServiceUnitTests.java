@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import io.ejangs.docsa.domain.branch.app.BranchQueryService;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
@@ -52,7 +52,7 @@ class DocQueryServiceUnitTests {
     private BranchQueryService branchQueryService;
 
     @Mock
-    private CommitQueryService commitQueryService;
+    private CommitReader commitReader;
 
     @Mock
     private EdgeService edgeService;
@@ -185,7 +185,7 @@ class DocQueryServiceUnitTests {
 
         when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
         when(branchQueryService.getBranchGraphList(docId)).thenReturn(branches);
-        when(commitQueryService.getCommitGraphList(docId)).thenReturn(commits);
+        when(commitReader.getCommitGraphList(docId)).thenReturn(commits);
         when(edgeService.getEdgeDtoByDocId(docId)).thenReturn(edges);
 
         GraphResponse response = docQueryService.getGraph(userId, docId);

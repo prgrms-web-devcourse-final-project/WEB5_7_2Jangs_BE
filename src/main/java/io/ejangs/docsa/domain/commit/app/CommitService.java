@@ -31,7 +31,8 @@ public class CommitService {
 
     private final DocReader docReader;
     private final BranchQueryService branchQueryService;
-    private final CommitQueryService commitQueryService;
+    private final CommitReader commitReader;
+    private final CommitWriter commitWriter;
     private final EdgeService edgeService;
 
     private final CommitCreateOrchestrator commitCreateOrchestrator;
@@ -48,7 +49,7 @@ public class CommitService {
         Doc doc = docReader.getById(docId);
         Branch branch = branchQueryService.getById(request.branchId());
 
-        String baseCommitCbsMongoId = commitQueryService.resolveBaseCommitCbsMongoId(branch);
+        String baseCommitCbsMongoId = commitReader.resolveBaseCommitCbsMongoId(branch);
 
         Commit newCommit = commitCreateOrchestrator.create(request, baseCommitCbsMongoId, doc,
                 branch);
@@ -63,7 +64,7 @@ public class CommitService {
     }
 
     private List<Map<String, Object>> getWholeContent(Long commitId) {
-        Commit commit = commitQueryService.getById(commitId);
+        Commit commit = commitReader.getById(commitId);
         return assembler.assemble(commit.getCommitMongoId());
     }
 
@@ -71,7 +72,7 @@ public class CommitService {
     public void deleteCommit(Long docId, Long commitId, Long userId) {
         Doc doc = docReader.getByIdAndUserId(docId, userId);
 
-        Commit commit = commitQueryService.getById(commitId);
+        Commit commit = commitReader.getById(commitId);
         // LeafCommit일 경우에만 삭제 가능
         checkLeafCommit(commit);
         // 어느 브랜치의 FromCommit이나 MergeTargetCommit일 경우 삭제 불가능
@@ -97,7 +98,7 @@ public class CommitService {
 
         MongoIdsDto commitDeleteMongoIds = mongoIdsCollector.collectFrom(prevCommits, commit);
 
-        commitQueryService.deleteById(commit.getId());
+        commitWriter.deleteById(commit.getId());
 
         mongoDeleteJobEnqueuer.enqueueCommitDeletion(commitId, commitDeleteMongoIds);
     }

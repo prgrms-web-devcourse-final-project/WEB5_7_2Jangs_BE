@@ -6,7 +6,7 @@ import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
@@ -41,7 +41,7 @@ class BranchServiceTest {
     private BranchService branchService;
 
     @Mock
-    private CommitQueryService commitQueryService;
+    private CommitReader commitReader;
 
     @Mock
     private DocReader docReader;
@@ -78,7 +78,7 @@ class BranchServiceTest {
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
 
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
         doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
                 .when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
@@ -108,7 +108,7 @@ class BranchServiceTest {
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
 
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
         doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
         when(branchCreateOrchestrator.create(any()))
@@ -152,7 +152,7 @@ class BranchServiceTest {
         when(commit.getBranch()).thenReturn(fromBranch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
         fromBranch.updateLeafCommit(commit);
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
         doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
         when(branchCreateOrchestrator.create(any()))
@@ -195,7 +195,7 @@ class BranchServiceTest {
         when(branch.getDoc()).thenReturn(commitDoc);
         when(commitDoc.getId()).thenReturn(999L);
 
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
+        when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
 
         // when & then

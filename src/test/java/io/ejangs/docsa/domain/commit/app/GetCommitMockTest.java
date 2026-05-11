@@ -33,7 +33,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GetCommitMockTest {
 
     @Mock
-    private CommitQueryService commitQueryService;
+    private CommitReader commitReader;
+
+    @Mock
+    private CommitWriter commitWriter;
 
     @Mock
     private DocReader docReader;
@@ -80,7 +83,7 @@ class GetCommitMockTest {
         Long commitId = 1L;
         String commitMongoId = "mongo-commit-id";
 
-        given(commitQueryService.getById(commitId)).willReturn(targetCommit);
+        given(commitReader.getById(commitId)).willReturn(targetCommit);
         given(assembler.assemble(commitMongoId)).willReturn(mockContent);
 
         // when
@@ -91,7 +94,7 @@ class GetCommitMockTest {
         assertThat(response.content()).isEqualTo(mockContent);
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService).getById(commitId);
+        verify(commitReader).getById(commitId);
         verify(assembler).assemble(commitMongoId);
     }
 
@@ -102,7 +105,7 @@ class GetCommitMockTest {
         Long docId = 1L;
         Long commitId = 999L;
 
-        given(commitQueryService.getById(commitId))
+        given(commitReader.getById(commitId))
                 .willThrow(new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
 
         // when & then
@@ -110,7 +113,7 @@ class GetCommitMockTest {
                 .isInstanceOf(CustomException.class);
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService).getById(commitId);
+        verify(commitReader).getById(commitId);
         verify(assembler, never()).assemble(any());
     }
 
@@ -129,7 +132,7 @@ class GetCommitMockTest {
                 .isInstanceOf(CustomException.class);
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService, never()).getById(any());
+        verify(commitReader, never()).getById(any());
         verify(assembler, never()).assemble(any());
     }
 

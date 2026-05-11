@@ -49,7 +49,10 @@ class CommitServiceMockTest {
     private DocReader docReader;
 
     @Mock
-    private CommitQueryService commitQueryService;
+    private CommitReader commitReader;
+
+    @Mock
+    private CommitWriter commitWriter;
 
     @Mock
     private BranchQueryService branchQueryService;
@@ -110,7 +113,7 @@ class CommitServiceMockTest {
     void createCommit_success_withLeafCommit() {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
-        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("leaf-cbs-id");
+        when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn("leaf-cbs-id");
         when(createdCommit.getId()).thenReturn(101L);
         when(commitCreateOrchestrator.create(createCommitRequest, "leaf-cbs-id", doc, branch))
                 .thenReturn(createdCommit);
@@ -129,7 +132,7 @@ class CommitServiceMockTest {
     void createCommit_success_useFromCommitWhenLeafCommitIsNull() {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
-        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("from-cbs-id");
+        when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn("from-cbs-id");
         when(createdCommit.getId()).thenReturn(101L);
         when(commitCreateOrchestrator.create(createCommitRequest, "from-cbs-id", doc, branch))
                 .thenReturn(createdCommit);
@@ -145,7 +148,7 @@ class CommitServiceMockTest {
     void createCommit_success_initialCommit_baseIsNull() {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
-        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn(null);
+        when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn(null);
         when(createdCommit.getId()).thenReturn(101L);
         when(commitCreateOrchestrator.create(createCommitRequest, null, doc, branch))
                 .thenReturn(createdCommit);
@@ -189,7 +192,7 @@ class CommitServiceMockTest {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
         doThrow(new RuntimeException("repo fail"))
-                .when(commitQueryService).resolveBaseCommitCbsMongoId(branch);
+                .when(commitReader).resolveBaseCommitCbsMongoId(branch);
 
         assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
                 .isInstanceOf(RuntimeException.class)
@@ -203,7 +206,7 @@ class CommitServiceMockTest {
     void createCommit_fail_whenOrchestratorThrows() {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchQueryService.getById(branchId)).thenReturn(branch);
-        when(commitQueryService.resolveBaseCommitCbsMongoId(branch)).thenReturn("base-cbs-id");
+        when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn("base-cbs-id");
         doThrow(new RuntimeException("orchestrator fail"))
                 .when(commitCreateOrchestrator).create(createCommitRequest, "base-cbs-id", doc, branch);
 

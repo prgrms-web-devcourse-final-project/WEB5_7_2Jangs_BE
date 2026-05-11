@@ -7,7 +7,7 @@ import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.DocReader;
@@ -36,7 +36,7 @@ public class BranchService {
 
     private final DocReader docReader;
     private final BranchQueryService branchQueryService;
-    private final CommitQueryService commitQueryService;
+    private final CommitReader commitReader;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final EdgeService edgeService;
     private final BranchCreateOrchestrator branchCreateOrchestrator;
@@ -56,7 +56,7 @@ public class BranchService {
 
         Long fromCommitId = request.fromCommitId();
 
-        Commit fromCommit = commitQueryService.getById(fromCommitId);
+        Commit fromCommit = commitReader.getById(fromCommitId);
         Branch fromBranch = fromCommit.getBranch();
 
         if (!fromBranch.getDoc().getId().equals(documentId)) {
