@@ -29,7 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SaveService {
 
-    private final SaveQueryService saveQueryService;
+    private final SaveReader saveReader;
+    private final SaveWriter saveWriter;
     private final ThumbnailService thumbnailService;
 
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
@@ -38,7 +39,7 @@ public class SaveService {
     public SaveGetResponse getSave(SaveIdentifierDto dto) {
         Save findSave = getValidSave(dto);
 
-        SaveContent saveContent = saveQueryService.getSaveContentById(findSave.getSaveMongoId());
+        SaveContent saveContent = saveReader.getSaveContentById(findSave.getSaveMongoId());
 
         return SaveMapper.toSaveGetResponse(findSave.getUpdatedAt(), saveContent.getContent());
     }
@@ -48,7 +49,7 @@ public class SaveService {
 
         // MySQL 먼저 저장
         RenewUpdatedAtHelper.touch(findSave);
-        saveQueryService.saveSave(findSave);
+        saveWriter.saveSave(findSave);
 
         ThumbnailSyncResponse thumbnailSyncResponse = thumbnailService.requestUpdate(
                 dto.userId(),
@@ -57,10 +58,10 @@ public class SaveService {
 
         // MongoDB 저장
         try {
-            SaveContent saveContent = saveQueryService.getSaveContentById(
+            SaveContent saveContent = saveReader.getSaveContentById(
                     findSave.getSaveMongoId());
             saveContent.updateContent(request.content());
-            saveQueryService.saveSaveContent(saveContent);
+            saveWriter.saveSaveContent(saveContent);
         } catch (DuplicateKeyException e) {
             log.warn("중복 키로 Mongo 저장 실패 - saveId={}, mongoId={}, message={}", findSave.getId(),
                     findSave.getSaveMongoId(), e.getMessage());
@@ -78,9 +79,9 @@ public class SaveService {
 
     private Save getValidSave(SaveIdentifierDto dto) {
 
-        Save findSave = saveQueryService.getSaveById(dto.saveId());
+        Save findSave = saveReader.getSaveById(dto.saveId());
 
-        saveQueryService.checkSaveAndDocOwner(findSave, dto.userId(), dto.documentId());
+        saveReader.checkSaveAndDocOwner(findSave, dto.userId(), dto.documentId());
         return findSave;
     }
 

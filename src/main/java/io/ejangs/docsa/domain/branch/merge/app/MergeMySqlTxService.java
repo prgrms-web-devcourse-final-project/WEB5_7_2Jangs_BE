@@ -6,7 +6,7 @@ import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
 import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
 import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
-import io.ejangs.docsa.domain.save.app.SaveQueryService;
+import io.ejangs.docsa.domain.save.app.SaveWriter;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import io.ejangs.docsa.global.outbox.event.model.AggregateType;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MergeMySqlTxService {
 
-    private final SaveQueryService saveQueryService;
+    private final SaveWriter saveWriter;
     private final BranchWriter branchWriter;
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
@@ -30,7 +30,7 @@ public class MergeMySqlTxService {
         Branch newBranch = branchWriter.createBranch(context.doc(), request.branchName(), context.baseCommit());
         newBranch.updateMergeTargetCommit(context.targetCommit());
 
-        Save save = saveQueryService.createSave(newBranch, saveMongoId);
+        Save save = saveWriter.createSave(newBranch, saveMongoId);
         newBranch.setSave(save);
         branchWriter.save(newBranch);
         RenewUpdatedAtHelper.touch(save);

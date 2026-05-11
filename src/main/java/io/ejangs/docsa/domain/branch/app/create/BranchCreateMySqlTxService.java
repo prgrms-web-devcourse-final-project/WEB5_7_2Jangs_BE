@@ -6,7 +6,7 @@ import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
 import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
-import io.ejangs.docsa.domain.save.app.SaveQueryService;
+import io.ejangs.docsa.domain.save.app.SaveWriter;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import io.ejangs.docsa.global.outbox.event.model.AggregateType;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BranchCreateMySqlTxService {
 
     private final BranchWriter branchWriter;
-    private final SaveQueryService saveQueryService;
+    private final SaveWriter saveWriter;
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     @Transactional(rollbackFor = Exception.class)
@@ -29,7 +29,7 @@ public class BranchCreateMySqlTxService {
 
         Branch newBranch = branchWriter.createBranch(context.doc(), context.branchName(), context.fromCommit());
 
-        Save save = saveQueryService.createSave(newBranch, saveContentId);
+        Save save = saveWriter.createSave(newBranch, saveContentId);
         RenewUpdatedAtHelper.touch(save);
 
         domainEventOutboxPublisher.publish(DomainEventType.DOC_ACTIVITY_CHANGED, AggregateType.DOC, context.doc()

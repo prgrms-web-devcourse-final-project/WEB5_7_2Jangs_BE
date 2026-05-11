@@ -9,7 +9,7 @@ import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
 import io.ejangs.docsa.domain.doc.thumbnail.dao.ThumbnailRepository;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
 import io.ejangs.docsa.domain.doc.util.DocMapper;
-import io.ejangs.docsa.domain.save.app.SaveQueryService;
+import io.ejangs.docsa.domain.save.app.SaveWriter;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
@@ -27,7 +27,7 @@ public class DocCreateMySqlTxService {
 
     private final DocReader docReader;
     private final BranchWriter branchWriter;
-    private final SaveQueryService saveQueryService;
+    private final SaveWriter saveWriter;
     private final ThumbnailRepository thumbnailRepository;
 
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
@@ -41,7 +41,7 @@ public class DocCreateMySqlTxService {
 
         Doc doc = docReader.create(user, title);
         Branch defaultBranch = branchWriter.createBranch(doc, defaultBranchName);
-        Save defaultSave = saveQueryService.createSave(defaultBranch, saveContentId);
+        Save defaultSave = saveWriter.createSave(defaultBranch, saveContentId);
         RenewUpdatedAtHelper.touch(defaultSave);
         thumbnailRepository.save(Thumbnail.builder()
                 .doc(doc)

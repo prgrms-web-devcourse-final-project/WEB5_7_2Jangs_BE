@@ -7,7 +7,6 @@ import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DatabaseErrorCode;
-import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SaveQueryService {
+public class SaveWriter {
 
     private final SaveContentRepository saveContentRepository;
     private final SaveRepository saveRepository;
@@ -40,22 +39,4 @@ public class SaveQueryService {
     public SaveContent saveSaveContent(SaveContent saveContent) {
         return saveContentRepository.save(saveContent);
     }
-
-    public Save getSaveById(Long id) {
-        return saveRepository.findById(id)
-                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
-
-    }
-
-    public SaveContent getSaveContentById(String id) {
-        return saveContentRepository.findById(id)
-                .orElseThrow(() -> new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
-    }
-
-    public void checkSaveAndDocOwner(Save save, Long userId, Long documentId) {
-        if (!saveRepository.validateSaveOwnership(save.getId(), documentId, userId)) {
-            throw new CustomException(SaveErrorCode.SAVE_NOT_OWNER);
-        }
-    }
-
 }
