@@ -45,7 +45,7 @@ class ImageServiceUnitTest {
     private ImageRepository imageRepository;
 
     @Mock
-    private ImageQueryService imageQueryService;
+    private ImageReader imageReader;
 
     @Mock
     private DocReader docReader;
@@ -63,7 +63,7 @@ class ImageServiceUnitTest {
 
     @BeforeEach
     void setUp() {
-        imageService = new ImageService(imageRepository, imageQueryService, docReader,
+        imageService = new ImageService(imageRepository, imageReader, docReader,
                 s3Presigner, s3Client);
         ReflectionTestUtils.setField(imageService, "bucket", "docsa-image-bucket");
         ReflectionTestUtils.setField(imageService, "expireMinutes", 5L);
@@ -180,7 +180,7 @@ class ImageServiceUnitTest {
                 .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
+        when(imageReader.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(
                 HeadObjectResponse.builder()
                         .contentType("image/png")
@@ -219,7 +219,7 @@ class ImageServiceUnitTest {
                 .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
+        when(imageReader.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenThrow(
                 S3Exception.builder()
                         .statusCode(404)

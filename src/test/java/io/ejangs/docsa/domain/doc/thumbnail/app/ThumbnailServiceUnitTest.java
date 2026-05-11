@@ -11,7 +11,7 @@ import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
-import io.ejangs.docsa.domain.image.app.ImageQueryService;
+import io.ejangs.docsa.domain.image.app.ImageReader;
 import io.ejangs.docsa.domain.image.entity.Image;
 import io.ejangs.docsa.domain.image.entity.Image.ImageStatus;
 import io.ejangs.docsa.domain.image.entity.Image.Purpose;
@@ -31,13 +31,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 class ThumbnailServiceUnitTest {
 
     @Mock
-    private ThumbnailQueryService thumbnailQueryService;
+    private ThumbnailStore thumbnailStore;
 
     @Mock
     private DocReader docReader;
 
     @Mock
-    private ImageQueryService imageQueryService;
+    private ImageReader imageReader;
 
     @Mock
     private S3DeleteOutboxRepository s3DeleteOutboxRepository;
@@ -52,9 +52,9 @@ class ThumbnailServiceUnitTest {
         S3DeleteJobEnqueuer s3DeleteJobEnqueuer =
                 new S3DeleteJobEnqueuer(s3DeleteOutboxRepository);
         thumbnailService = new ThumbnailService(
-                thumbnailQueryService,
+                thumbnailStore,
                 docReader,
-                imageQueryService,
+                imageReader,
                 s3DeleteJobEnqueuer,
                 domainEventOutboxPublisher
         );
@@ -71,8 +71,8 @@ class ThumbnailServiceUnitTest {
         Image newImage = activeThumbnailImage(11L, userId, docId, "new.webp");
         Thumbnail thumbnail = thumbnailWithCurrentImage(oldImage, requestToken);
 
-        when(thumbnailQueryService.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
-        when(imageQueryService.getByIdAndUserId(newImage.getId(), userId)).thenReturn(newImage);
+        when(thumbnailStore.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
+        when(imageReader.getByIdAndUserId(newImage.getId(), userId)).thenReturn(newImage);
 
         ThumbnailResponse response = thumbnailService.finalizeThumbnail(
                 userId,
@@ -101,8 +101,8 @@ class ThumbnailServiceUnitTest {
         Image image = activeThumbnailImage(10L, userId, docId, "same.webp");
         Thumbnail thumbnail = thumbnailWithCurrentImage(image, requestToken);
 
-        when(thumbnailQueryService.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
-        when(imageQueryService.getByIdAndUserId(image.getId(), userId)).thenReturn(image);
+        when(thumbnailStore.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
+        when(imageReader.getByIdAndUserId(image.getId(), userId)).thenReturn(image);
 
         thumbnailService.finalizeThumbnail(
                 userId,

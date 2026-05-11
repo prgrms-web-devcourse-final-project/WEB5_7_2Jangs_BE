@@ -7,7 +7,7 @@ import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
-import io.ejangs.docsa.domain.image.app.ImageQueryService;
+import io.ejangs.docsa.domain.image.app.ImageReader;
 import io.ejangs.docsa.domain.image.entity.Image;
 import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import io.ejangs.docsa.global.outbox.event.model.AggregateType;
@@ -25,9 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ThumbnailService {
 
-    private final ThumbnailQueryService thumbnailQueryService;
+    private final ThumbnailStore thumbnailStore;
     private final DocReader docReader;
-    private final ImageQueryService imageQueryService;
+    private final ImageReader imageReader;
     private final S3DeleteJobEnqueuer s3DeleteJobEnqueuer;
 
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
@@ -39,7 +39,7 @@ public class ThumbnailService {
     public ThumbnailSyncResponse requestUpdate(Long userId, Long docId) {
         Doc doc = docReader.getByIdAndUserId(docId, userId);
 
-        Thumbnail thumbnail = thumbnailQueryService.getOrCreateByDocForUpdate(doc);
+        Thumbnail thumbnail = thumbnailStore.getOrCreateByDocForUpdate(doc);
 
         Long requestToken = thumbnail.requestUpdate();
 
@@ -60,13 +60,13 @@ public class ThumbnailService {
     ) {
         docReader.checkByIdAndUserId(docId, userId);
 
-        Thumbnail thumbnail = thumbnailQueryService.getByDocIdForUpdate(docId);
+        Thumbnail thumbnail = thumbnailStore.getByDocIdForUpdate(docId);
 
         if (!thumbnail.isCurrentToken(requestToken)) {
             throw new CustomException(ThumbnailErrorCode.STALE_THUMBNAIL_REQUEST);
         }
 
-        Image image = imageQueryService.getByIdAndUserId(imageId, userId);
+        Image image = imageReader.getByIdAndUserId(imageId, userId);
 
         validateThumbnailImage(docId, image);
 

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ThumbnailQueryService {
+public class ThumbnailStore {
 
     private final ThumbnailRepository thumbnailRepository;
 
@@ -25,5 +25,4 @@ public class ThumbnailQueryService {
                         .doc(doc)
                         .build()));
     }
-
 }

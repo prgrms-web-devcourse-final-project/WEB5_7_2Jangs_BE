@@ -32,7 +32,7 @@ public class ImageService {
     private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
     private final ImageRepository imageRepository;
-    private final ImageQueryService imageQueryService;
+    private final ImageReader imageReader;
     private final DocReader docReader;
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
@@ -96,7 +96,7 @@ public class ImageService {
 
     @Transactional
     public ImageUploadCompleteResponse complete(Long userId, Long imageId) {
-        Image image = imageQueryService.getByIdAndUserId(imageId, userId);
+        Image image = imageReader.getByIdAndUserId(imageId, userId);
 
         String objectKey = image.getObjectKey();
 

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ImageQueryService {
+public class ImageReader {
 
     private final ImageRepository imageRepository;
 
@@ -17,5 +17,4 @@ public class ImageQueryService {
         return imageRepository.findByIdAndUserId(imageId, userId)
                 .orElseThrow(() -> new CustomException(ImageErrorCode.IMAGE_NOT_FOUND));
     }
-
 }
