@@ -4,10 +4,8 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
-import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
-import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class BranchQueryService {
+public class BranchReader {
 
     private final BranchRepository branchRepository;
 
@@ -29,31 +27,11 @@ public class BranchQueryService {
         return branchRepository.findBranchGraphDtoList(docId);
     }
 
-    public Branch save(Branch branch) {
-        return branchRepository.save(branch);
-    }
-
-    public Branch createBranch(Doc doc, String branchName) {
-        Branch branch = branchRepository.save(Branch.builder().name(branchName).doc(doc).build());
-        RenewUpdatedAtHelper.touch(branch);
-        return branch;
-    }
-
-    public Branch createBranch(Doc doc, String branchName, Commit fromCommit) {
-        Branch branch = Branch.builder().name(branchName).doc(doc).fromCommit(fromCommit).build();
-        return branchRepository.save(branch);
-    }
-
     @Transactional(readOnly = true)
     public boolean existsSubBranchByFromCommitIds(List<Long> commitIds) {
         return branchRepository.existsByFromCommitIdIn(commitIds);
     }
 
-    public void delete(Branch branch) {
-        branchRepository.delete(branch);
-    }
-
-    //TODO: 검증하는 메소드는 별도의 ex.ValidationService로 분리(모든 도메인)
     public void checkBranchInDocOwnedByUser(Long documentId, Long branchId, Long userId) {
         boolean exists =
                 branchRepository.existsByIdAndDocIdAndDocUserId(branchId, documentId, userId);

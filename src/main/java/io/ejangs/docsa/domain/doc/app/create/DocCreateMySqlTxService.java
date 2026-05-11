@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.app.create;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
+import io.ejangs.docsa.domain.branch.app.BranchWriter;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 public class DocCreateMySqlTxService {
 
     private final DocReader docReader;
-    private final BranchQueryService branchQueryService;
+    private final BranchWriter branchWriter;
     private final SaveQueryService saveQueryService;
     private final ThumbnailRepository thumbnailRepository;
 
@@ -40,7 +40,7 @@ public class DocCreateMySqlTxService {
             String saveContentId) {
 
         Doc doc = docReader.create(user, title);
-        Branch defaultBranch = branchQueryService.createBranch(doc, defaultBranchName);
+        Branch defaultBranch = branchWriter.createBranch(doc, defaultBranchName);
         Save defaultSave = saveQueryService.createSave(defaultBranch, saveContentId);
         RenewUpdatedAtHelper.touch(defaultSave);
         thumbnailRepository.save(Thumbnail.builder()

@@ -53,7 +53,10 @@ class BranchServiceTest {
     private CommitBlockSequenceRepository commitBlockSequenceRepository;
 
     @Mock
-    private BranchQueryService branchQueryService;
+    private BranchReader branchReader;
+
+    @Mock
+    private BranchWriter branchWriter;
 
     @Mock
     private BranchCreateOrchestrator branchCreateOrchestrator;
@@ -81,7 +84,7 @@ class BranchServiceTest {
         when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
         doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
-                .when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+                .when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
 
         // when & then
         CustomException ex = assertThrows(CustomException.class,
@@ -110,7 +113,7 @@ class BranchServiceTest {
 
         when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
-        doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+        doNothing().when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
         when(branchCreateOrchestrator.create(any()))
                 .thenReturn(new BranchCreateResponse(101L, 201L));
 
@@ -154,7 +157,7 @@ class BranchServiceTest {
         fromBranch.updateLeafCommit(commit);
         when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
-        doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+        doNothing().when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
         when(branchCreateOrchestrator.create(any()))
                 .thenReturn(new BranchCreateResponse(100L, 200L));
 
@@ -202,7 +205,7 @@ class BranchServiceTest {
         CustomException ex = assertThrows(CustomException.class,
                 () -> branchService.createBranch(documentId, request, userId));
         assertEquals(DocErrorCode.COMMIT_NOT_IN_DOCUMENT, ex.getErrorCode());
-        verify(branchQueryService, never()).checkDuplicatedWithBranchName(anyLong(), anyString());
+        verify(branchReader, never()).checkDuplicatedWithBranchName(anyLong(), anyString());
         verifyNoInteractions(branchCreateOrchestrator);
     }
 
@@ -217,8 +220,8 @@ class BranchServiceTest {
 
         Branch branch = Branch.builder().name("기존이름").doc(mock(Doc.class)).fromCommit(commit).build();
 
-        doNothing().when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userId);
-        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        doNothing().when(branchReader).checkBranchInDocOwnedByUser(docId, branchId, userId);
+        when(branchReader.getById(branchId)).thenReturn(branch);
 
         BranchRenameResponse response =
                 branchService.renameBranch(docId, branchId, newName, userId);
@@ -230,7 +233,7 @@ class BranchServiceTest {
     @DisplayName("브랜치가 문서에 없거나 유저 소유가 아니면 예외 발생")
     void renameBranch_branchOwnershipCheckFailed() {
         doThrow(new CustomException(BranchErrorCode.BRANCH_NOT_FOUND))
-                .when(branchQueryService).checkBranchInDocOwnedByUser(anyLong(), anyLong(),
+                .when(branchReader).checkBranchInDocOwnedByUser(anyLong(), anyLong(),
                         anyLong());
 
         CustomException e = assertThrows(CustomException.class,
@@ -262,10 +265,10 @@ class BranchServiceTest {
         CommitBlockSequence seq2 =
                 CommitBlockSequence.builder().blockOrders(List.of("block3")).build();
 
-        doNothing().when(branchQueryService)
+        doNothing().when(branchReader)
                 .checkBranchInDocOwnedByUser(documentId, branchId, userId);
-        when(branchQueryService.getById(branchId)).thenReturn(branch);
-        when(branchQueryService.existsSubBranchByFromCommitIds(any())).thenReturn(false);
+        when(branchReader.getById(branchId)).thenReturn(branch);
+        when(branchReader.existsSubBranchByFromCommitIds(any())).thenReturn(false);
         doNothing().when(edgeService).deleteEdgesConnectedToCommits(any());
 
         when(commitBlockSequenceRepository.findById("seq1")).thenReturn(Optional.of(seq1));
@@ -275,7 +278,7 @@ class BranchServiceTest {
         branchService.deleteBranch(documentId, branchId, userId);
 
         // then - 브랜치 실제 삭제
-        verify(branchQueryService).delete(branch);
+        verify(branchWriter).delete(branch);
 
         // Outbox 적재 검증
         ArgumentCaptor<MongoIdsDto> captor = ArgumentCaptor.forClass(MongoIdsDto.class);
@@ -299,8 +302,8 @@ class BranchServiceTest {
         Long userId = 3L;
 
         Branch mainBranch = Branch.builder().name("main").doc(mock(Doc.class)).build();
-        doNothing().when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userId);
-        when(branchQueryService.getById(branchId)).thenReturn(mainBranch);
+        doNothing().when(branchReader).checkBranchInDocOwnedByUser(docId, branchId, userId);
+        when(branchReader.getById(branchId)).thenReturn(mainBranch);
 
         CustomException ex = assertThrows(CustomException.class,
                 () -> branchService.deleteBranch(docId, branchId, userId));

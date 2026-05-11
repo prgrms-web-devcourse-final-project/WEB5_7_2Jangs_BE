@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
+import io.ejangs.docsa.domain.branch.app.BranchReader;
 import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.doc.app.DocQueryService;
 import io.ejangs.docsa.domain.doc.app.DocReader;
@@ -49,7 +49,7 @@ class DocQueryServiceUnitTests {
     private DocReader docReader;
 
     @Mock
-    private BranchQueryService branchQueryService;
+    private BranchReader branchReader;
 
     @Mock
     private CommitReader commitReader;
@@ -184,7 +184,7 @@ class DocQueryServiceUnitTests {
         List<EdgeDto> edges = List.of(new EdgeDto(100L, 101L));
 
         when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
-        when(branchQueryService.getBranchGraphList(docId)).thenReturn(branches);
+        when(branchReader.getBranchGraphList(docId)).thenReturn(branches);
         when(commitReader.getCommitGraphList(docId)).thenReturn(commits);
         when(edgeService.getEdgeDtoByDocId(docId)).thenReturn(edges);
 
@@ -205,7 +205,7 @@ class DocQueryServiceUnitTests {
         Doc doc = Doc.builder().title("문서").user(user).build();
 
         when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
-        when(branchQueryService.getBranchGraphList(docId)).thenReturn(List.of());
+        when(branchReader.getBranchGraphList(docId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> docQueryService.getGraph(userId, docId))
                 .isInstanceOf(CustomException.class)

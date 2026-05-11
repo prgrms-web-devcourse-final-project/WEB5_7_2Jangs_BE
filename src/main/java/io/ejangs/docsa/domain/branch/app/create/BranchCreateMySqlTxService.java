@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.branch.app.create;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
+import io.ejangs.docsa.domain.branch.app.BranchWriter;
 import io.ejangs.docsa.domain.branch.dto.BranchCreateContext;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
@@ -20,14 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BranchCreateMySqlTxService {
 
-    private final BranchQueryService branchQueryService;
+    private final BranchWriter branchWriter;
     private final SaveQueryService saveQueryService;
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     public BranchCreateResponse createMySqlPart(BranchCreateContext context, String saveContentId) {
 
-        Branch newBranch = branchQueryService.createBranch(context.doc(), context.branchName(), context.fromCommit());
+        Branch newBranch = branchWriter.createBranch(context.doc(), context.branchName(), context.fromCommit());
 
         Save save = saveQueryService.createSave(newBranch, saveContentId);
         RenewUpdatedAtHelper.touch(save);

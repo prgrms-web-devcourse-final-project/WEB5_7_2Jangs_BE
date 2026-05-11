@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.commit.app;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
+import io.ejangs.docsa.domain.branch.app.BranchReader;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommitService {
 
     private final DocReader docReader;
-    private final BranchQueryService branchQueryService;
+    private final BranchReader branchReader;
     private final CommitReader commitReader;
     private final CommitWriter commitWriter;
     private final EdgeService edgeService;
@@ -44,10 +44,10 @@ public class CommitService {
             CreateCommitRequest request,
             Long userId) {
 
-        branchQueryService.checkBranchInDocOwnedByUser(docId, request.branchId(), userId);
+        branchReader.checkBranchInDocOwnedByUser(docId, request.branchId(), userId);
 
         Doc doc = docReader.getById(docId);
-        Branch branch = branchQueryService.getById(request.branchId());
+        Branch branch = branchReader.getById(request.branchId());
 
         String baseCommitCbsMongoId = commitReader.resolveBaseCommitCbsMongoId(branch);
 
@@ -104,7 +104,7 @@ public class CommitService {
     }
 
     private void checkFromOrMergeTargetCommit(Commit commit) {
-        if (branchQueryService.checkFromCommitOrMergeCommitInBranch(commit)) {
+        if (branchReader.checkFromCommitOrMergeCommitInBranch(commit)) {
             throw new CustomException(CommitErrorCode.CAN_NOT_DELETE_COMMIT);
         }
     }

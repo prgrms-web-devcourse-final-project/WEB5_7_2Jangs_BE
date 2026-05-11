@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
+import io.ejangs.docsa.domain.branch.app.BranchReader;
 import io.ejangs.docsa.domain.branch.merge.app.MergeOrchestrator;
 import io.ejangs.docsa.domain.branch.merge.app.MergeService;
 import io.ejangs.docsa.domain.branch.merge.app.MergeService.MergeContext;
@@ -44,7 +44,7 @@ class MergeServiceMockTest {
     private DocReader docReader;
 
     @Mock
-    private BranchQueryService branchQueryService;
+    private BranchReader branchReader;
 
     @Mock
     private CommitReader commitReader;
@@ -100,7 +100,7 @@ class MergeServiceMockTest {
         var response = mergeService.merge(docId, request, userId);
 
         assertThat(response).isEqualTo(expected);
-        verify(branchQueryService).checkDuplicatedWithBranchName(docId, "merged-branch");
+        verify(branchReader).checkDuplicatedWithBranchName(docId, "merged-branch");
         verify(commitReader)
                 .checkTwoCommitsInDocOwnedByUser(baseCommitId, targetCommitId, docId, userId);
         verify(mergeOrchestrator).merge(
@@ -119,7 +119,7 @@ class MergeServiceMockTest {
         Long targetCommitId = 32L;
         when(docReader.getByIdAndUserId(docId, userId)).thenReturn(doc);
         doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
-                .when(branchQueryService).checkDuplicatedWithBranchName(docId, "merged-branch");
+                .when(branchReader).checkDuplicatedWithBranchName(docId, "merged-branch");
 
         MergeRequest request = new MergeRequest(
                 "merged-branch",

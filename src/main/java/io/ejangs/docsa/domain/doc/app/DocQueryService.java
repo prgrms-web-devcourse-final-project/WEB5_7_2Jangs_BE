@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.doc.app;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
+import io.ejangs.docsa.domain.branch.app.BranchReader;
 import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocSimplePageResponse;
@@ -30,7 +30,7 @@ public class DocQueryService {
     private final DocListReadModelRepository docListReadModelRepository;
 
     private final DocReader docReader;
-    private final BranchQueryService branchQueryService;
+    private final BranchReader branchReader;
     private final CommitReader commitReader;
     private final EdgeService edgeService;
 
@@ -67,7 +67,7 @@ public class DocQueryService {
         String docTitle = docReader.getByIdAndUserId(documentId, userId).getTitle();
 
         //  Branch, Commit, Edge 각각 별도 조회 (Projection 쿼리)
-        List<BranchGraphDto> branches = branchQueryService.getBranchGraphList(documentId);
+        List<BranchGraphDto> branches = branchReader.getBranchGraphList(documentId);
         if (branches.isEmpty()) {
             throw new CustomException(BranchErrorCode.BRANCH_NOT_FOUND);
         }

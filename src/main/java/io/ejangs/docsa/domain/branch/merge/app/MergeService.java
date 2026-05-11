@@ -1,7 +1,6 @@
 package io.ejangs.docsa.domain.branch.merge.app;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
-import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
+import io.ejangs.docsa.domain.branch.app.BranchReader;
 import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.app.DocReader;
@@ -17,9 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class MergeService {
 
     private final DocReader docReader;
-    private final BranchQueryService branchQueryService;
+    private final BranchReader branchReader;
     private final CommitReader commitReader;
-    private final CommitContentAssembler commitContentAssembler;
     private final MergeOrchestrator mergeOrchestrator;
 
     @Transactional(rollbackFor = Exception.class)
@@ -33,7 +31,7 @@ public class MergeService {
 
     private MergeContext validateMerge(Long docId, MergeRequest mergeRequest, Long userId) {
         Doc doc = docReader.getByIdAndUserId(docId, userId);
-        branchQueryService.checkDuplicatedWithBranchName(docId, mergeRequest.branchName());
+        branchReader.checkDuplicatedWithBranchName(docId, mergeRequest.branchName());
 
         Commit baseCommit = commitReader.getById(mergeRequest.baseCommitId());
         Commit targetCommit = commitReader.getById(mergeRequest.targetCommitId());
