@@ -57,6 +57,9 @@ app:
     allowed-origin:
 
 mongo:
+  test-cleanup:
+    enabled: true
+
   delete:
     outbox:
       worker:

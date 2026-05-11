@@ -71,6 +71,9 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+mongo:
+  local-cleanup:
+    enabled: true
 
 perf:
   seed:
