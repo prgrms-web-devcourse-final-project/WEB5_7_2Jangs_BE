@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.unit;
+package io.ejangs.docsa.domain.doc.app.unit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

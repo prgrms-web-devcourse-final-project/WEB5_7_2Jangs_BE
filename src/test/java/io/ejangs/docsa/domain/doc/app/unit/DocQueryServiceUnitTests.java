@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.unit;
+package io.ejangs.docsa.domain.doc.app.unit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -117,6 +117,52 @@ class DocQueryServiceUnitTests {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().title()).isEqualTo("문서 1");
+    }
+
+    @Test
+    @DisplayName("문서 목록 조회시 thumbnailObjectKey가 없으면 thumbnailUrl은 null")
+    void getPage_objectKeyNull_thumbnailUrlNull() {
+        DocListReadModel model = readModel(1L, "문서 1", 10L, null, ThumbnailStatus.EMPTY);
+
+        when(docListReadModelRepository.findByUserIdAndDeletedFalse(userId, pageable))
+                .thenReturn(new PageImpl<>(List.of(model), pageable, 1));
+
+        Page<DocPageResponse> result = docQueryService.getPage(userId, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        DocPageResponse response = result.getContent().getFirst();
+        assertThat(response.thumbnailUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("문서 목록 조회시 thumbnailObjectKey가 blank면 thumbnailUrl은 null")
+    void getPage_objectKeyBlank_thumbnailUrlNull() {
+        DocListReadModel model = readModel(1L, "문서 1", 10L, "   ", ThumbnailStatus.EMPTY);
+
+        when(docListReadModelRepository.findByUserIdAndDeletedFalse(userId, pageable))
+                .thenReturn(new PageImpl<>(List.of(model), pageable, 1));
+
+        Page<DocPageResponse> result = docQueryService.getPage(userId, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        DocPageResponse response = result.getContent().getFirst();
+        assertThat(response.thumbnailUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("문서 목록 조회시 thumbnailObjectKey가 있으면 CDN URL을 조합한다")
+    void getPage_objectKeyExists_buildThumbnailUrl() {
+        DocListReadModel model = readModel(1L, "문서 1", 10L, "thumbnail/doc-1.webp", ThumbnailStatus.READY);
+
+        when(docListReadModelRepository.findByUserIdAndDeletedFalse(userId, pageable))
+                .thenReturn(new PageImpl<>(List.of(model), pageable, 1));
+
+        Page<DocPageResponse> result = docQueryService.getPage(userId, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        DocPageResponse response = result.getContent().getFirst();
+        assertThat(response.thumbnailUrl()).isEqualTo("https://cdn.test.invalid/thumbnail/doc-1.webp");
+        assertThat(response.thumbnailStatus()).isEqualTo(ThumbnailStatus.READY);
     }
 
     @Test

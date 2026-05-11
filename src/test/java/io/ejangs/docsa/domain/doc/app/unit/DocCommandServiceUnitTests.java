@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.unit;
+package io.ejangs.docsa.domain.doc.app.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

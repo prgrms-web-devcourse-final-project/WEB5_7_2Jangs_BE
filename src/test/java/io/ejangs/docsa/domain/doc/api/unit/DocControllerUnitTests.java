@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.unit;
+package io.ejangs.docsa.domain.doc.api.unit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
