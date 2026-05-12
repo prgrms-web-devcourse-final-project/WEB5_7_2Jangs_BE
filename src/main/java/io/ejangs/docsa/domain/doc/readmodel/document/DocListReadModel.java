@@ -51,6 +51,30 @@ public class DocListReadModel {
         return model;
     }
 
+    public static DocListReadModel backfill(
+            Long docId,
+            Long userId,
+            String title,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            Long recentSaveId,
+            String thumbnailObjectKey,
+            ThumbnailStatus thumbnailStatus
+    ) {
+        DocListReadModel model = new DocListReadModel();
+        model.id = docId;
+        model.userId = userId;
+        model.title = title;
+        model.createdAt = createdAt;
+        model.updatedAt = updatedAt;
+        model.recentSaveId = recentSaveId;
+        model.thumbnailObjectKey = thumbnailObjectKey;
+        model.thumbnailStatus = thumbnailStatus;
+        model.deleted = false;
+        model.lastProjectedEventId = null;
+        return model;
+    }
+
     public boolean changeTitle(DocTitleChangedPayload payload, Long eventId) {
         if (isAlreadyProjected(eventId)) {
             return false;

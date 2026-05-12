@@ -1,0 +1,25 @@
+spring:
+  main:
+    web-application-type: none
+
+mongo:
+  delete:
+    outbox:
+      worker:
+        enabled: false
+
+s3:
+  delete:
+    outbox:
+      worker:
+        enabled: false
+
+domain:
+  event:
+    outbox:
+      worker:
+        enabled: false
+
+backfill:
+  doc-list:
+    batch-size: ${DOC_LIST_READ_MODEL_BACKFILL_BATCH_SIZE:1000}

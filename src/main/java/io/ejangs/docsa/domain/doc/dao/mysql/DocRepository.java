@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.doc.dao.mysql;
 
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,15 @@ public interface DocRepository extends JpaRepository<Doc, Long> {
 
     @EntityGraph(attributePaths = {"thumbnail", "thumbnail.currentImage"})
     Page<Doc> findAllByUserId(Long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "thumbnail", "thumbnail.currentImage"})
+    @Query("""
+            SELECT d
+            FROM Doc d
+            WHERE d.id > :lastDocId
+            ORDER BY d.id ASC
+            """)
+    List<Doc> findBackfillBatch(@Param("lastDocId") Long lastDocId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"thumbnail", "thumbnail.currentImage"})
     @Query("""
