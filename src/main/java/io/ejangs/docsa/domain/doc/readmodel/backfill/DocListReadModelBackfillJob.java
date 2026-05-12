@@ -1,4 +1,4 @@
-package io.ejangs.docsa.domain.doc.readmodel.app;
+package io.ejangs.docsa.domain.doc.readmodel.backfill;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
