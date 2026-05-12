@@ -98,7 +98,7 @@ import org.springframework.http.MediaType;
                                                 value = """
                                                         {
                                                             "status": 400,
-                                                            "message": "새로운 버전의 이름은 다른 버전의 이름과 중복될 수 없습니다.",
+                                                            "message": "새로운 브랜치의 이름은 다른 브랜치의 이름과 중복될 수 없습니다.",
                                                             "error": "BRANCH_NAME_DUPLICATED"
                                                         }
                                                         """

@@ -35,7 +35,7 @@ import io.ejangs.docsa.domain.save.util.PageableFactory;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
-import io.ejangs.docsa.global.mongo.outbox.util.MongoIdsCollector;
+import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;

@@ -37,7 +37,8 @@ import org.springframework.http.MediaType;
                                           "docId": 1,
                                           "originalFileName": "profile.png",
                                           "contentType": "image/png",
-                                          "size": 102400
+                                          "size": 102400,
+                                          "purpose": "DOC_CONTENT"
                                         }
                                         """
                         )
