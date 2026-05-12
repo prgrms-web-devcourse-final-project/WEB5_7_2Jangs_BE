@@ -31,8 +31,9 @@ import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import io.ejangs.docsa.global.mongo.outbox.dao.mysql.MongoDeleteOutboxRepository;
-import io.ejangs.docsa.global.mongo.outbox.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.outbox.OutboxStatus;
+import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository;
+import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -240,7 +241,7 @@ public class CreateCommitIntegrationTest {
                         assertThat(outbox.getTriggerType()).isEqualTo(MongoDeleteOutbox.TriggerType.COMPENSATE);
                         assertThat(outbox.getDomainType()).isEqualTo(MongoDeleteOutbox.DomainType.COMMIT);
                         assertThat(outbox.getOriginType()).isEqualTo(MongoDeleteOutbox.OriginType.CBS_ID);
-                        assertThat(outbox.getStatus()).isEqualTo(MongoDeleteOutbox.OutboxStatus.OPEN);
+                        assertThat(outbox.getStatus()).isEqualTo(OutboxStatus.OPEN);
                         assertThat(outbox.getOriginId()).isNotBlank();
                     });
         }
