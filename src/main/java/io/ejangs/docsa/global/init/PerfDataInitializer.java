@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Profile({"local", "stg"})
+@Profile({"local & !backfill", "stg & !backfill"})
 public class PerfDataInitializer implements ApplicationRunner {
 
     private static final String PASSWORD = "Testtest1";

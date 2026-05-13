@@ -3,6 +3,8 @@ spring:
     web-application-type: none
 
 mongo:
+  local-cleanup:
+    enabled: false
   delete:
     outbox:
       worker:
@@ -18,7 +20,9 @@ domain:
   event:
     outbox:
       worker:
-        enabled: false
+        enabled: true
+        fixed-delay: PT1M
+        initial-delay: PT24H
 
 backfill:
   doc-list:
