@@ -4,7 +4,7 @@ spring:
 
   data:
     mongodb:
-      uri: ${MONGO_URI}
+      uri: ${SPRING_DATA_MONGODB_URI:${MONGO_URI}}
 
   mail:
     connection-timeout: 5000
