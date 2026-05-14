@@ -12,7 +12,7 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
@@ -33,10 +33,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GetCommitMockTest {
 
     @Mock
-    private CommitQueryService commitQueryService;
+    private CommitReader commitReader;
 
     @Mock
-    private DocQueryService docQueryService;
+    private CommitWriter commitWriter;
+
+    @Mock
+    private DocReader docReader;
 
     @Mock
     private CommitContentAssembler assembler;
@@ -80,7 +83,7 @@ class GetCommitMockTest {
         Long commitId = 1L;
         String commitMongoId = "mongo-commit-id";
 
-        given(commitQueryService.getById(commitId)).willReturn(targetCommit);
+        given(commitReader.getById(commitId)).willReturn(targetCommit);
         given(assembler.assemble(commitMongoId)).willReturn(mockContent);
 
         // when
@@ -90,8 +93,8 @@ class GetCommitMockTest {
         assertThat(response).isNotNull();
         assertThat(response.content()).isEqualTo(mockContent);
 
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService).getById(commitId);
+        verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
+        verify(commitReader).getById(commitId);
         verify(assembler).assemble(commitMongoId);
     }
 
@@ -102,15 +105,15 @@ class GetCommitMockTest {
         Long docId = 1L;
         Long commitId = 999L;
 
-        given(commitQueryService.getById(commitId))
+        given(commitReader.getById(commitId))
                 .willThrow(new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
 
         // when & then
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService).getById(commitId);
+        verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
+        verify(commitReader).getById(commitId);
         verify(assembler, never()).assemble(any());
     }
 
@@ -122,14 +125,14 @@ class GetCommitMockTest {
         Long commitId = 1L;
 
         doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
-                .when(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
+                .when(docReader).checkByIdAndUserId(docId, userDetails.getId());
 
         // when & then
         assertThatThrownBy(() -> commitService.getCommit(docId, commitId, userDetails.getId()))
                 .isInstanceOf(CustomException.class);
 
-        verify(docQueryService).checkByIdAndUserId(docId, userDetails.getId());
-        verify(commitQueryService, never()).getById(any());
+        verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
+        verify(commitReader, never()).getById(any());
         verify(assembler, never()).assemble(any());
     }
 

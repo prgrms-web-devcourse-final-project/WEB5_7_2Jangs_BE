@@ -7,18 +7,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
-import io.ejangs.docsa.domain.image.app.ImageQueryService;
+import io.ejangs.docsa.domain.image.app.ImageReader;
 import io.ejangs.docsa.domain.image.entity.Image;
 import io.ejangs.docsa.domain.image.entity.Image.ImageStatus;
 import io.ejangs.docsa.domain.image.entity.Image.Purpose;
-import io.ejangs.docsa.global.outbox.s3.app.S3DeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
+import io.ejangs.docsa.global.outbox.s3.app.S3DeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.s3.dao.S3DeleteOutboxRepository;
 import io.ejangs.docsa.global.outbox.s3.entity.S3DeleteOutbox;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,28 +31,32 @@ import org.springframework.test.util.ReflectionTestUtils;
 class ThumbnailServiceUnitTest {
 
     @Mock
-    private ThumbnailQueryService thumbnailQueryService;
+    private ThumbnailStore thumbnailStore;
 
     @Mock
-    private DocQueryService docQueryService;
+    private DocReader docReader;
 
     @Mock
-    private ImageQueryService imageQueryService;
+    private ImageReader imageReader;
 
     @Mock
     private S3DeleteOutboxRepository s3DeleteOutboxRepository;
+
+    @Mock
+    private DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     private ThumbnailService thumbnailService;
 
     @BeforeEach
     void setUp() {
-        S3DeleteOutboxFactory s3DeleteOutboxFactory =
-                new S3DeleteOutboxFactory(s3DeleteOutboxRepository);
+        S3DeleteJobEnqueuer s3DeleteJobEnqueuer =
+                new S3DeleteJobEnqueuer(s3DeleteOutboxRepository);
         thumbnailService = new ThumbnailService(
-                thumbnailQueryService,
-                docQueryService,
-                imageQueryService,
-                s3DeleteOutboxFactory
+                thumbnailStore,
+                docReader,
+                imageReader,
+                s3DeleteJobEnqueuer,
+                domainEventOutboxPublisher
         );
         ReflectionTestUtils.setField(thumbnailService, "cdnUrl", "https://cdn.example.com");
     }
@@ -67,8 +71,8 @@ class ThumbnailServiceUnitTest {
         Image newImage = activeThumbnailImage(11L, userId, docId, "new.webp");
         Thumbnail thumbnail = thumbnailWithCurrentImage(oldImage, requestToken);
 
-        when(thumbnailQueryService.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
-        when(imageQueryService.getByIdAndUserId(newImage.getId(), userId)).thenReturn(newImage);
+        when(thumbnailStore.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
+        when(imageReader.getByIdAndUserId(newImage.getId(), userId)).thenReturn(newImage);
 
         ThumbnailResponse response = thumbnailService.finalizeThumbnail(
                 userId,
@@ -97,8 +101,8 @@ class ThumbnailServiceUnitTest {
         Image image = activeThumbnailImage(10L, userId, docId, "same.webp");
         Thumbnail thumbnail = thumbnailWithCurrentImage(image, requestToken);
 
-        when(thumbnailQueryService.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
-        when(imageQueryService.getByIdAndUserId(image.getId(), userId)).thenReturn(image);
+        when(thumbnailStore.getByDocIdForUpdate(docId)).thenReturn(thumbnail);
+        when(imageReader.getByIdAndUserId(image.getId(), userId)).thenReturn(image);
 
         thumbnailService.finalizeThumbnail(
                 userId,

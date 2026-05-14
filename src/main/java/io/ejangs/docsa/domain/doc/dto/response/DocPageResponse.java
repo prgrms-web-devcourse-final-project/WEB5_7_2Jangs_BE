@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.doc.dto.response;
 
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
 import java.time.LocalDateTime;
 
@@ -11,7 +10,7 @@ public record DocPageResponse(
         LocalDateTime updatedAt,
         String thumbnailUrl,
         ThumbnailStatus thumbnailStatus,
-        RecentActivityDto recent
+        Long recentSaveId
 ) {
 
     public DocPageResponse {

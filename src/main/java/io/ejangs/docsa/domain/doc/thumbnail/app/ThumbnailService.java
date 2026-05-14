@@ -1,13 +1,18 @@
 package io.ejangs.docsa.domain.doc.thumbnail.app;
 
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
+import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.dto.ThumbnailSyncResponse;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail;
-import io.ejangs.docsa.domain.image.app.ImageQueryService;
+import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
+import io.ejangs.docsa.domain.image.app.ImageReader;
 import io.ejangs.docsa.domain.image.entity.Image;
-import io.ejangs.docsa.global.outbox.s3.app.S3DeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
+import io.ejangs.docsa.global.outbox.event.model.AggregateType;
+import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
+import io.ejangs.docsa.global.outbox.s3.app.S3DeleteJobEnqueuer;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.ImageErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.ThumbnailErrorCode;
@@ -20,19 +25,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ThumbnailService {
 
-    private final ThumbnailQueryService thumbnailQueryService;
-    private final DocQueryService docQueryService;
-    private final ImageQueryService imageQueryService;
-    private final S3DeleteOutboxFactory s3DeleteOutboxFactory;
+    private final ThumbnailStore thumbnailStore;
+    private final DocReader docReader;
+    private final ImageReader imageReader;
+    private final S3DeleteJobEnqueuer s3DeleteJobEnqueuer;
+
+    private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     @Value("${cloud.aws.s3.public-base-url}")
     private String cdnUrl;
 
     @Transactional
     public ThumbnailSyncResponse requestUpdate(Long userId, Long docId) {
-        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
+        Doc doc = docReader.getByIdAndUserId(docId, userId);
 
-        Thumbnail thumbnail = thumbnailQueryService.getOrCreateByDocForUpdate(doc);
+        Thumbnail thumbnail = thumbnailStore.getOrCreateByDocForUpdate(doc);
 
         Long requestToken = thumbnail.requestUpdate();
 
@@ -51,21 +58,24 @@ public class ThumbnailService {
             Long requestToken,
             String signature
     ) {
-        docQueryService.checkByIdAndUserId(docId, userId);
+        docReader.checkByIdAndUserId(docId, userId);
 
-        Thumbnail thumbnail = thumbnailQueryService.getByDocIdForUpdate(docId);
+        Thumbnail thumbnail = thumbnailStore.getByDocIdForUpdate(docId);
 
         if (!thumbnail.isCurrentToken(requestToken)) {
             throw new CustomException(ThumbnailErrorCode.STALE_THUMBNAIL_REQUEST);
         }
 
-        Image image = imageQueryService.getByIdAndUserId(imageId, userId);
+        Image image = imageReader.getByIdAndUserId(imageId, userId);
 
         validateThumbnailImage(docId, image);
 
         Image previousImage = thumbnail.getCurrentImage();
         thumbnail.complete(image, signature);
+
         enqueuePreviousThumbnailDeletion(previousImage, image);
+        domainEventOutboxPublisher.publish(DomainEventType.DOC_THUMBNAIL_CHANGED, AggregateType.DOC, docId,
+                DocPayloadFactory.thumbnailChanged(docId, image.getObjectKey(), ThumbnailStatus.READY));
 
         return new ThumbnailResponse(
                 image.getId(),
@@ -94,6 +104,6 @@ public class ThumbnailService {
             return;
         }
 
-        s3DeleteOutboxFactory.enqueueImageDeletion(previousImage);
+        s3DeleteJobEnqueuer.enqueueImageDeletion(previousImage);
     }
 }

@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.image.dao.ImageRepository;
 import io.ejangs.docsa.domain.image.dto.request.ImageUploadUrlRequest;
@@ -45,10 +45,10 @@ class ImageServiceUnitTest {
     private ImageRepository imageRepository;
 
     @Mock
-    private ImageQueryService imageQueryService;
+    private ImageReader imageReader;
 
     @Mock
-    private DocQueryService docQueryService;
+    private DocReader docReader;
 
     @Mock
     private S3Presigner s3Presigner;
@@ -63,7 +63,7 @@ class ImageServiceUnitTest {
 
     @BeforeEach
     void setUp() {
-        imageService = new ImageService(imageRepository, imageQueryService, docQueryService,
+        imageService = new ImageService(imageRepository, imageReader, docReader,
                 s3Presigner, s3Client);
         ReflectionTestUtils.setField(imageService, "bucket", "docsa-image-bucket");
         ReflectionTestUtils.setField(imageService, "expireMinutes", 5L);
@@ -78,7 +78,7 @@ class ImageServiceUnitTest {
         ImageUploadUrlRequest request =
                 new ImageUploadUrlRequest(docId, "sample.png", "image/png", 1024L, Purpose.DOC_CONTENT);
 
-        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
+        when(docReader.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
         when(imageRepository.save(any(Image.class))).thenAnswer(invocation -> {
             Image image = invocation.getArgument(0);
             ReflectionTestUtils.setField(image, "id", 10L);
@@ -119,7 +119,7 @@ class ImageServiceUnitTest {
         ImageUploadUrlRequest request =
                 new ImageUploadUrlRequest(docId, "thumbnail.webp", "image/webp", 1024L, Purpose.DOC_THUMBNAIL);
 
-        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
+        when(docReader.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
         when(imageRepository.save(any(Image.class))).thenAnswer(invocation -> {
             Image image = invocation.getArgument(0);
             ReflectionTestUtils.setField(image, "id", 10L);
@@ -153,7 +153,7 @@ class ImageServiceUnitTest {
         ImageUploadUrlRequest request =
                 new ImageUploadUrlRequest(docId, "sample.svg", "image/svg+xml", 1024L, Purpose.DOC_CONTENT);
 
-        when(docQueryService.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
+        when(docReader.getByIdAndUserId(docId, userId)).thenReturn(org.mockito.Mockito.mock(Doc.class));
 
         assertThatThrownBy(() -> imageService.createUploadUrl(userId, request))
                 .isInstanceOf(CustomException.class)
@@ -180,7 +180,7 @@ class ImageServiceUnitTest {
                 .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
+        when(imageReader.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(
                 HeadObjectResponse.builder()
                         .contentType("image/png")
@@ -219,7 +219,7 @@ class ImageServiceUnitTest {
                 .purpose(Purpose.DOC_CONTENT)
                 .build();
 
-        when(imageQueryService.getByIdAndUserId(imageId, userId)).thenReturn(image);
+        when(imageReader.getByIdAndUserId(imageId, userId)).thenReturn(image);
         when(s3Client.headObject(any(HeadObjectRequest.class))).thenThrow(
                 S3Exception.builder()
                         .statusCode(404)

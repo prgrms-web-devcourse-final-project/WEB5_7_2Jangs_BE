@@ -1,6 +1,5 @@
 package io.ejangs.docsa.domain.doc.dto.response;
 
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
 import java.time.LocalDateTime;
 
 public record DocSimplePageResponse(
@@ -8,15 +7,15 @@ public record DocSimplePageResponse(
         String title,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        RecentActivityDto recent
+        Long recentSaveId
 ) {
 
     public DocSimplePageResponse(Long id, String title, LocalDateTime createdAt,
-            LocalDateTime updatedAt, RecentActivityDto recent) {
+            LocalDateTime updatedAt, Long recentSaveId) {
         this.id = id;
         this.title = title;
         this.createdAt = createdAt.plusHours(9L);
         this.updatedAt = updatedAt.plusHours(9L);
-        this.recent = recent;
+        this.recentSaveId = recentSaveId;
     }
 }

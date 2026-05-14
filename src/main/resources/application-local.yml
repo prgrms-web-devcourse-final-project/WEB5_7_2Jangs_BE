@@ -24,9 +24,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:create-drop}
+    show-sql: false
     properties:
       hibernate:
-        show_sql: false
         format_sql: false
         highlight_sql: false
 
@@ -39,7 +39,7 @@ decorator:
       format-sql: true
       count-query: true
       query:
-        enable-logging: true
+        enable-logging: false
         log-level: debug
       slow-query:
         enable-logging: true
@@ -48,7 +48,13 @@ decorator:
 
 logging:
   level:
-    net.ttddyy.dsproxy.listener: OFF
+    root: INFO
+    io.ejangs.docsa: DEBUG
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:OFF}
+    org.hibernate.orm.jdbc.bind: ${LOG_LEVEL_HIBERNATE_BIND:OFF}
+    org.springframework: INFO
+    org.mongodb.driver: WARN
+    net.ttddyy.dsproxy.listener: ${LOG_LEVEL_DATASOURCE_PROXY:OFF}
 
 server:
   port: 8080
@@ -65,6 +71,9 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+mongo:
+  local-cleanup:
+    enabled: true
 
 perf:
   seed:

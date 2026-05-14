@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-//TODO: commitQueryService로 or cbsQueryService 신설(block부분은 blockService로 이동) 모르겠다.
+//TODO: CBS 조회 책임 분리 검토(block부분은 blockService로 이동)
 public class CommitContentAssembler {
 
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;

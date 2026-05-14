@@ -6,11 +6,11 @@ import io.ejangs.docsa.domain.branch.dto.request.BranchCreateRequest;
 import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.user.entity.User;
@@ -18,10 +18,7 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,10 +41,10 @@ class BranchServiceTest {
     private BranchService branchService;
 
     @Mock
-    private CommitQueryService commitQueryService;
+    private CommitReader commitReader;
 
     @Mock
-    private DocQueryService docQueryService;
+    private DocReader docReader;
 
     @Mock
     private EdgeService edgeService;
@@ -56,13 +53,16 @@ class BranchServiceTest {
     private CommitBlockSequenceRepository commitBlockSequenceRepository;
 
     @Mock
-    private BranchQueryService branchQueryService;
+    private BranchReader branchReader;
+
+    @Mock
+    private BranchWriter branchWriter;
 
     @Mock
     private BranchCreateOrchestrator branchCreateOrchestrator;
 
     @Mock
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @Test
     @DisplayName("새 브랜치 이름이 중복되면 BRANCH_NAME_DUPLICATED")
@@ -81,10 +81,10 @@ class BranchServiceTest {
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
 
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
-        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+        when(commitReader.getById(commitId)).thenReturn(commit);
+        doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
         doThrow(new CustomException(BranchErrorCode.BRANCH_NAME_DUPLICATED))
-                .when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+                .when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
 
         // when & then
         CustomException ex = assertThrows(CustomException.class,
@@ -111,9 +111,9 @@ class BranchServiceTest {
         when(branch.getDoc()).thenReturn(doc);
         when(doc.getId()).thenReturn(documentId);
 
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
-        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
-        doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+        when(commitReader.getById(commitId)).thenReturn(commit);
+        doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
+        doNothing().when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
         when(branchCreateOrchestrator.create(any()))
                 .thenReturn(new BranchCreateResponse(101L, 201L));
 
@@ -155,9 +155,9 @@ class BranchServiceTest {
         when(commit.getBranch()).thenReturn(fromBranch);
         when(commit.getCommitMongoId()).thenReturn("mongo-1");
         fromBranch.updateLeafCommit(commit);
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
-        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
-        doNothing().when(branchQueryService).checkDuplicatedWithBranchName(documentId, "new-branch");
+        when(commitReader.getById(commitId)).thenReturn(commit);
+        doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
+        doNothing().when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
         when(branchCreateOrchestrator.create(any()))
                 .thenReturn(new BranchCreateResponse(100L, 200L));
 
@@ -198,14 +198,14 @@ class BranchServiceTest {
         when(branch.getDoc()).thenReturn(commitDoc);
         when(commitDoc.getId()).thenReturn(999L);
 
-        when(commitQueryService.getById(commitId)).thenReturn(commit);
-        doNothing().when(docQueryService).checkByIdAndUserId(documentId, userId);
+        when(commitReader.getById(commitId)).thenReturn(commit);
+        doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
 
         // when & then
         CustomException ex = assertThrows(CustomException.class,
                 () -> branchService.createBranch(documentId, request, userId));
         assertEquals(DocErrorCode.COMMIT_NOT_IN_DOCUMENT, ex.getErrorCode());
-        verify(branchQueryService, never()).checkDuplicatedWithBranchName(anyLong(), anyString());
+        verify(branchReader, never()).checkDuplicatedWithBranchName(anyLong(), anyString());
         verifyNoInteractions(branchCreateOrchestrator);
     }
 
@@ -220,8 +220,8 @@ class BranchServiceTest {
 
         Branch branch = Branch.builder().name("기존이름").doc(mock(Doc.class)).fromCommit(commit).build();
 
-        doNothing().when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userId);
-        when(branchQueryService.getById(branchId)).thenReturn(branch);
+        doNothing().when(branchReader).checkBranchInDocOwnedByUser(docId, branchId, userId);
+        when(branchReader.getById(branchId)).thenReturn(branch);
 
         BranchRenameResponse response =
                 branchService.renameBranch(docId, branchId, newName, userId);
@@ -233,7 +233,7 @@ class BranchServiceTest {
     @DisplayName("브랜치가 문서에 없거나 유저 소유가 아니면 예외 발생")
     void renameBranch_branchOwnershipCheckFailed() {
         doThrow(new CustomException(BranchErrorCode.BRANCH_NOT_FOUND))
-                .when(branchQueryService).checkBranchInDocOwnedByUser(anyLong(), anyLong(),
+                .when(branchReader).checkBranchInDocOwnedByUser(anyLong(), anyLong(),
                         anyLong());
 
         CustomException e = assertThrows(CustomException.class,
@@ -265,10 +265,10 @@ class BranchServiceTest {
         CommitBlockSequence seq2 =
                 CommitBlockSequence.builder().blockOrders(List.of("block3")).build();
 
-        doNothing().when(branchQueryService)
+        doNothing().when(branchReader)
                 .checkBranchInDocOwnedByUser(documentId, branchId, userId);
-        when(branchQueryService.getById(branchId)).thenReturn(branch);
-        when(branchQueryService.existsSubBranchByFromCommitIds(any())).thenReturn(false);
+        when(branchReader.getById(branchId)).thenReturn(branch);
+        when(branchReader.existsSubBranchByFromCommitIds(any())).thenReturn(false);
         doNothing().when(edgeService).deleteEdgesConnectedToCommits(any());
 
         when(commitBlockSequenceRepository.findById("seq1")).thenReturn(Optional.of(seq1));
@@ -278,14 +278,11 @@ class BranchServiceTest {
         branchService.deleteBranch(documentId, branchId, userId);
 
         // then - 브랜치 실제 삭제
-        verify(branchQueryService).delete(branch);
+        verify(branchWriter).delete(branch);
 
         // Outbox 적재 검증
         ArgumentCaptor<MongoIdsDto> captor = ArgumentCaptor.forClass(MongoIdsDto.class);
-        verify(mongoDeleteOutboxFactory).create(
-                eq(TriggerType.DELETE),
-                eq(DomainType.BRANCH),
-                eq(OriginType.BRANCH_ID),
+        verify(mongoDeleteJobEnqueuer).enqueueBranchDeletion(
                 eq(branchId),
                 captor.capture()
         );
@@ -305,8 +302,8 @@ class BranchServiceTest {
         Long userId = 3L;
 
         Branch mainBranch = Branch.builder().name("main").doc(mock(Doc.class)).build();
-        doNothing().when(branchQueryService).checkBranchInDocOwnedByUser(docId, branchId, userId);
-        when(branchQueryService.getById(branchId)).thenReturn(mainBranch);
+        doNothing().when(branchReader).checkBranchInDocOwnedByUser(docId, branchId, userId);
+        when(branchReader.getById(branchId)).thenReturn(mainBranch);
 
         CustomException ex = assertThrows(CustomException.class,
                 () -> branchService.deleteBranch(docId, branchId, userId));

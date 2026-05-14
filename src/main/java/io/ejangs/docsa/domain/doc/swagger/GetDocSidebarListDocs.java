@@ -65,30 +65,21 @@ import org.springframework.http.MediaType;
                                                                     "title": "새 문서 제목 3",
                                                                     "createdAt": "2025-07-22T04:48:43.036421+09:00",
                                                                     "updatedAt": "2025-07-22T04:48:43.065674+09:00",
-                                                                    "recent": {
-                                                                        "recentType": "SAVE",
-                                                                        "recentTypeId": 3
-                                                                    }
+                                                                    "recentSaveId": 3
                                                                 },
                                                                 {
                                                                     "id": 2,
                                                                     "title": "새 문서 제목 2",
                                                                     "createdAt": "2025-07-22T04:48:40.02776+09:00",
                                                                     "updatedAt": "2025-07-22T04:48:40.056721+09:00",
-                                                                    "recent": {
-                                                                        "recentType": "COMMIT",
-                                                                        "recentTypeId": 2
-                                                                    }
+                                                                    "recentSaveId": 2
                                                                 },
                                                                 {
                                                                     "id": 1,
                                                                     "title": "새 문서 제목",
                                                                     "createdAt": "2025-07-22T04:48:35.242338+09:00",
                                                                     "updatedAt": "2025-07-22T04:48:35.348708+09:00",
-                                                                    "recent": {
-                                                                        "recentType": "SAVE",
-                                                                        "recentTypeId": 1
-                                                                    }
+                                                                    "recentSaveId": 1
                                                                 }
                                                             ],
                                                             "pageable": {

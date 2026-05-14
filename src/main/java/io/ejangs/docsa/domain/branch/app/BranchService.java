@@ -7,20 +7,17 @@ import io.ejangs.docsa.domain.branch.dto.response.BranchCreateResponse;
 import io.ejangs.docsa.domain.branch.dto.response.BranchRenameResponse;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.branch.util.BranchMapper;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 
@@ -37,13 +34,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BranchService {
 
-    private final DocQueryService docQueryService;
-    private final BranchQueryService branchQueryService;
-    private final CommitQueryService commitQueryService;
+    private final DocReader docReader;
+    private final BranchReader branchReader;
+    private final BranchWriter branchWriter;
+    private final CommitReader commitReader;
     private final CommitBlockSequenceRepository commitBlockSequenceRepository;
     private final EdgeService edgeService;
     private final BranchCreateOrchestrator branchCreateOrchestrator;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     public BranchCreateResponse createBranch(Long documentId, BranchCreateRequest request,
             Long userId) {
@@ -55,18 +53,18 @@ public class BranchService {
 
     private BranchCreateContext prepareBranchCreateContext(Long documentId,
             BranchCreateRequest request, Long userId) {
-        docQueryService.checkByIdAndUserId(documentId, userId);
+        docReader.checkByIdAndUserId(documentId, userId);
 
         Long fromCommitId = request.fromCommitId();
 
-        Commit fromCommit = commitQueryService.getById(fromCommitId);
+        Commit fromCommit = commitReader.getById(fromCommitId);
         Branch fromBranch = fromCommit.getBranch();
 
         if (!fromBranch.getDoc().getId().equals(documentId)) {
             throw new CustomException(DocErrorCode.COMMIT_NOT_IN_DOCUMENT);
         }
 
-        branchQueryService.checkDuplicatedWithBranchName(documentId, request.name());
+        branchReader.checkDuplicatedWithBranchName(documentId, request.name());
 
 
         return new BranchCreateContext(
@@ -83,8 +81,8 @@ public class BranchService {
             Long userId) {
 
         // 1. 브랜치 검증
-        branchQueryService.checkBranchInDocOwnedByUser(documentId, branchId, userId);
-        Branch branch = branchQueryService.getById(branchId);
+        branchReader.checkBranchInDocOwnedByUser(documentId, branchId, userId);
+        Branch branch = branchReader.getById(branchId);
         checkDefaultBranch(branch);
 
         // 2. 브랜치 이름 수정 후 브랜치와 문서의 수정시각 갱신
@@ -105,8 +103,8 @@ public class BranchService {
     public void deleteBranch(Long documentId, Long branchId, Long userId) {
 
         // 1. 브랜치 검증
-        branchQueryService.checkBranchInDocOwnedByUser(documentId, branchId, userId);
-        Branch branch = branchQueryService.getById(branchId);
+        branchReader.checkBranchInDocOwnedByUser(documentId, branchId, userId);
+        Branch branch = branchReader.getById(branchId);
 
         // 2. main브랜치는 삭제가 불가능하도록 함
         checkDefaultBranch(branch);
@@ -115,7 +113,7 @@ public class BranchService {
         List<Commit> branchCommits = branch.getCommits();
         List<Long> commitsIds = branchCommits.stream().map(Commit::getId).toList();
 
-        if (branchQueryService.existsSubBranchByFromCommitIds(commitsIds)) {
+        if (branchReader.existsSubBranchByFromCommitIds(commitsIds)) {
             throw new CustomException(BranchErrorCode.SUB_BRANCH_DELETE_UNAVAILABLE);
         }
 
@@ -133,15 +131,9 @@ public class BranchService {
         doc.getBranches().remove(branch);
 
         // 8. 브랜치, 나머지 RDB  브랜치 메타데이터 CASCADE 삭제
-        branchQueryService.delete(branch);
+        branchWriter.delete(branch);
 
-        mongoDeleteOutboxFactory.create(
-                TriggerType.DELETE,
-                DomainType.BRANCH,
-                OriginType.BRANCH_ID,
-                branchId,
-                deletableMongoIds
-        );
+        mongoDeleteJobEnqueuer.enqueueBranchDeletion(branchId, deletableMongoIds);
 
     }
 

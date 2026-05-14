@@ -17,10 +17,7 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +37,7 @@ class CommitCreateOrchestratorTest {
     private CommitMongoTxService commitMongoTxService;
 
     @Mock
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @InjectMocks
     private CommitCreateOrchestrator orchestrator;
@@ -60,7 +57,7 @@ class CommitCreateOrchestratorTest {
         Commit result = orchestrator.create(request, "base-cbs", doc, branch);
 
         assertThat(result).isEqualTo(commit);
-        verify(mongoDeleteOutboxFactory, never()).create(any(), any(), any(), any(String.class), any());
+        verify(mongoDeleteJobEnqueuer, never()).enqueueCommitCreateCompensation(any(String.class), any());
     }
 
     @Test
@@ -79,10 +76,7 @@ class CommitCreateOrchestratorTest {
                 .isInstanceOf(CustomException.class)
                 .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 
-        verify(mongoDeleteOutboxFactory).create(
-                eq(TriggerType.COMPENSATE),
-                eq(DomainType.COMMIT),
-                eq(OriginType.CBS_ID),
+        verify(mongoDeleteJobEnqueuer).enqueueCommitCreateCompensation(
                 eq("cbs-1"),
                 eq(ids)
         );

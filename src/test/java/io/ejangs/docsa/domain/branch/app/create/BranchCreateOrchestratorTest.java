@@ -15,11 +15,8 @@ import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +34,7 @@ class BranchCreateOrchestratorTest {
     private BranchCreateMySqlTxService branchCreateMySqlTxService;
 
     @Mock
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @InjectMocks
     private BranchCreateOrchestrator orchestrator;
@@ -56,8 +53,7 @@ class BranchCreateOrchestratorTest {
         BranchCreateResponse result = orchestrator.create(context);
 
         assertThat(result).isEqualTo(expected);
-        verify(mongoDeleteOutboxFactory, never()).create(any(), any(), any(), any(String.class),
-                any());
+        verify(mongoDeleteJobEnqueuer, never()).enqueueBranchCreateCompensation(any(String.class), any());
     }
 
     @Test
@@ -74,10 +70,7 @@ class BranchCreateOrchestratorTest {
                 .isInstanceOf(CustomException.class)
                         .hasMessage(BranchErrorCode.FAIL_CREATE_BRANCH.getMessage());
 
-        verify(mongoDeleteOutboxFactory).create(
-                eq(TriggerType.COMPENSATE),
-                eq(DomainType.BRANCH),
-                eq(OriginType.SAVE_CONTENT_ID),
+        verify(mongoDeleteJobEnqueuer).enqueueBranchCreateCompensation(
                 eq("save-content-1"),
                 eq(new MongoIdsDto(java.util.List.of("save-content-1"), null, null))
         );
@@ -96,8 +89,7 @@ class BranchCreateOrchestratorTest {
                 .hasMessage("mongo fail");
 
         verify(branchCreateMySqlTxService, never()).createMySqlPart(any(), any());
-        verify(mongoDeleteOutboxFactory, never()).create(any(), any(), any(), any(String.class),
-                any());
+        verify(mongoDeleteJobEnqueuer, never()).enqueueBranchCreateCompensation(any(String.class), any());
     }
 
     private BranchCreateContext createContext(String fromCommitMongoId) {

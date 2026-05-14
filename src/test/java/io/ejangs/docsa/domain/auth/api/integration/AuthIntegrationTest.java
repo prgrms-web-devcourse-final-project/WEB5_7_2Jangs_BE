@@ -1,10 +1,9 @@
 package io.ejangs.docsa.domain.auth.api.integration;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.domain.user.security.CustomUserDetails;
@@ -41,8 +40,7 @@ class AuthIntegrationTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.name").value("테스트유저"))
-                .andDo(print());
+                .andExpect(jsonPath("$.name").value("테스트유저"));
     }
 
     @Test
@@ -53,8 +51,7 @@ class AuthIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
-                .andExpect(jsonPath("$.error").value("LOGIN_REQUIRED"))
-                .andDo(print());
+                .andExpect(jsonPath("$.error").value("LOGIN_REQUIRED"));
     }
 
     private User createTestUser() {

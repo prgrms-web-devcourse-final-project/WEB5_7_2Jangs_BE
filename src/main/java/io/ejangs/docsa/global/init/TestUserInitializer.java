@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
-@Profile({"local", "stg"})
+@Profile({"local & !backfill", "stg & !backfill"})
 @Transactional(rollbackFor = Exception.class)
 @RequiredArgsConstructor
 public class TestUserInitializer {

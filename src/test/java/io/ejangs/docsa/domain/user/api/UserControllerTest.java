@@ -5,9 +5,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -74,8 +73,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.name").value("이장님"))
-                .andDo(print());
+                .andExpect(jsonPath("$.name").value("이장님"));
 
         verify(userService).signup(any(UserSignupRequest.class));
     }
@@ -94,8 +92,7 @@ class UserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("이미 가입된 이메일입니다."))
-                .andExpect(jsonPath("$.error").value("DUPLICATE_EMAIL"))
-                .andDo(print());
+                .andExpect(jsonPath("$.error").value("DUPLICATE_EMAIL"));
 
         verify(userService).signup(any(UserSignupRequest.class));
     }
@@ -113,9 +110,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("EXPIRED_CODE"))
-                .andExpect(jsonPath("$.message").value("인증 코드가 만료되었습니다."))
-                .andDo(print());
-
+                .andExpect(jsonPath("$.message").value("인증 코드가 만료되었습니다."));
         verify(userService).signup(any(UserSignupRequest.class));
     }
 
@@ -132,9 +127,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVALID_CODE"))
-                .andExpect(jsonPath("$.message").value("인증 코드가 일치하지 않습니다."))
-                .andDo(print());
-
+                .andExpect(jsonPath("$.message").value("인증 코드가 일치하지 않습니다."));
         verify(userService).signup(any(UserSignupRequest.class));
     }
 
@@ -153,9 +146,7 @@ class UserControllerTest {
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
-
+                .andExpect(status().isBadRequest());
         verify(userService, never()).signup(any());
     }
 
@@ -169,9 +160,7 @@ class UserControllerTest {
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
-
+                .andExpect(status().isBadRequest());
         verify(userService, never()).signup(any());
     }
 
@@ -190,9 +179,7 @@ class UserControllerTest {
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
-
+                .andExpect(status().isBadRequest());
         verify(userService, never()).signup(any());
     }
 
@@ -211,9 +198,7 @@ class UserControllerTest {
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
-
+                .andExpect(status().isBadRequest());
         verify(userService, never()).signup(any());
     }
 
@@ -232,9 +217,7 @@ class UserControllerTest {
         mockMvc.perform(post("/api/user/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
-
+                .andExpect(status().isBadRequest());
         verify(userService, never()).signup(any());
     }
 
@@ -245,9 +228,7 @@ class UserControllerTest {
         mockMvc.perform(post("/api/user/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(passwordResetRequest)))
-                .andExpect(status().isOk())
-                .andDo(print());
-
+                .andExpect(status().isOk());
         verify(userService).resetPassword(any(PasswordResetRequest.class));
     }
 
@@ -264,7 +245,6 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(passwordResetRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("SAME_AS_OLD_PASSWORD"))
-                .andExpect(jsonPath("$.message").value("기존 비밀번호와 동일한 비밀번호입니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("기존 비밀번호와 동일한 비밀번호입니다."));
     }
 }
