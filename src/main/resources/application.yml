@@ -5,6 +5,7 @@ spring:
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:${MONGO_URI}}
+      auto-index-creation: ${SPRING_DATA_MONGODB_AUTO_INDEX_CREATION:true}
 
   mail:
     connection-timeout: 5000

@@ -10,10 +10,21 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document("doc_list_read_models")
+@CompoundIndexes({
+        @CompoundIndex(
+                name = "idx_doc_list_user_deleted_updated",
+                def = "{'userId': 1, 'deleted': 1, 'updatedAt': -1}"
+        ),
+        @CompoundIndex(
+                name = "idx_doc_list_user_deleted_title",
+                def = "{'userId': 1, 'deleted': 1, 'title': 1}"
+        )
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DocListReadModel {
@@ -21,7 +32,6 @@ public class DocListReadModel {
     @Id
     private Long id; // docId
 
-    @Indexed
     private Long userId;
 
     private String title;
