@@ -1,0 +1,79 @@
+name: docsa-local
+
+services:
+  mysql:
+    image: mysql:9.4.0
+    container_name: docsa-mysql-local
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${LOCAL_MYSQL_DATABASE:-docsa}
+      MYSQL_USER: ${LOCAL_MYSQL_USER:-docsa}
+      MYSQL_PASSWORD: ${LOCAL_MYSQL_PASSWORD:-docsa}
+      MYSQL_ROOT_PASSWORD: ${LOCAL_MYSQL_ROOT_PASSWORD:-root}
+      TZ: Asia/Seoul
+    ports:
+      - "${LOCAL_MYSQL_PORT:-3306}:3306"
+    volumes:
+      - local_mysql_data:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - docsa_local_net
+
+  mongo:
+    image: mongo:8.0
+    container_name: docsa-mongo-local
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "${LOCAL_MONGO_PORT:-27017}:27017"
+    volumes:
+      - local_mongo_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --eval 'try { rs.status().ok } catch (e) { rs.initiate({_id:\"rs0\",members:[{_id:0,host:\"localhost:27017\"}]}); 1 }' | grep 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - docsa_local_net
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: docsa-mailpit-local
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: "5000"
+    ports:
+      - "${LOCAL_MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${LOCAL_MAILPIT_WEB_PORT:-8025}:8025"
+    volumes:
+      - local_mailpit_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8025/readyz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - docsa_local_net
+
+volumes:
+  local_mysql_data:
+  local_mongo_data:
+  local_mailpit_data:
+
+networks:
+  docsa_local_net:
