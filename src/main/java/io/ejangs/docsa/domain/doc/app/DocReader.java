@@ -8,12 +8,16 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.UserErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class DocReader {
+
+    private static final String DOC_TITLE_UNIQUE_CONSTRAINT = "uk_user_title";
 
     private final UserRepository userRepository;
     private final DocRepository docRepository;
@@ -26,10 +30,17 @@ public class DocReader {
     }
 
     public Doc create(User user, String title) {
-        Doc doc = docRepository.save(Doc.builder().title(title).user(user).build());
-        docRepository.flush();
-        user.addDocument(doc);
-        return doc;
+        try {
+            Doc doc = docRepository.save(Doc.builder().title(title).user(user).build());
+            docRepository.flush();
+            user.addDocument(doc);
+            return doc;
+        } catch (DataIntegrityViolationException e) {
+            if (isTitleDuplicate(e)) {
+                throw new CustomException(DocErrorCode.TITLE_DUPLICATION);
+            }
+            throw e;
+        }
     }
 
     public void checkTitleDuplicate(Long userId, String title) {
@@ -55,6 +66,15 @@ public class DocReader {
         if (!docRepository.existsByIdAndUserId(docId, userId)) {
             throw new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND);
         }
+    }
+
+    private boolean isTitleDuplicate(DataIntegrityViolationException e) {
+        if (!(e.getCause() instanceof ConstraintViolationException constraintViolationException)) {
+            return false;
+        }
+
+        String constraintName = constraintViolationException.getConstraintName();
+        return constraintName != null && constraintName.endsWith(DOC_TITLE_UNIQUE_CONSTRAINT);
     }
 
 }

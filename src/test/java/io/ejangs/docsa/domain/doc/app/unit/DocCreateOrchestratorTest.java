@@ -82,4 +82,28 @@ class DocCreateOrchestratorTest {
                                 && ids.blockIds().isEmpty())
         );
     }
+
+    @Test
+    @DisplayName("문서 생성 Saga 실패 - MySQL 파트에서 CustomException 발생 시 보상 삭제 후 그대로 전파한다")
+    void create_fail_rethrowCustomException() {
+        User user = org.mockito.Mockito.mock(User.class);
+        SaveContent saved = SaveContent.builder().build();
+        ReflectionTestUtils.setField(saved, "id", "save-1");
+
+        when(saveWriter.createSaveContent()).thenReturn(saved);
+        when(docCreateMySqlTxService.createMySqlPart("doc", user, "save-1"))
+                .thenThrow(new CustomException(DocErrorCode.TITLE_DUPLICATION));
+
+        assertThatThrownBy(() -> orchestrator.create("doc", user))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(DocErrorCode.TITLE_DUPLICATION.getMessage());
+
+        verify(mongoDeleteJobEnqueuer).enqueueDocCreateCompensation(
+                eq("save-1"),
+                argThat(ids ->
+                        ids.saveContentsIds().contains("save-1")
+                                && ids.commitBlockSequenceIds().isEmpty()
+                                && ids.blockIds().isEmpty())
+        );
+    }
 }

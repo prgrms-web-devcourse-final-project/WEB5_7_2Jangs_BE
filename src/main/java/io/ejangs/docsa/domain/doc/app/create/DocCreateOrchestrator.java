@@ -30,6 +30,10 @@ public class DocCreateOrchestrator {
 
         try {
             return docCreateMySqlTxService.createMySqlPart(title, user, saveContentId);
+        } catch (CustomException e) {
+            log.warn("[SAGA] 문서 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
+            compensateMongo(saveContentId);
+            throw e;
         } catch (Exception e) {
             log.warn("[SAGA] 문서 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
             compensateMongo(saveContentId);
