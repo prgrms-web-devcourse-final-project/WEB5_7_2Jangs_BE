@@ -1,0 +1,29 @@
+spring:
+  main:
+    web-application-type: none
+
+mongo:
+  local-cleanup:
+    enabled: false
+  delete:
+    outbox:
+      worker:
+        enabled: false
+
+s3:
+  delete:
+    outbox:
+      worker:
+        enabled: false
+
+domain:
+  event:
+    outbox:
+      worker:
+        enabled: true
+        fixed-delay: PT1M
+        initial-delay: PT24H
+
+backfill:
+  doc-list:
+    batch-size: ${DOC_LIST_READ_MODEL_BACKFILL_BATCH_SIZE:1000}

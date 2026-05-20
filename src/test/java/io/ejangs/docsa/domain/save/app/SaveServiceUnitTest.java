@@ -21,6 +21,7 @@ import io.ejangs.docsa.domain.save.entity.Save;
 import io.ejangs.docsa.domain.save.util.SaveMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.SaveErrorCode;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -38,13 +39,17 @@ import org.springframework.dao.RecoverableDataAccessException;
 class SaveServiceUnitTest {
 
     @Mock
-    private SaveQueryService saveQueryService;
+    private SaveReader saveReader;
+    @Mock
+    private SaveWriter saveWriter;
     @Mock
     private ThumbnailService thumbnailService;
     @Mock
     private Save mockSave;
     @Mock
     private SaveContent mockSaveContent;
+    @Mock
+    private DomainEventOutboxPublisher domainEventOutboxPublisher;
     @InjectMocks
     private SaveService saveService;
 
@@ -69,11 +74,11 @@ class SaveServiceUnitTest {
         SaveGetResponse expectedResponse = new SaveGetResponse(LocalDateTime.now(), data);
         SaveContent saveContent = SaveContent.builder().content(data).build();
 
-        when(saveQueryService.getSaveById(idDto.saveId())).thenReturn(mockSave);
-        doNothing().when(saveQueryService)
+        when(saveReader.getSaveById(idDto.saveId())).thenReturn(mockSave);
+        doNothing().when(saveReader)
                 .checkSaveAndDocOwner(mockSave, idDto.userId(), idDto.documentId());
         when(mockSave.getSaveMongoId()).thenReturn("mongo-1");
-        when(saveQueryService.getSaveContentById("mongo-1")).thenReturn(saveContent);
+        when(saveReader.getSaveContentById("mongo-1")).thenReturn(saveContent);
         when(mockSave.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         try (MockedStatic<SaveMapper> mockedMapper = mockStatic(SaveMapper.class)) {
@@ -89,9 +94,9 @@ class SaveServiceUnitTest {
     @Test
     @DisplayName("문서의 주인이 아닌 사람이 저장 요청 시 예외가 발생한다")
     void getSave_fail_invalidUser() {
-        when(saveQueryService.getSaveById(idDto.saveId())).thenReturn(mockSave);
+        when(saveReader.getSaveById(idDto.saveId())).thenReturn(mockSave);
         doThrow(new CustomException(SaveErrorCode.SAVE_NOT_OWNER))
-                .when(saveQueryService)
+                .when(saveReader)
                 .checkSaveAndDocOwner(mockSave, idDto.userId(), idDto.documentId());
 
         assertThatThrownBy(() -> saveService.getSave(idDto))
@@ -102,7 +107,7 @@ class SaveServiceUnitTest {
     @Test
     @DisplayName("존재하지 않는 저장 ID로 조회 요청 시 예외가 발생한다")
     void getSave_fail_invalidSave() {
-        when(saveQueryService.getSaveById(idDto.saveId())).thenThrow(
+        when(saveReader.getSaveById(idDto.saveId())).thenThrow(
                 new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
 
         assertThatThrownBy(() -> saveService.getSave(idDto))
@@ -118,11 +123,11 @@ class SaveServiceUnitTest {
         SaveUpdateResponse expectedResponse = new SaveUpdateResponse(LocalDateTime.now(),
                 thumbnailSyncResponse);
 
-        when(saveQueryService.getSaveById(idDto.saveId())).thenReturn(mockSave);
-        doNothing().when(saveQueryService)
+        when(saveReader.getSaveById(idDto.saveId())).thenReturn(mockSave);
+        doNothing().when(saveReader)
                 .checkSaveAndDocOwner(mockSave, idDto.userId(), idDto.documentId());
         when(mockSave.getSaveMongoId()).thenReturn("mongo-1");
-        when(saveQueryService.getSaveContentById("mongo-1")).thenReturn(mockSaveContent);
+        when(saveReader.getSaveContentById("mongo-1")).thenReturn(mockSaveContent);
         when(mockSave.getUpdatedAt()).thenReturn(LocalDateTime.now());
         when(thumbnailService.requestUpdate(idDto.userId(), idDto.documentId()))
                 .thenReturn(thumbnailSyncResponse);
@@ -135,18 +140,18 @@ class SaveServiceUnitTest {
             SaveUpdateResponse actualResponse = saveService.updateSave(idDto, request);
 
             assertEquals(expectedResponse, actualResponse);
-            verify(saveQueryService).saveSave(mockSave);
+            verify(saveWriter).saveSave(mockSave);
             verify(mockSaveContent).updateContent(data);
-            verify(saveQueryService).saveSaveContent(mockSaveContent);
+            verify(saveWriter).saveSaveContent(mockSaveContent);
         }
     }
 
     @Test
     @DisplayName("문서의 주인이 아닌 사람이 수정 요청 시 예외가 발생한다")
     void updateSave_fail_invalidUser() {
-        when(saveQueryService.getSaveById(idDto.saveId())).thenReturn(mockSave);
+        when(saveReader.getSaveById(idDto.saveId())).thenReturn(mockSave);
         doThrow(new CustomException(SaveErrorCode.SAVE_NOT_OWNER))
-                .when(saveQueryService)
+                .when(saveReader)
                 .checkSaveAndDocOwner(mockSave, idDto.userId(), idDto.documentId());
 
         assertThatThrownBy(() -> saveService.updateSave(idDto, request))
@@ -157,7 +162,7 @@ class SaveServiceUnitTest {
     @Test
     @DisplayName("존재하지 않는 저장 ID로 수정 요청 시 예외가 발생한다")
     void updateSave_fail_invalidSave() {
-        when(saveQueryService.getSaveById(idDto.saveId())).thenThrow(
+        when(saveReader.getSaveById(idDto.saveId())).thenThrow(
                 new CustomException(SaveErrorCode.SAVE_NOT_FOUND));
 
         assertThatThrownBy(() -> saveService.updateSave(idDto, request))
@@ -168,12 +173,12 @@ class SaveServiceUnitTest {
     @Test
     @DisplayName("Mongo 저장 실패 시 저장 실패 예외가 발생한다")
     void updateSave_fail_whenMongoSaveFails() {
-        when(saveQueryService.getSaveById(idDto.saveId())).thenReturn(mockSave);
-        doNothing().when(saveQueryService)
+        when(saveReader.getSaveById(idDto.saveId())).thenReturn(mockSave);
+        doNothing().when(saveReader)
                 .checkSaveAndDocOwner(mockSave, idDto.userId(), idDto.documentId());
         when(mockSave.getSaveMongoId()).thenReturn("mongo-1");
-        when(saveQueryService.getSaveContentById("mongo-1")).thenReturn(mockSaveContent);
-        when(saveQueryService.saveSaveContent(mockSaveContent))
+        when(saveReader.getSaveContentById("mongo-1")).thenReturn(mockSaveContent);
+        when(saveWriter.saveSaveContent(mockSaveContent))
                 .thenThrow(new RecoverableDataAccessException("mongo write failed"));
 
         assertThatThrownBy(() -> saveService.updateSave(idDto, request))

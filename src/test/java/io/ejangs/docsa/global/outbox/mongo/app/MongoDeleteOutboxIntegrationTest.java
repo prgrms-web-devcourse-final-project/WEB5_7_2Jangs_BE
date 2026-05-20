@@ -7,9 +7,6 @@ import static org.mockito.Mockito.doThrow;
 import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.OriginType;
-import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
 import io.ejangs.docsa.global.outbox.OutboxStatus;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,7 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class MongoDeleteOutboxIntegrationTest {
 
     @Autowired
-    private MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
     @Autowired
     private MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
@@ -44,7 +41,7 @@ class MongoDeleteOutboxIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @MockitoSpyBean
-    private MongoDeleteService mongoDeleteService;
+    private MongoDeleteExecutor mongoDeleteExecutor;
 
     @BeforeEach
     void cleanOutbox() {
@@ -70,7 +67,7 @@ class MongoDeleteOutboxIntegrationTest {
     void workerRetryToOpen() {
         MongoDeleteOutbox outbox = createOpenOutbox();
         doThrow(new RuntimeException("mongo delete fail"))
-                .when(mongoDeleteService).deleteTarget(any());
+                .when(mongoDeleteExecutor).deleteTarget(any());
 
         mongoDeleteOutboxWorker.run();
 
@@ -85,7 +82,7 @@ class MongoDeleteOutboxIntegrationTest {
     void workerFailedAfterMaxRetry() {
         MongoDeleteOutbox outbox = createOpenOutbox();
         doThrow(new RuntimeException("always fail"))
-                .when(mongoDeleteService).deleteTarget(any());
+                .when(mongoDeleteExecutor).deleteTarget(any());
 
         for (int i = 0; i < 10; i++) {
             mongoDeleteOutboxWorker.run();
@@ -101,17 +98,11 @@ class MongoDeleteOutboxIntegrationTest {
     @DisplayName("동일 키 create 중복 호출 시 outbox는 1건만 유지된다")
     void factoryDedupeWithSameKey() {
         String originId = "dup-" + UUID.randomUUID();
-        MongoDeleteOutbox first = mongoDeleteOutboxFactory.create(
-                TriggerType.COMPENSATE,
-                DomainType.DOC,
-                OriginType.DOC_ID,
+        MongoDeleteOutbox first = mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(
                 originId,
                 new MongoIdsDto(List.of("save-" + originId), List.of(), List.of())
         );
-        MongoDeleteOutbox second = mongoDeleteOutboxFactory.create(
-                TriggerType.COMPENSATE,
-                DomainType.DOC,
-                OriginType.DOC_ID,
+        MongoDeleteOutbox second = mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(
                 originId,
                 new MongoIdsDto(List.of("save-" + originId), List.of(), List.of())
         );
@@ -171,10 +162,7 @@ class MongoDeleteOutboxIntegrationTest {
     void workerProcessesAtMost100OpenRowsPerRun() {
         for (int i = 0; i < 101; i++) {
             String originId = "batch-" + i + "-" + UUID.randomUUID();
-            mongoDeleteOutboxFactory.create(
-                    TriggerType.COMPENSATE,
-                    DomainType.DOC,
-                    OriginType.DOC_ID,
+            mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(
                     originId,
                     new MongoIdsDto(List.of("save-" + originId), List.of(), List.of())
             );
@@ -199,10 +187,7 @@ class MongoDeleteOutboxIntegrationTest {
 
     private MongoDeleteOutbox createOpenOutbox() {
         String originId = UUID.randomUUID().toString();
-        return mongoDeleteOutboxFactory.create(
-                TriggerType.COMPENSATE,
-                DomainType.DOC,
-                OriginType.DOC_ID,
+        return mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(
                 originId,
                 new MongoIdsDto(List.of("save-" + originId), List.of(), List.of())
         );

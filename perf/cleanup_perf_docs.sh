@@ -61,7 +61,7 @@ login_cookie() {
   cookie="$(
     grep -i '^set-cookie:' "${headers}" \
       | tr -d '\r' \
-      | sed -n "s/^set-cookie:[[:space:]]*${SESSION_COOKIE_NAME}=\\([^;]*\\).*/\\1/p" \
+      | sed -n "s/^[Ss][Ee][Tt]-[Cc][Oo][Oo][Kk][Ii][Ee]:[[:space:]]*${SESSION_COOKIE_NAME}=\\([^;]*\\).*/\\1/p" \
       | head -n 1
   )"
   rm -f "${headers}" "${body}"

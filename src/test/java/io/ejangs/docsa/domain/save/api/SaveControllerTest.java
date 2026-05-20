@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -75,8 +74,7 @@ class SaveControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.updatedAt").exists())
-                .andDo(print());
+                .andExpect(jsonPath("$.updatedAt").exists());
     }
 
     @ParameterizedTest
@@ -93,8 +91,7 @@ class SaveControllerTest {
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(MethodArgumentTypeMismatchException.class,
-                        result.getResolvedException()))
-                .andDo(print());
+                        result.getResolvedException()));
     }
 
     @Test
@@ -112,8 +109,7 @@ class SaveControllerTest {
                 .andExpect(jsonPath("$.updatedAt").exists())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].text1").value("Key features"))
-                .andExpect(jsonPath("$.content[1].text2").value("Key features"))
-                .andDo(print());
+                .andExpect(jsonPath("$.content[1].text2").value("Key features"));
     }
 
     @ParameterizedTest
@@ -130,7 +126,6 @@ class SaveControllerTest {
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(MethodArgumentTypeMismatchException.class,
-                        result.getResolvedException()))
-                .andDo(print());
+                        result.getResolvedException()));
     }
 }

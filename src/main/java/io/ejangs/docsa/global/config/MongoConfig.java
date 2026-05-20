@@ -18,6 +18,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
         "io.ejangs.docsa.domain.block.dao.mongodb",
         "io.ejangs.docsa.domain.commit.dao.mongodb",
         "io.ejangs.docsa.domain.save.dao.mongodb",
+        "io.ejangs.docsa.domain.doc.readmodel.dao.mongodb",
 })
 public class MongoConfig {
 

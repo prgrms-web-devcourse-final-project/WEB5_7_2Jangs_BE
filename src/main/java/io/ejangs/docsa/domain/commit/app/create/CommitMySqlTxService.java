@@ -1,16 +1,18 @@
 package io.ejangs.docsa.domain.commit.app.create;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.commit.app.CommitWriter;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMapper;
+import io.ejangs.docsa.domain.doc.readmodel.util.DocPayloadFactory;
 import io.ejangs.docsa.domain.edge.app.EdgeService;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.edge.entity.Edge;
 import io.ejangs.docsa.domain.edge.util.EdgeMapper;
-import io.ejangs.docsa.domain.save.app.SaveQueryService;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteOutboxFactory;
+import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
+import io.ejangs.docsa.global.outbox.event.model.AggregateType;
+import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -21,16 +23,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommitMySqlTxService {
 
-    private final CommitQueryService commitQueryService;
-    private final SaveQueryService saveQueryService;
+    private final CommitWriter commitWriter;
     private final EdgeService edgeService;
-    private final MongoDeleteOutboxFactory mongoDeleteOutboxFactory;
+    private final DomainEventOutboxPublisher domainEventOutboxPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     public Commit createMySqlPart(Doc doc, Branch branch, CreateCommitRequest request, String commitCbsMongoId) {
         Commit newCommit = CommitMapper.toEntity(branch, request);
         newCommit.initializeCommitMongoId(commitCbsMongoId);
-        newCommit = commitQueryService.saveAndFlush(newCommit);
+        newCommit = commitWriter.saveAndFlush(newCommit);
 
         branch.updateRootCommit(newCommit);
 
@@ -43,7 +44,10 @@ public class CommitMySqlTxService {
             edgeService.saveEdge(newEdge);
         }
 
-        RenewUpdatedAtHelper.touch(branch);
+        RenewUpdatedAtHelper.touch(branch.getSave());
+
+        domainEventOutboxPublisher.publish(DomainEventType.DOC_ACTIVITY_CHANGED, AggregateType.DOC, doc.getId(),
+                DocPayloadFactory.activityChanged(doc.getId(), branch.getSave()));
 
         return newCommit;
     }

@@ -74,10 +74,7 @@ import org.springframework.http.MediaType;
                                                             "createdAt": "2025-07-24T23:08:36.088612+09:00",
                                                             "updatedAt": "2025-07-24T23:08:36.114375+09:00",
                                                             "preview": "미리보기 없음",
-                                                            "recent": {
-                                                                "recentType": "SAVE",
-                                                                "recentTypeId": 3
-                                                            }
+                                                            "recentSaveId": 3
                                                         },
                                                         {
                                                             "id": 2,
@@ -85,10 +82,7 @@ import org.springframework.http.MediaType;
                                                             "createdAt": "2025-07-24T23:08:32.066607+09:00",
                                                             "updatedAt": "2025-07-24T23:08:32.088371+09:00",
                                                             "preview": "미리보기 없음",
-                                                            "recent": {
-                                                                "recentType": "SAVE",
-                                                                "recentTypeId": 2
-                                                            }
+                                                            "recentSaveId": 2
                                                         },
                                                         {
                                                             "id": 1,
@@ -96,10 +90,7 @@ import org.springframework.http.MediaType;
                                                             "createdAt": "2025-07-24T23:08:27.511586+09:00",
                                                             "updatedAt": "2025-07-24T23:08:27.648299+09:00",
                                                             "preview": "미리보기 없음",
-                                                            "recent": {
-                                                                "recentType": "SAVE",
-                                                                "recentTypeId": 1
-                                                            }
+                                                            "recentSaveId": 1
                                                         }
                                                     ],
                                                     "pageable": {

@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${MYSQL_PROD_URL}
-    username: ${MYSQL_USERNAME}
-    password: ${MYSQL_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:${MYSQL_PROD_URL}}
+    username: ${SPRING_DATASOURCE_USERNAME:${MYSQL_USERNAME}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${MYSQL_PASSWORD}}
 
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
@@ -22,7 +22,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:validate}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:${DDL_AUTO:validate}}
     database-platform: org.hibernate.dialect.MySQL8Dialect
     show-sql: false
     properties:
@@ -87,4 +87,11 @@ decorator:
 
 logging:
   level:
-    net.ttddyy.dsproxy.listener: DEBUG
+    root: INFO
+    io.ejangs.docsa: INFO
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.springframework: WARN
+    org.mongodb.driver: WARN
+    com.zaxxer.hikari: WARN
+    net.ttddyy.dsproxy.listener: WARN

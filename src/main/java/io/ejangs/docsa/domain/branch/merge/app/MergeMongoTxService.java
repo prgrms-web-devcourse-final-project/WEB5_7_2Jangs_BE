@@ -1,6 +1,6 @@
 package io.ejangs.docsa.domain.branch.merge.app;
 
-import io.ejangs.docsa.domain.save.app.SaveQueryService;
+import io.ejangs.docsa.domain.save.app.SaveWriter;
 import io.ejangs.docsa.domain.save.document.SaveContent;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MergeMongoTxService {
 
-    private final SaveQueryService saveQueryService;
+    private final SaveWriter saveWriter;
 
     @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
     public String createMongoPart(List<Map<String, Object>> content) {
@@ -20,7 +20,7 @@ public class MergeMongoTxService {
                 .content(content)
                 .build();
 
-        SaveContent saved = saveQueryService.saveSaveContent(saveContent);
+        SaveContent saved = saveWriter.saveSaveContent(saveContent);
         return saved.getId();
     }
 }

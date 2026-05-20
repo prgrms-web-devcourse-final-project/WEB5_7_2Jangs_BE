@@ -1,10 +1,9 @@
 package io.ejangs.docsa.domain.branch.merge.app;
 
-import io.ejangs.docsa.domain.branch.app.BranchQueryService;
-import io.ejangs.docsa.domain.commit.app.CommitContentAssembler;
-import io.ejangs.docsa.domain.commit.app.CommitQueryService;
+import io.ejangs.docsa.domain.branch.app.BranchReader;
+import io.ejangs.docsa.domain.commit.app.CommitReader;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.app.create.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocReader;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.branch.merge.dto.request.MergeRequest;
 import io.ejangs.docsa.domain.branch.merge.dto.response.MergeResponse;
@@ -16,10 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MergeService {
 
-    private final DocQueryService docQueryService;
-    private final BranchQueryService branchQueryService;
-    private final CommitQueryService commitQueryService;
-    private final CommitContentAssembler commitContentAssembler;
+    private final DocReader docReader;
+    private final BranchReader branchReader;
+    private final CommitReader commitReader;
     private final MergeOrchestrator mergeOrchestrator;
 
     @Transactional(rollbackFor = Exception.class)
@@ -32,13 +30,13 @@ public class MergeService {
     }
 
     private MergeContext validateMerge(Long docId, MergeRequest mergeRequest, Long userId) {
-        Doc doc = docQueryService.getByIdAndUserId(docId, userId);
-        branchQueryService.checkDuplicatedWithBranchName(docId, mergeRequest.branchName());
+        Doc doc = docReader.getByIdAndUserId(docId, userId);
+        branchReader.checkDuplicatedWithBranchName(docId, mergeRequest.branchName());
 
-        Commit baseCommit = commitQueryService.getById(mergeRequest.baseCommitId());
-        Commit targetCommit = commitQueryService.getById(mergeRequest.targetCommitId());
+        Commit baseCommit = commitReader.getById(mergeRequest.baseCommitId());
+        Commit targetCommit = commitReader.getById(mergeRequest.targetCommitId());
 
-        commitQueryService.checkTwoCommitsInDocOwnedByUser(
+        commitReader.checkTwoCommitsInDocOwnedByUser(
                 baseCommit.getId(),
                 targetCommit.getId(),
                 docId,

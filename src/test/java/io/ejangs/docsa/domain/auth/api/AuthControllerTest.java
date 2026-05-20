@@ -7,7 +7,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -57,8 +56,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(""))
-                .andDo(print());
+                .andExpect(content().string(""));
 
         verify(authService).sendSignupCode(request);
     }
@@ -73,8 +71,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/code/signup-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isBadRequest());
 
         verify(authService, never()).sendSignupCode(any());
     }
@@ -89,8 +86,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/code/signup-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isBadRequest());
 
         verify(authService, never()).sendSignupCode(any());
     }
@@ -105,8 +101,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/code/signup-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isBadRequest());
 
         verify(authService, never()).sendSignupCode(any());
     }
@@ -127,8 +122,7 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("이미 가입된 이메일입니다."))
-                .andExpect(jsonPath("$.error").value("DUPLICATE_EMAIL"))
-                .andDo(print());
+                .andExpect(jsonPath("$.error").value("DUPLICATE_EMAIL"));
 
         verify(authService).sendSignupCode(request);
     }
@@ -148,8 +142,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.passCode").value("generatedPass123"))
-                .andDo(print());
+                .andExpect(jsonPath("$.passCode").value("generatedPass123"));
 
         verify(authService).checkCode(request);
     }
@@ -169,8 +162,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("EXPIRED_CODE"))
-                .andExpect(jsonPath("$.message").value("인증 코드가 만료되었습니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("인증 코드가 만료되었습니다."));
 
         verify(authService).checkCode(request);
     }
@@ -190,8 +182,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVALID_CODE"))
-                .andExpect(jsonPath("$.message").value("인증 코드가 일치하지 않습니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("인증 코드가 일치하지 않습니다."));
 
         verify(authService).checkCode(request);
     }
@@ -206,8 +197,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/code/check")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isBadRequest());
 
         verify(authService, never()).checkCode(any());
     }
@@ -225,8 +215,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(""))
-                .andDo(print());
+                .andExpect(content().string(""));
 
         verify(authService).sendResetPwdCode(request);
     }
@@ -246,8 +235,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("USER_NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("해당 사용자를 찾을 수 없습니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("해당 사용자를 찾을 수 없습니다."));
 
         verify(authService).sendResetPwdCode(any(PwdResetCodeRequest.class));
     }
@@ -268,8 +256,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("ALREADY_REGISTERED_USER"))
-                .andExpect(jsonPath("$.message").value("이미 가입한 사용자입니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("이미 가입한 사용자입니다."));
 
         verify(authService).checkCode(request);
     }
@@ -290,8 +277,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("USER_NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("해당 사용자를 찾을 수 없습니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("해당 사용자를 찾을 수 없습니다."));
 
         verify(authService).checkCode(request);
     }

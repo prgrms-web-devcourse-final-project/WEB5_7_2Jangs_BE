@@ -159,7 +159,7 @@ public class CommitIntegrationTestUtils {
                         .map(b -> Block.builder().content(b).build())
                         .toList());
 
-        // 문서 1: 저장 없음, 커밋 여러 개
+        // 문서 1: 커밋 여러 개
         Doc doc1 = Doc.builder().title("문서 1").user(user).build();
 
         CommitBlockSequence commitSeq10 = commitBlockSequenceRepository.save(
@@ -185,6 +185,10 @@ public class CommitIntegrationTestUtils {
 
         // 브랜치 1의 커밋 설정
         Branch branch1 = Branch.builder().name("브랜치 1").doc(doc1).build();
+        Save.builder()
+                .branch(branch1)
+                .saveMongoId("save-content-branch-1")
+                .build();
 
         Commit commit10 = Commit.builder()
                 .title("커밋 1").description("desc1")
@@ -204,6 +208,10 @@ public class CommitIntegrationTestUtils {
 
         // 브랜치 2 커밋 설정
         Branch branch2 = Branch.builder().name("브랜치 2").doc(doc1).fromCommit(commit20).build();
+        Save.builder()
+                .branch(branch2)
+                .saveMongoId("save-content-branch-2")
+                .build();
 
         Commit commit21 = Commit.builder()
                 .title("커밋 A").description("descA")

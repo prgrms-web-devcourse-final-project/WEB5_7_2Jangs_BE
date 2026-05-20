@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.branch.dao.mysql;
 
 import io.ejangs.docsa.domain.edge.dto.graph.BranchGraphDto;
 import io.ejangs.docsa.domain.branch.entity.Branch;
+import io.ejangs.docsa.domain.doc.dto.LatestSaveIdDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +28,26 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
     WHERE b.doc.id = :docId
 """)
     List<BranchGraphDto> findBranchGraphDtoList(@Param("docId") Long docId);
+
+    @Query("""
+            SELECT new io.ejangs.docsa.domain.doc.dto.LatestSaveIdDto(
+                b.doc.id,
+                s.id
+            )
+            FROM Branch b
+            JOIN b.save s
+            WHERE b.doc.id IN :docIds
+            AND NOT EXISTS (
+                SELECT 1
+                FROM Branch newer
+                WHERE newer.doc.id = b.doc.id
+                AND (
+                    newer.updatedAt > b.updatedAt
+                    OR (newer.updatedAt = b.updatedAt AND newer.id > b.id)
+                )
+            )
+            """)
+    List<LatestSaveIdDto> findLatestSaveIdsByDocIds(@Param("docIds") List<Long> docIds);
 
     boolean existsByIdAndDocIdAndDocUserId(Long branchId, Long documentId, Long userId);
 

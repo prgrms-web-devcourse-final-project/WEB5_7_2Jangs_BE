@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.doc.api;
 
-import io.ejangs.docsa.domain.doc.app.DocService;
+import io.ejangs.docsa.domain.doc.app.DocQueryService;
+import io.ejangs.docsa.domain.doc.app.DocCommandService;
 import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.edge.dto.GraphResponse;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
@@ -40,7 +41,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/document")
 public class DocController {
 
-    private final DocService docService;
+    private final DocCommandService docCommandService;
+    private final DocQueryService docQueryService;
 
     @PostMapping
     @CreateDocDocs
@@ -49,7 +51,7 @@ public class DocController {
             @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(docService.create(request, userDetails.getId()));
+                .body(docCommandService.create(request, userDetails.getId()));
     }
 
     @GetMapping("/sidebar")
@@ -65,7 +67,7 @@ public class DocController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getSimplePage(userDetails.getId(), pageable));
+                .body(docQueryService.getSimplePage(userDetails.getId(), pageable));
     }
 
     @GetMapping
@@ -81,7 +83,7 @@ public class DocController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.getPage(userDetails.getId(), pageable));
+                .body(docQueryService.getPage(userDetails.getId(), pageable));
     }
 
     @SearchDocDocs
@@ -96,7 +98,7 @@ public class DocController {
         Pageable pageable = PageableFactory.create(sort, order, page, size);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.searchList(userDetails.getId(), keyword, pageable));
+                .body(docQueryService.searchList(userDetails.getId(), keyword, pageable));
     }
 
     @RenameDocDocs
@@ -107,7 +109,7 @@ public class DocController {
             @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(docService.updateTitle(userDetails.getId(), docId, request));
+                .body(docCommandService.updateTitle(userDetails.getId(), docId, request));
     }
 
     @GetDocGraphDocs
@@ -116,7 +118,7 @@ public class DocController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(docService.getGraph(userDetails.getId(), docId));
+                .body(docQueryService.getGraph(userDetails.getId(), docId));
     }
 
     @DeleteDocDocs
@@ -124,7 +126,7 @@ public class DocController {
     public ResponseEntity<Void> delete(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long docId) {
-        docService.delete(docId, userDetails.getId());
+        docCommandService.delete(docId, userDetails.getId());
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT).build();
     }

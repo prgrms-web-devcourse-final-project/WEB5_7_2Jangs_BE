@@ -3,7 +3,6 @@ package io.ejangs.docsa.domain.user.integration;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -77,7 +76,6 @@ class UserIntegrationTest {
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(user.getId()))
-                .andDo(print())
                 .andReturn();
 
         // 세션 확인
@@ -106,8 +104,7 @@ class UserIntegrationTest {
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("INVALID_CREDENTIALS"))
-                .andExpect(jsonPath("$.message").value("이메일 또는 비밀번호가 일치하지 않습니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("이메일 또는 비밀번호가 일치하지 않습니다."));
     }
 
     @Test
@@ -120,8 +117,7 @@ class UserIntegrationTest {
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("INVALID_CREDENTIALS"))
-                .andExpect(jsonPath("$.message").value("이메일 또는 비밀번호가 일치하지 않습니다."))
-                .andDo(print());
+                .andExpect(jsonPath("$.message").value("이메일 또는 비밀번호가 일치하지 않습니다."));
     }
 
     @Test
@@ -133,8 +129,7 @@ class UserIntegrationTest {
         mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidEmailRequest)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isBadRequest());
 
         // 빈 비밀번호
         UserLoginRequest invalidPasswordRequest = new UserLoginRequest("test@example.com", "");
@@ -142,8 +137,7 @@ class UserIntegrationTest {
         mockMvc.perform(post("/api/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidPasswordRequest)))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -245,7 +239,6 @@ class UserIntegrationTest {
         MvcResult logoutResult = mockMvc.perform(post("/api/user/logout")
                         .session(session))
                 .andExpect(status().isOk())
-                .andDo(print())
                 .andReturn();
 
         // 세션 무효화 확인

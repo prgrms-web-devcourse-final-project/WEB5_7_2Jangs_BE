@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_mongo_delete_outbox_trigger_domain_origin",
-                        columnNames = {"trigger_type", "domain_type", "origin_type", "origin_id"}
+                        columnNames = {"trigger_type", "domain_type", "origin_id"}
                 )
         },
         indexes = {
@@ -50,15 +50,6 @@ public class MongoDeleteOutbox extends BaseOutboxEntity {
         SAVE
     }
 
-    public enum OriginType {
-        DOC_ID,
-        BRANCH_ID,
-        COMMIT_ID,
-        SAVE_ID,
-        SAVE_CONTENT_ID,
-        CBS_ID
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -70,10 +61,6 @@ public class MongoDeleteOutbox extends BaseOutboxEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "domain_type", length = 64, nullable = false)
     private DomainType domainType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "origin_type", length = 64, nullable = false)
-    private OriginType originType;
 
     @Column(name = "origin_id", length = 255, nullable = false)
     private String originId;
@@ -96,7 +83,6 @@ public class MongoDeleteOutbox extends BaseOutboxEntity {
     public static MongoDeleteOutbox open(
             TriggerType triggerType,
             DomainType domainType,
-            OriginType originType,
             String originId,
             List<String> saveIds,
             List<String> commitIds,
@@ -106,7 +92,6 @@ public class MongoDeleteOutbox extends BaseOutboxEntity {
         MongoDeleteOutbox outbox = new MongoDeleteOutbox();
         outbox.triggerType = triggerType;
         outbox.domainType = domainType;
-        outbox.originType = originType;
         outbox.originId = originId;
         outbox.saveContentIds = saveIds;
         outbox.commitBlockSequenceIds = commitIds;

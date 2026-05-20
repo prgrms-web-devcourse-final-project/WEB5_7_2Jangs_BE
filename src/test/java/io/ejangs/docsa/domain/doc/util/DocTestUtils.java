@@ -9,8 +9,6 @@ import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.entity.Commit;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto;
-import io.ejangs.docsa.domain.doc.dto.RecentActivityDto.RecentType;
 import io.ejangs.docsa.domain.doc.dto.response.DocPageResponse;
 import io.ejangs.docsa.domain.doc.entity.Doc;
 import io.ejangs.docsa.domain.doc.thumbnail.entity.Thumbnail.ThumbnailStatus;
@@ -24,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -158,7 +154,16 @@ public class DocTestUtils {
                 .branch(branch1)
                 .build();
 
+        SaveContent doc1SaveContent = saveContentRepository.save(SaveContent.builder()
+                .content(List.of(parsedJson1.get(1)))
+                .build());
+        Save doc1Save = Save.builder()
+                .branch(branch1)
+                .saveMongoId(doc1SaveContent.getId())
+                .build();
+
         branch1.updateLeafCommit(commit2);
+        branch1.setSave(doc1Save);
         doc1.addBranch(branch1);
         docs.add(doc1);
 
@@ -367,29 +372,14 @@ public class DocTestUtils {
                     LocalDateTime createdAt = doc.getCreatedAt();
                     LocalDateTime updatedAt = doc.getUpdatedAt();
                     String thumbnailUrl = null;
-
-                    // 최근 활동 (SAVE > COMMIT 우선)
-                    RecentActivityDto recent = doc.getBranches().stream()
-                            .flatMap(branch -> {
-                                Stream<RecentActivityDto> activityStream = Stream.of(
-                                        branch.getSave() != null
-                                                ? new RecentActivityDto(RecentType.SAVE,
-                                                branch.getSave().getId())
-                                                : null,
-                                        branch.getLeafCommit() != null
-                                                ? new RecentActivityDto(RecentType.COMMIT,
-                                                branch.getLeafCommit().getId())
-                                                : null
-                                );
-                                return activityStream.filter(Objects::nonNull);
-                            })
-                            .sorted(Comparator.comparing(
-                                    dto -> dto.recentType() == RecentType.SAVE ? 0 : 1))
-                            .findFirst()
+                    Long recentSaveId = doc.getBranches().stream()
+                            .max(Comparator.comparing(Branch::getUpdatedAt))
+                            .map(Branch::getSave)
+                            .map(Save::getId)
                             .orElse(null);
 
                     return new DocPageResponse(docId, title, createdAt, updatedAt, thumbnailUrl,
-                            ThumbnailStatus.EMPTY, recent);
+                            ThumbnailStatus.EMPTY, recentSaveId);
                 })
                 .toList();
 
