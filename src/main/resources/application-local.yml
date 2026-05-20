@@ -59,6 +59,18 @@ logging:
 server:
   port: 8080
 
+cloud:
+  aws:
+    region: ${AWS_REGION:ap-northeast-2}
+    credentials:
+      access-key: ${LOCAL_MINIO_ROOT_USER:docsa-local}
+      secret-key: ${LOCAL_MINIO_ROOT_PASSWORD:docsa-local-password}
+    s3:
+      bucket: ${LOCAL_MINIO_BUCKET:docsa-local}
+      endpoint: ${LOCAL_MINIO_ENDPOINT:http://localhost:9000}
+      path-style-access-enabled: true
+      public-base-url: ${LOCAL_MINIO_PUBLIC_BASE_URL:http://localhost:9000/docsa-local}
+
 app:
   cors:
     allowed-origin:
