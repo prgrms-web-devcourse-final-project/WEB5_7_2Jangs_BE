@@ -1,4 +1,5 @@
 HELP.md
+.DS_Store
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -51,3 +52,6 @@ infra/mysql/logs/
 # Perf benchmark outputs
 perf/**/results/*
 !perf/**/results/.gitkeep
+
+# Local documentation and portfolio drafts
+docs/
