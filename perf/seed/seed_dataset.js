@@ -10,6 +10,7 @@ const USER_PASSWORD = __ENV.USER_PASSWORD || 'Testtest1';
 const USER_COUNT = Number(__ENV.USER_COUNT || 50);
 const DOCS_PER_USER = Number(__ENV.DOCS_PER_USER || 3);
 const MAIN_COMMITS = Number(__ENV.MAIN_COMMITS || 6);
+const FEATURE_BRANCHES = Number(__ENV.FEATURE_BRANCHES || 1);
 const FEATURE_COMMITS = Number(__ENV.FEATURE_COMMITS || 4);
 const BLOCKS_PER_COMMIT = Number(__ENV.BLOCKS_PER_COMMIT || 20);
 const RUN_ID = __ENV.RUN_ID || Math.floor(Date.now() / 1000).toString(36);
@@ -196,33 +197,35 @@ export default function () {
     mainCommits.push(commit.id);
   }
 
-  if (mainCommits.length < 2) {
+  if (FEATURE_BRANCHES <= 0 || mainCommits.length < 2) {
     return;
   }
 
-  const featureName = `feat-${key}`;
-  const fromCommitId = mainCommits[0]; // non-leaf from commit
+  for (let branchNo = 1; branchNo <= FEATURE_BRANCHES; branchNo += 1) {
+    const featureName = `feat-${branchNo}-${key}`.slice(0, 100);
+    const fromCommitId = mainCommits[Math.min(branchNo - 1, mainCommits.length - 2)];
 
-  const branchRes = createBranch(cookie, doc.id, featureName, fromCommitId);
-  let featureBranchId = branchRes.branchId;
+    const branchRes = createBranch(cookie, doc.id, featureName, fromCommitId);
+    let featureBranchId = branchRes.branchId;
 
-  if (!featureBranchId) {
-    const graph1 = getGraph(cookie, doc.id);
-    featureBranchId = findBranchIdByName(graph1, featureName);
     if (!featureBranchId) {
-      throw new Error('seed_branch_create could not resolve feature branch id');
+      const graph1 = getGraph(cookie, doc.id);
+      featureBranchId = findBranchIdByName(graph1, featureName);
+      if (!featureBranchId) {
+        throw new Error('seed_branch_create could not resolve feature branch id');
+      }
     }
-  }
 
-  for (let i = 0; i < FEATURE_COMMITS; i += 1) {
-    const title = `f${i}-${key}`.slice(0, 28);
-    createCommit(cookie, doc.id, featureBranchId, title);
+    for (let i = 0; i < FEATURE_COMMITS; i += 1) {
+      const title = `f${branchNo}-${i}-${key}`.slice(0, 28);
+      createCommit(cookie, doc.id, featureBranchId, title);
+    }
   }
 }
 
 export function handleSummary(data) {
   const summary = {
-    stdout: `\n[seed-dataset] run_id=${RUN_ID}, users=${USER_COUNT}, docs_per_user=${DOCS_PER_USER}, total_docs=${TOTAL_DOCS}\n`,
+    stdout: `\n[seed-dataset] run_id=${RUN_ID}, users=${USER_COUNT}, docs_per_user=${DOCS_PER_USER}, feature_branches=${FEATURE_BRANCHES}, total_docs=${TOTAL_DOCS}\n`,
   };
 
   if (RESULT_DIR) {
