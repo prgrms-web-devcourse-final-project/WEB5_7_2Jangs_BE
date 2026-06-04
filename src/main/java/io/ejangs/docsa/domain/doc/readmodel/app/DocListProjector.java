@@ -38,6 +38,14 @@ public class DocListProjector {
         }
     }
 
+    private DocListReadModel getRequiredModel(Long docId, DomainEventMessage message) {
+        return docListReadModelRepository.findById(docId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Doc list read model is missing. eventType=%s, eventId=%d, docId=%d"
+                                .formatted(message.eventType(), message.eventId(), docId)
+                ));
+    }
+
     private void create(DomainEventMessage message) {
         DocCreatedPayload payload = readPayload(message, DocCreatedPayload.class);
 
@@ -50,45 +58,37 @@ public class DocListProjector {
 
     private void changeTitle(DomainEventMessage message) {
         DocTitleChangedPayload payload = readPayload(message, DocTitleChangedPayload.class);
+        DocListReadModel model = getRequiredModel(payload.docId(), message);
 
-        docListReadModelRepository.findById(payload.docId())
-                .ifPresent(model -> {
-                    if (model.changeTitle(payload, message.eventId())) {
-                        docListReadModelRepository.save(model);
-                    }
-                });
+        if (model.changeTitle(payload, message.eventId())) {
+            docListReadModelRepository.save(model);
+        }
     }
 
     private void changeActivity(DomainEventMessage message) {
         DocActivityChangedPayload payload = readPayload(message, DocActivityChangedPayload.class);
+        DocListReadModel model = getRequiredModel(payload.docId(), message);
 
-        docListReadModelRepository.findById(payload.docId())
-                .ifPresent(model -> {
-                    if (model.changeActivity(payload, message.eventId())) {
-                        docListReadModelRepository.save(model);
-                    }
-                });
+        if (model.changeActivity(payload, message.eventId())) {
+            docListReadModelRepository.save(model);
+        }
     }
 
     private void changeThumbnail(DomainEventMessage message) {
         DocThumbnailChangedPayload payload = readPayload(message, DocThumbnailChangedPayload.class);
+        DocListReadModel model = getRequiredModel(payload.docId(), message);
 
-        docListReadModelRepository.findById(payload.docId())
-                .ifPresent(model -> {
-                    if (model.changeThumbnail(payload, message.eventId())) {
-                        docListReadModelRepository.save(model);
-                    }
-                });
+        if (model.changeThumbnail(payload, message.eventId())) {
+            docListReadModelRepository.save(model);
+        }
     }
 
     private void delete(DomainEventMessage message) {
         DocDeletedPayload payload = readPayload(message, DocDeletedPayload.class);
+        DocListReadModel model = getRequiredModel(payload.docId(), message);
 
-        docListReadModelRepository.findById(payload.docId())
-                .ifPresent(model -> {
-                    if (model.markDeleted(message.eventId())) {
-                        docListReadModelRepository.save(model);
-                    }
-                });
+        if (model.markDeleted(message.eventId())) {
+            docListReadModelRepository.save(model);
+        }
     }
 }
