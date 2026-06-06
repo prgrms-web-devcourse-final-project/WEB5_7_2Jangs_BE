@@ -19,6 +19,6 @@ public class DomainEventOutboxWakeUpListener {
             phase = TransactionPhase.AFTER_COMMIT
     )
     public void handle(DomainEventOutboxWakeUpEvent event) {
-        relay.run(event.outboxId());
+        relay.run();
     }
 }
