@@ -12,6 +12,8 @@
   - 목록 테스트에 사용할 문서/브랜치/커밋 데이터를 생성
 - `perf/read/doc_list_benchmark.js`
   - `sidebar`, `full list`, `search` 읽기 성능 측정
+- `perf/read/doc_graph_benchmark.js`
+  - 현재 MySQL projection 기반 graph 조회 성능 측정
 
 ## Why this benchmark
 
@@ -43,7 +45,7 @@ RUN_ID=read01 \
 BASE_URL=http://localhost:8080 \
 USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
 USER_COUNT=50 DOCS_PER_USER=5 \
-MAIN_COMMITS=8 FEATURE_COMMITS=5 BLOCKS_PER_COMMIT=100 \
+MAIN_COMMITS=8 FEATURE_BRANCHES=1 FEATURE_COMMITS=5 BLOCKS_PER_COMMIT=100 \
 SEED_VUS=20 \
 k6 run perf/seed/seed_dataset.js
 ```
@@ -65,6 +67,7 @@ PERF_SEED_BLOCKS_PER_COMMIT=100
 
 - `DOCS_PER_USER`: 5 이상
 - `MAIN_COMMITS`: 8 이상
+- `FEATURE_BRANCHES`: 1 이상. graph branch 수 확장 테스트에서는 이 값을 늘림
 - `FEATURE_COMMITS`: 5 이상
 - `BLOCKS_PER_COMMIT`: 100 이상
 
@@ -110,3 +113,45 @@ SEARCH_PREFIX=PERF
 - `sidebar`보다 `full list`가 크게 느리면 preview 조립 비용 영향이 큼
 - `search`까지 더 느리면 목록 조립 비용 + 검색 쿼리 비용이 함께 작동
 - `PAGE_SIZE` 증가에 따라 p95가 급격히 오르면 per-doc 조립 비용이 병목일 가능성이 큼
+
+## 5) Run graph benchmark
+
+그래프 CQRS 적용 여부를 판단할 때는 먼저 현재 구조의 baseline을 측정합니다.
+Benchmark setup 단계에서 유저별 `/api/document` 목록을 조회해 테스트 대상 `docId`를 준비하고,
+실제 부하 구간에서는 `/api/document/{docId}/graph`만 반복 호출합니다.
+
+```bash
+RUN_ID=graph01 \
+BASE_URL=http://localhost:8080 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
+USER_COUNT=50 DOCS_PER_USER=5 \
+TITLE_PREFIX=PDEL \
+GRAPH_VUS=10 GRAPH_DURATION=30s \
+k6 run perf/read/doc_graph_benchmark.js
+```
+
+Branch 수 확장용 seed 예시:
+
+```bash
+RUN_ID=graph-branch-r1 \
+BASE_URL=http://localhost:8080 \
+USER_PREFIX=perfuser USER_DOMAIN=test.com USER_PASSWORD=Testtest1 \
+USER_COUNT=10 DOCS_PER_USER=2 \
+MAIN_COMMITS=30 FEATURE_BRANCHES=10 FEATURE_COMMITS=10 BLOCKS_PER_COMMIT=1 \
+SEED_VUS=2 \
+k6 run perf/seed/seed_dataset.js
+```
+
+핵심 지표:
+
+- `op_doc_graph_ms`
+- `op_doc_graph_payload_bytes`
+- `op_doc_graph_branch_count`
+- `op_doc_graph_commit_count`
+- `op_doc_graph_edge_count`
+
+해석 기준:
+
+- commit/edge 수 증가에 따라 `op_doc_graph_ms` p95/p99가 뚜렷하게 증가하면 graph read model 후보로 본다.
+- 응답 시간이 안정적인데 payload만 커진다면 CQRS보다 응답 축약, pagination, lazy loading을 먼저 검토한다.
+- commit 생성 직후 graph 즉시성이 중요하면 read model 조회 전환 시 MySQL fallback 또는 command 응답 보강이 필요하다.

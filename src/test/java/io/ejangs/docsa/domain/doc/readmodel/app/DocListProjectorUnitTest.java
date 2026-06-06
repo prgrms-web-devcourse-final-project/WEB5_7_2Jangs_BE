@@ -1,6 +1,7 @@
 package io.ejangs.docsa.domain.doc.readmodel.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -80,6 +81,17 @@ class DocListProjectorUnitTest {
     }
 
     @Test
+    @DisplayName("DOC_CREATED 이벤트는 read model이 이미 존재하면 멱등하게 무시한다")
+    void project_ignore_docCreatedWhenReadModelAlreadyExists() throws Exception {
+        DocCreatedPayload payload = createdPayload();
+        when(docListReadModelRepository.existsById(docId)).thenReturn(true);
+
+        docListProjector.project(message(1L, DomainEventType.DOC_CREATED, payload));
+
+        verify(docListReadModelRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("DOC_TITLE_CHANGED 이벤트를 문서 목록 read model에 반영한다")
     void project_success_docTitleChanged() throws Exception {
         DocListReadModel model = existingModel(1L);
@@ -94,6 +106,23 @@ class DocListProjectorUnitTest {
         assertThat(model.getUpdatedAt()).isEqualTo(titleUpdatedAt);
         assertThat(model.isDeleted()).isFalse();
         assertThat(model.getLastProjectedEventId()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("DOC_TITLE_CHANGED 이벤트는 read model이 없으면 재시도 대상 예외를 던진다")
+    void project_fail_docTitleChangedWhenReadModelMissing() throws Exception {
+        DocTitleChangedPayload payload =
+                new DocTitleChangedPayload(docId, "변경 제목", LocalDateTime.of(2026, 1, 3, 10, 0));
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> docListProjector.project(message(2L, DomainEventType.DOC_TITLE_CHANGED, payload)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Doc list read model is missing")
+                .hasMessageContaining("DOC_TITLE_CHANGED")
+                .hasMessageContaining("eventId=2")
+                .hasMessageContaining(docId.toString());
+
+        verify(docListReadModelRepository, never()).save(any());
     }
 
     @Test
@@ -114,6 +143,23 @@ class DocListProjectorUnitTest {
     }
 
     @Test
+    @DisplayName("DOC_ACTIVITY_CHANGED 이벤트는 read model이 없으면 재시도 대상 예외를 던진다")
+    void project_fail_docActivityChangedWhenReadModelMissing() throws Exception {
+        DocActivityChangedPayload payload =
+                new DocActivityChangedPayload(docId, 20L, LocalDateTime.of(2026, 1, 4, 10, 0));
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> docListProjector.project(message(2L, DomainEventType.DOC_ACTIVITY_CHANGED, payload)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Doc list read model is missing")
+                .hasMessageContaining("DOC_ACTIVITY_CHANGED")
+                .hasMessageContaining("eventId=2")
+                .hasMessageContaining(docId.toString());
+
+        verify(docListReadModelRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("DOC_THUMBNAIL_CHANGED 이벤트를 문서 목록 read model에 반영한다")
     void project_success_docThumbnailChanged() throws Exception {
         DocListReadModel model = existingModel(1L);
@@ -130,6 +176,23 @@ class DocListProjectorUnitTest {
     }
 
     @Test
+    @DisplayName("DOC_THUMBNAIL_CHANGED 이벤트는 read model이 없으면 재시도 대상 예외를 던진다")
+    void project_fail_docThumbnailChangedWhenReadModelMissing() throws Exception {
+        DocThumbnailChangedPayload payload =
+                new DocThumbnailChangedPayload(docId, "thumbnail-2", ThumbnailStatus.PENDING);
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> docListProjector.project(message(2L, DomainEventType.DOC_THUMBNAIL_CHANGED, payload)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Doc list read model is missing")
+                .hasMessageContaining("DOC_THUMBNAIL_CHANGED")
+                .hasMessageContaining("eventId=2")
+                .hasMessageContaining(docId.toString());
+
+        verify(docListReadModelRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("DOC_DELETED 이벤트를 문서 목록 read model에 반영한다")
     void project_success_docDeleted() throws Exception {
         DocListReadModel model = existingModel(1L);
@@ -141,6 +204,22 @@ class DocListProjectorUnitTest {
         verify(docListReadModelRepository).save(model);
         assertThat(model.isDeleted()).isTrue();
         assertThat(model.getLastProjectedEventId()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("DOC_DELETED 이벤트는 read model이 없으면 재시도 대상 예외를 던진다")
+    void project_fail_docDeletedWhenReadModelMissing() throws Exception {
+        DocDeletedPayload payload = new DocDeletedPayload(docId);
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> docListProjector.project(message(2L, DomainEventType.DOC_DELETED, payload)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Doc list read model is missing")
+                .hasMessageContaining("DOC_DELETED")
+                .hasMessageContaining("eventId=2")
+                .hasMessageContaining(docId.toString());
+
+        verify(docListReadModelRepository, never()).save(any());
     }
 
     @Test
