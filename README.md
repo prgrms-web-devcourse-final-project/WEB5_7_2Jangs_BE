@@ -55,7 +55,7 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 브�
 </div>
 
 ## 🌐 시스템 아키텍처
-<img width="2000" height="1000" alt="이장님들-System-arch" src="https://github.com/user-attachments/assets/4ea1be39-6fea-479c-a9cb-03e717522fff" />
+<img width="4070" height="2460" alt="dosa(slack추가본)" src="https://github.com/user-attachments/assets/a6b22c7d-e775-42c8-827e-cb0b56d96f68" />
 
 
 
@@ -127,9 +127,10 @@ Docsa는 문서의 변경 사항을 기록(commit) 단위로 추적하고, 브�
 
 
 
+
 ## 📄 ERD
 ### [데이터 모델 도출 과정](https://github.com/prgrms-web-devcourse-final-project/WEB5_7_2Jangs_BE/wiki/%F0%9F%93%84-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EB%AA%A8%EB%8D%B8-%EB%8F%84%EC%B6%9C-%EA%B3%BC%EC%A0%95) 
-<img width="1700" height="806" alt="docsa-몽고도입 후" src="https://github.com/user-attachments/assets/fa0367db-218b-4553-891f-23c9615e73ca" />
+<img width="2650" height="1232" alt="docsa-erd" src="https://github.com/user-attachments/assets/1de00357-4b1e-4afe-8ef8-98b6813e605f" />
 
 ## 📄 Flow Chart
 <img width="1468" height="1021" alt="이장님들-페이지-1 drawio" src="https://github.com/user-attachments/assets/1204efd2-94d9-42db-a7fd-c79af0efeace" />
