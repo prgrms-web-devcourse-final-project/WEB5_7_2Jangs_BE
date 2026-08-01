@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>커밋 본문 캐시 비교 실험 구현 계획</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f6fb;
+      --surface: #fff;
+      --soft: #f8fafc;
+      --line: #dce4ef;
+      --text: #172033;
+      --muted: #64748b;
+      --navy: #172554;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --green: #047857;
+      --green-soft: #ecfdf5;
+      --amber: #b45309;
+      --amber-soft: #fffbeb;
+      --red: #b91c1c;
+      --red-soft: #fef2f2;
+      --shadow: 0 16px 44px rgba(15, 23, 42, .07);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      line-height: 1.68;
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: #eaf0f7;
+      color: #0f172a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+    pre {
+      margin: 12px 0 0;
+      padding: 16px;
+      overflow-x: auto;
+      border-radius: 10px;
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 940px);
+      gap: 28px;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      min-width: 0;
+      max-width: 100%;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .95);
+      box-shadow: var(--shadow);
+    }
+    .toc strong {
+      display: block;
+      margin-bottom: 11px;
+      color: #1e40af;
+      font-size: 14px;
+    }
+    .toc a {
+      display: block;
+      padding: 7px 8px;
+      border-radius: 7px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .toc a:hover { background: var(--blue-soft); color: #1e40af; text-decoration: none; }
+    main { min-width: 0; }
+
+    .hero {
+      padding: 42px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--navy), #1d4ed8 62%, #2563eb);
+      color: #fff;
+      box-shadow: 0 24px 64px rgba(30, 64, 175, .24);
+    }
+    .eyebrow {
+      margin: 0 0 12px;
+      color: #bfdbfe;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      max-width: 760px;
+      font-size: clamp(32px, 6vw, 48px);
+      line-height: 1.14;
+      letter-spacing: -.035em;
+    }
+    .hero .lead {
+      max-width: 760px;
+      margin: 18px 0 0;
+      overflow-wrap: anywhere;
+      color: #dbeafe;
+      font-size: 17px;
+    }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .pill {
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      background: rgba(255,255,255,.11);
+      color: #eff6ff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    section {
+      margin-top: 24px;
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      scroll-margin-top: 24px;
+    }
+    h2 { margin: 0 0 18px; font-size: 25px; line-height: 1.3; letter-spacing: -.02em; }
+    h3 { margin: 24px 0 10px; font-size: 18px; line-height: 1.4; }
+    p { margin: 0 0 14px; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 10px 0 0; padding-left: 22px; }
+    li + li { margin-top: 6px; }
+
+    .grid-4, .grid-3, .grid-2 { display: grid; gap: 14px; }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .metric, .card {
+      min-width: 0;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--soft);
+    }
+    .metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .metric strong { display: block; margin-top: 6px; font-size: 21px; line-height: 1.25; }
+    .card h3 { margin: 0 0 8px; }
+    .card p { color: var(--muted); font-size: 14px; }
+    .card.good { border-color: #a7f3d0; background: var(--green-soft); }
+    .card.warn { border-color: #fde68a; background: var(--amber-soft); }
+    .card.stop { border-color: #fecaca; background: var(--red-soft); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .flow-item {
+      position: relative;
+      min-width: 0;
+      padding: 16px 13px;
+      border: 1px solid #bfdbfe;
+      border-radius: 11px;
+      background: var(--blue-soft);
+      text-align: center;
+    }
+    .flow-item:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 50%;
+      right: -15px;
+      color: var(--blue);
+      font-weight: 900;
+      transform: translateY(-50%);
+    }
+    .flow-item b { display: block; color: #1e40af; font-size: 14px; }
+    .flow-item span { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+
+    .phase {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 150px;
+      gap: 16px;
+      align-items: start;
+      padding: 18px 0;
+      border-top: 1px solid var(--line);
+    }
+    .phase:first-of-type { border-top: 0; }
+    .phase-no {
+      width: 58px;
+      padding: 6px 0;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1e40af;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .phase h3 { margin: 0 0 6px; }
+    .phase p { margin: 0; color: var(--muted); font-size: 14px; }
+    .verify {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 12px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--soft); color: #334155; font-size: 13px; }
+    tr:last-child td { border-bottom: 0; }
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .gate {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 190px;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+    .gate:first-of-type { border-top: 0; }
+    .gate strong:last-child { text-align: right; color: #1e40af; }
+    details {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+    }
+    summary { padding: 13px 15px; cursor: pointer; color: #334155; font-weight: 800; }
+    details > div { padding: 0 15px 15px; }
+    .notice {
+      padding: 16px 18px;
+      border-left: 4px solid var(--amber);
+      border-radius: 8px;
+      background: var(--amber-soft);
+    }
+    footer { margin-top: 24px; padding: 22px 8px; color: var(--muted); text-align: center; font-size: 13px; }
+
+    @media (max-width: 980px) {
+      .shell { display: block; width: 100%; }
+      .toc { position: static; max-height: none; margin-bottom: 28px; padding: 14px; }
+      .toc strong { margin-bottom: 8px; }
+      .toc nav { display: flex; gap: 6px; max-width: 100%; overflow-x: auto; padding-bottom: 3px; white-space: nowrap; scrollbar-width: thin; }
+      .toc a { flex: 0 0 auto; padding: 6px 9px; border: 1px solid var(--line); background: var(--soft); }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow { grid-template-columns: 1fr; }
+      .flow-item:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -21px; transform: translateX(50%); }
+    }
+    @media (max-width: 680px) {
+      .shell { padding: 16px 12px 48px; }
+      .hero, section { padding: 22px; border-radius: 12px; }
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .phase, .gate { grid-template-columns: 1fr; }
+      .gate strong:last-child { text-align: left; }
+      .verify { text-align: left; }
+    }
+    @media print {
+      body { background: #fff; }
+      .shell { display: block; max-width: none; padding: 0; }
+      .toc { display: none; }
+      .hero { color: #111827; background: #fff; box-shadow: none; border: 1px solid var(--line); }
+      .hero .lead, .eyebrow { color: #475569; }
+      section { break-inside: avoid; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="toc" aria-label="문서 목차">
+      <strong>구현계획 목차</strong>
+      <nav>
+        <a href="#summary">한눈에 보기</a>
+        <a href="#principles">구현 원칙</a>
+        <a href="#architecture">최종 구조</a>
+        <a href="#phases">실행 단계</a>
+        <a href="#files">변경 파일</a>
+        <a href="#tests">검증 전략</a>
+        <a href="#matrix">부하 매트릭스</a>
+        <a href="#decision">중단·선택 기준</a>
+        <a href="#scope">제외 범위</a>
+        <a href="#handoff">실행 전 선택</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <p class="eyebrow">DOCSA · IMPLEMENTATION PLAN</p>
+        <h1>커밋 본문 캐시<br>비교 실험 구현 계획</h1>
+        <p class="lead">Redis를 넣는 계획이 아니라, 캐시가 필요한지부터 검증하고 Caffeine과 Redis를 같은 조건에서 비교해 결과로 하나를 선택하는 실행 계획이다.</p>
+        <div class="pills">
+          <span class="pill">구현 전 Issue</span>
+          <span class="pill">TDD</span>
+          <span class="pill">Fail-Open</span>
+          <span class="pill">3회 반복</span>
+          <span class="pill">단일 앱</span>
+          <span class="pill">운영 채택은 후속 설계</span>
+        </div>
+      </header>
+
+      <section id="summary">
+        <h2>한눈에 보기</h2>
+        <div class="grid-4">
+          <div class="metric"><span>구현 작업</span><strong>13개</strong></div>
+          <div class="metric"><span>비교 후보</span><strong>3가지</strong></div>
+          <div class="metric"><span>기본 커밋 수</span><strong>400개</strong></div>
+          <div class="metric"><span>반복 측정</span><strong>조건당 3회</strong></div>
+        </div>
+        <div class="grid-3" style="margin-top:14px">
+          <div class="card good"><h3>먼저 증명</h3><p>10% 증분 데이터가 실제 API 경로로 정확히 만들어지는지 자동 테스트한다.</p></div>
+          <div class="card good"><h3>동일 조건 비교</h3><p>cache key·value·TTL·데이터셋·JVM·부하 순서를 고정한다.</p></div>
+          <div class="card warn"><h3>결과 전 채택 금지</h3><p>Redis 사용 경험과 운영 채택을 구분한다. 차이가 작으면 단순한 쪽을 고른다.</p></div>
+        </div>
+      </section>
+
+      <section id="principles">
+        <h2>구현 원칙</h2>
+        <div class="grid-2">
+          <div class="card"><h3>변경하지 않는 것</h3><ul><li>커밋 조회 API와 응답 JSON</li><li>MySQL schema와 MongoDB collection</li><li>권한 확인과 MySQL 커밋 확인 순서</li><li>기존 인증용 Caffeine 캐시</li></ul></div>
+          <div class="card"><h3>새로 만드는 것</h3><ul><li>커밋 본문 전용 cache-aside 계층</li><li>provider별 격리 설정</li><li>결정적 증분 seed</li><li>부하 실행·결과 판정 자동화</li></ul></div>
+        </div>
+        <div class="notice" style="margin-top:16px"><strong>중요:</strong> 이 계획은 비교 실험까지다. 최종 운영 TTL, 메모리 예산, eviction과 churn 정책은 측정 승자가 나온 뒤 별도 채택 설계에서 다룬다.</div>
+      </section>
+
+      <section id="architecture">
+        <h2>최종 구조</h2>
+        <div class="flow">
+          <div class="flow-item"><b>권한 확인</b><span>기존 Doc 검사</span></div>
+          <div class="flow-item"><b>MySQL 확인</b><span>삭제 commit 차단</span></div>
+          <div class="flow-item"><b>전용 캐시</b><span>commitMongoId key</span></div>
+          <div class="flow-item"><b>Mongo 조립</b><span>miss·오류 fallback</span></div>
+          <div class="flow-item"><b>기존 응답</b><span>JSON 계약 유지</span></div>
+        </div>
+        <h3>캐시 내부 책임</h3>
+        <div class="grid-3">
+          <div class="card"><h3>Cache-Aside</h3><p>hit면 본문 반환, miss면 기존 assembler 실행 후 성공 결과만 저장한다.</p></div>
+          <div class="card"><h3>Single-Flight</h3><p>같은 key 동시 miss만 하나로 합친다. Redis 분산 락은 추가하지 않는다.</p></div>
+          <div class="card"><h3>Fail-Open</h3><p>캐시 get·put 오류는 Mongo 원본 경로로 처리한다. 원본 오류는 그대로 API 오류다.</p></div>
+        </div>
+      </section>
+
+      <section id="phases">
+        <h2>실행 단계</h2>
+        <div class="phase"><div class="phase-no">01</div><div><h3>실험 계약 고정</h3><p>기존 GitHub Issue를 확인하고 없으면 범위·판정식을 이슈로 합의한다. 계정 확인 전 assignee를 임의 지정하지 않는다.</p></div><div class="verify">Issue 번호 확인</div></div>
+        <div class="phase"><div class="phase-no">02</div><div><h3>데이터 생성 신뢰성</h3><p>첫 commit은 전체 block, 이후 commit은 10%만 신규 생성하고 나머지는 이전 ID를 재사용한다. 무작위 ID를 제거한다.</p></div><div class="verify">Node 테스트 + k6 inspect</div></div>
+        <div class="phase"><div class="phase-no">03</div><div><h3>캐시 코어 구현</h3><p>none·Caffeine·Redis provider, 인증 캐시 격리, cache-aside, metric, single-flight, fail-open을 테스트 우선으로 구현한다.</p></div><div class="verify">단위 테스트</div></div>
+        <div class="phase"><div class="phase-no">04</div><div><h3>실제 경로 연결</h3><p>CommitService의 기존 권한/MySQL 흐름 뒤에 캐시를 연결하고 삭제 시 best-effort evict를 호출한다.</p></div><div class="verify">조회·삭제 회귀</div></div>
+        <div class="phase"><div class="phase-no">05</div><div><h3>Redis와 부하 도구 검증</h3><p>실제 Redis 컨테이너로 직렬화·TTL·중지·복구를 검증하고 k6 시나리오와 실행기를 완성한다.</p></div><div class="verify">통합 + smoke</div></div>
+        <div class="phase"><div class="phase-no">06</div><div><h3>측정·판정·staging</h3><p>교차 순서로 3회 반복한 뒤 자동 판정한다. 승자 하나만 제한된 staging 조건에서 방향성을 확인한다.</p></div><div class="verify">근거 문서</div></div>
+      </section>
+
+      <section id="files">
+        <h2>변경 파일과 책임</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>영역</th><th>핵심 파일</th><th>책임</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tag">Java</span></td><td><code>domain/commit/cache/*</code></td><td>provider 설정, cache-aside, single-flight, metric</td></tr>
+              <tr><td><span class="tag">기존 서비스</span></td><td><code>CommitService.java</code></td><td>조회 연결과 삭제 evict만 최소 변경</td></tr>
+              <tr><td><span class="tag">격리</span></td><td><code>CacheConfig.java</code></td><td>기존 bean 이름과 인증 코드는 유지하고 primary 지정만 추가</td></tr>
+              <tr><td><span class="tag">Seed</span></td><td><code>perf/seed/*</code></td><td>10% 증분 block 재사용을 결정적으로 생성</td></tr>
+              <tr><td><span class="tag">부하</span></td><td><code>perf/read/commit_*</code></td><td>시나리오, 반복 실행, 결과 판정 자동화</td></tr>
+              <tr><td><span class="tag">인프라</span></td><td><code>docker-compose.local.yml</code></td><td>profile로만 켜는 실험용 Redis</td></tr>
+              <tr><td><span class="tag">문서</span></td><td><code>docs/performance/*</code></td><td>측정 조건, 원본 근거, 선택·기각 사유</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <details>
+          <summary>예상 Java 공개 인터페이스 보기</summary>
+          <div><pre>List&lt;Map&lt;String, Object&gt;&gt; get(
+    String commitMongoId,
+    Supplier&lt;List&lt;Map&lt;String, Object&gt;&gt;&gt; loader
+);
+
+void evict(String commitMongoId);</pre></div>
+        </details>
+      </section>
+
+      <section id="tests">
+        <h2>검증 전략</h2>
+        <div class="grid-3">
+          <div class="card"><h3>순수 함수</h3><p>증분 seed의 신규 block 수, 재사용 수, 회전 구간과 100% 기존 동작을 빠르게 검증한다.</p></div>
+          <div class="card"><h3>Java 단위</h3><p>hit·miss·오류·동시성·삭제 evict와 metric을 원인별로 검증한다.</p></div>
+          <div class="card"><h3>실제 Redis</h3><p>Mock만으로 끝내지 않고 JSON, namespace, TTL, stop/recovery를 컨테이너에서 확인한다.</p></div>
+        </div>
+        <h3>반드시 통과해야 하는 행동</h3>
+        <ul>
+          <li>첫 조회만 Mongo 조립하고 두 번째 조회는 hit가 된다.</li>
+          <li>원본 조회·조립 실패 결과는 캐시하지 않는다.</li>
+          <li>cache get·put 오류가 정상 원본 응답을 실패시키지 않는다.</li>
+          <li>같은 key 동시 20요청에서도 loader가 한 번만 실행된다.</li>
+          <li>삭제된 commit은 캐시가 남아 있어도 MySQL 확인 단계에서 차단된다.</li>
+          <li>기존 인증 캐시와 전체 Gradle 회귀 테스트가 통과한다.</li>
+        </ul>
+        <details><summary>주요 검증 명령 보기</summary><div><pre>node --test perf/seed/commit_block_plan.test.mjs
+k6 inspect perf/seed/seed_dataset.js
+k6 inspect perf/read/commit_content_benchmark.js
+./gradlew test --tests '*CommitContentCache*'
+./gradlew test</pre></div></details>
+      </section>
+
+      <section id="matrix">
+        <h2>부하 매트릭스</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>목적</th><th>조건</th><th>반복</th><th>보는 것</th></tr></thead>
+            <tbody>
+              <tr><td>크기 baseline</td><td>none · 100/500/1,000 blocks · VU20 · 60초</td><td>각 3회</td><td>block 증가에 따른 원본 비용</td></tr>
+              <tr><td>주 비교</td><td>세 provider · Hot/Mixed · 500 blocks · VU20/50/100</td><td>각 3회</td><td>p95, 처리량, Mongo 감소</td></tr>
+              <tr><td>큰 본문</td><td>세 provider · Hot/Mixed · 1,000 blocks · VU50</td><td>각 3회</td><td>heap·GC·Redis 직렬화</td></tr>
+              <tr><td>Cold</td><td>400 key를 각각 1회 · VU50</td><td>각 3회</td><td>miss와 write 회귀</td></tr>
+              <tr><td>Cold burst</td><td>같은 key · VU10/50/100</td><td>조건별</td><td>single-flight와 대기 지연</td></tr>
+              <tr><td>포화점</td><td>Mixed 500 · 25→50→100→200 req/s</td><td>단계 60초</td><td>dropped request와 급변 구간</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>실행 순서 편향 통제</h3>
+        <div class="grid-3">
+          <div class="card"><h3>1회</h3><p>none → Caffeine → Redis</p></div>
+          <div class="card"><h3>2회</h3><p>Redis → none → Caffeine</p></div>
+          <div class="card"><h3>3회</h3><p>Caffeine → Redis → none</p></div>
+        </div>
+      </section>
+
+      <section id="decision">
+        <h2>중단·선택 기준</h2>
+        <div class="gate"><span>3회 결과가 같은 방향이 아니거나 데이터가 부족하다.</span><strong>판정 보류</strong></div>
+        <div class="gate"><span>p95 개선이 <code>max(10%, baseline 변동폭)</code>보다 작다.</span><strong>캐시 미도입</strong></div>
+        <div class="gate"><span>Caffeine과 Redis 차이가 최소 의미 차이보다 작다.</span><strong>Caffeine 선택</strong></div>
+        <div class="gate"><span>Redis가 p95/처리량에서 유효하게 우수하거나 Caffeine heap·GC 문제를 유효하게 줄인다.</span><strong>Redis 후보</strong></div>
+        <div class="gate"><span>Redis 중단이 정상 커밋 조회 실패로 이어진다.</span><strong>Redis 제외</strong></div>
+        <div class="gate"><span>큰 응답에서 네트워크·JSON 비용만 남고 서버 cache 효과가 작다.</span><strong>ETag 후속 검토</strong></div>
+      </section>
+
+      <section id="scope">
+        <h2>의도적으로 제외하는 범위</h2>
+        <div class="grid-2">
+          <div class="card stop"><h3>이번에 하지 않음</h3><ul><li>다중 애플리케이션 인스턴스</li><li>5,000 blocks 한계 실험</li><li>Redis 분산 락</li><li>HTTP ETag와 브라우저 캐시</li></ul></div>
+          <div class="card stop"><h3>결과 뒤에 결정</h3><ul><li>운영 TTL과 메모리 예산</li><li>eviction과 churn</li><li>staging Redis 영구 구성</li><li>패배 provider 제거 방식</li></ul></div>
+        </div>
+        <p style="margin-top:16px;color:var(--muted)">기존 사용자 소유 미추적 테스트 파일은 변경하거나 stage하지 않으며, AI는 별도 요청 없이 commit·push·merge하지 않는다.</p>
+      </section>
+
+      <section id="handoff">
+        <h2>실행 전 선택</h2>
+        <p>계획 승인 후 두 가지 방식 중 하나로 실행할 수 있다. 어느 방식을 선택해도 Task 0의 Issue 확인과 승인 gate부터 시작한다.</p>
+        <div class="grid-2">
+          <div class="card good"><h3>1. 작업별 분리 실행 · 권장</h3><p>각 Task를 독립 작업으로 실행하고 구현·요구사항 검토를 단계마다 수행한다. 작업량이 큰 이번 계획에 더 안전하다.</p></div>
+          <div class="card"><h3>2. 현재 세션에서 순차 실행</h3><p>여러 Task를 묶어 실행한 뒤 checkpoint에서 검토한다. 문맥은 이어지지만 한 번의 변경량이 커질 수 있다.</p></div>
+        </div>
+        <details><summary>AI용 상세 계획 원문</summary><div><p><a href="2026-08-01-commit-content-cache-benchmark-plan.md">Markdown 구현계획 원문 열기</a></p></div></details>
+      </section>
+
+      <footer>
+        사용자 검토 기준 문서 · 2026-08-01<br>
+        <a href="../specs/2026-08-01-commit-content-cache-benchmark-design.html">설계 문서로 돌아가기</a>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
