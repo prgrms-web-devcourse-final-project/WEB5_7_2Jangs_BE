@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>커밋 본문 캐시 로컬 벤치마크 판정</title>
+  <style>
+    :root { --bg:#f3f6fb; --surface:#fff; --soft:#f8fafc; --line:#dce4ef; --text:#172033; --muted:#64748b; --navy:#172554; --blue:#2563eb; --blue-soft:#eff6ff; --amber:#b45309; --amber-soft:#fffbeb; --green:#047857; --green-soft:#ecfdf5; --shadow:0 16px 44px rgba(15,23,42,.07); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif; line-height:1.65; }
+    a { color:var(--blue); } code { padding:2px 6px; border-radius:5px; background:#eaf0f7; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; overflow-wrap:anywhere; }
+    .shell { max-width:1180px; margin:auto; padding:28px 20px 72px; }
+    .hero { padding:38px; border-radius:20px; background:linear-gradient(135deg,var(--navy),#1d4ed8 62%,#2563eb); color:#fff; box-shadow:0 24px 64px rgba(30,64,175,.24); }
+    .eyebrow { margin:0 0 10px; color:#bfdbfe; font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(30px,5vw,46px); line-height:1.15; letter-spacing:-.035em; } .lead { max-width:800px; margin:16px 0 0; color:#dbeafe; font-size:17px; }
+    .pills,.grid { display:grid; gap:14px; } .pills { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:24px; } .pill { padding:12px; border:1px solid rgba(255,255,255,.24); border-radius:10px; background:rgba(255,255,255,.11); font-size:13px; font-weight:700; }
+    section { margin-top:22px; padding:28px; border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:var(--shadow); } h2 { margin:0 0 16px; font-size:25px; line-height:1.3; } h3 { margin:20px 0 8px; font-size:18px; } p { margin:0 0 13px; } .grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .card { padding:17px; border:1px solid var(--line); border-radius:11px; background:var(--soft); } .card b { display:block; font-size:18px; } .card span { color:var(--muted); font-size:13px; } .card.warn { border-color:#fde68a; background:var(--amber-soft); } .card.good { border-color:#a7f3d0; background:var(--green-soft); }
+    .table-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:10px; } table { width:100%; border-collapse:collapse; min-width:760px; font-size:14px; } th,td { padding:11px 12px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; } th { background:#f1f5f9; color:#334155; white-space:nowrap; } tr:last-child td { border-bottom:0; } .note { padding:14px 16px; border-left:4px solid var(--amber); border-radius:8px; background:var(--amber-soft); } .ok { padding:14px 16px; border-left:4px solid var(--green); border-radius:8px; background:var(--green-soft); } ul { margin:8px 0 0; padding-left:20px; } li + li { margin-top:5px; }
+    @media (max-width:720px) { .shell { padding:16px 12px 48px; } .hero,section { padding:22px; } .pills,.grid { grid-template-columns:1fr; } h2 { font-size:22px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">Local benchmark decision · 2026-08-02</p>
+      <h1>커밋 본문 캐시는<br>Caffeine 후보로 선택합니다.</h1>
+      <p class="lead">핵심 6개 조건은 모두 cache 후보를 확인했습니다. Redis가 Caffeine보다 최소 의미 차이 이상 우수하지 않아 선택 규칙은 Caffeine을 가리키지만, 보정된 cold 4조건은 이 결론을 약화합니다.</p>
+      <div class="pills"><div class="pill">핵심 6조건 · 모두 CACHE_CANDIDATE_CONFIRMED</div><div class="pill">Redis Fail-Open · 통과</div><div class="pill">staging 부하 · 미실행</div></div>
+    </header>
+
+    <section>
+      <h2>결론과 이유</h2>
+      <div class="grid">
+        <div class="card good"><span>최종 판정</span><b>Caffeine 후보 선택</b><p>핵심 6개 조건이 cache 후보를 확인했고, Caffeine/Redis의 차이는 최소 의미 차이 미만이다.</p></div>
+        <div class="card warn"><span>보류 위험</span><b>cold 경로는 후보 확인 0건</b><p>보정된 4조건은 NO_MEANINGFUL_IMPROVEMENT 2건, INCONCLUSIVE 2건이며 Caffeine p95 회귀 또는 방향 불일치를 보였다.</p></div>
+        <div class="card good"><span>안전성 gate</span><b>Redis Fail-Open 통과</b><p>Redis stop 후에도 health UP/API 성공, restart 뒤 miss·put·hit 회복을 확인했다.</p></div>
+      </div>
+      <p class="note">실제 성공 VU/rate summary에서 <code>dropped_iterations</code> key가 없음을 재현했다. 공식 k6 정의(실행하지 못한 iteration Counter)와 TDD 검증에 따라, 유효한 metrics 객체에서 key만 없으면 0으로 해석한다. key가 존재하지만 count가 null이거나 metrics 객체가 없으면 null을 유지한다.</p>
+    </section>
+
+    <section>
+      <h2>핵심 6조건: p95와 처리량</h2>
+      <p>각 칸은 3회 평균입니다. 괄호는 none과 run 번호를 짝지은 평균 p95 변화율입니다. 6개 모두 자동 <code>CACHE_CANDIDATE_CONFIRMED</code>를 받았습니다.</p>
+      <div class="table-wrap"><table><thead><tr><th>조건</th><th>none</th><th>Caffeine</th><th>Redis</th><th>최소 의미 차이</th></tr></thead><tbody>
+        <tr><td>Hot VU20</td><td>28.49 ms / 301.70/s</td><td>22.49 ms / 324.74/s (+21.06%)</td><td>23.64 ms / 325.08/s (+17.05%)</td><td>10.61%</td></tr>
+        <tr><td>Hot VU50</td><td>157.51 ms / 306.58/s</td><td>141.46 ms / 348.68/s (+10.18%)</td><td>144.32 ms / 331.99/s (+8.33%)</td><td>10.00%</td></tr>
+        <tr><td>Hot VU100</td><td>378.98 ms / 329.38/s</td><td>336.07 ms / 360.56/s (+11.32%)</td><td>347.86 ms / 355.81/s (+8.21%)</td><td>10.00%</td></tr>
+        <tr><td>Mixed VU20</td><td>27.42 ms / 314.32/s</td><td>22.07 ms / 344.61/s (+19.50%)</td><td>23.32 ms / 332.27/s (+14.96%)</td><td>10.00%</td></tr>
+        <tr><td>Mixed VU50</td><td>157.22 ms / 322.75/s</td><td>141.05 ms / 354.09/s (+10.28%)</td><td>140.94 ms / 348.51/s (+10.33%)</td><td>10.00%</td></tr>
+        <tr><td>Mixed VU100</td><td>404.36 ms / 336.53/s</td><td>349.33 ms / 366.35/s (+13.60%)</td><td>345.83 ms / 354.03/s (+14.47%)</td><td>10.00%</td></tr>
+      </tbody></table></div>
+      <p>기록된 core run에서 <code>commit_get_failed</code> 및 cache get/put error Δ는 0이다. raw key가 없는 dropped는 k6 Counter 의미에 따라 0으로 판정됐다.</p>
+    </section>
+
+    <section>
+      <h2>cache·자원 관측</h2>
+      <div class="grid">
+        <div class="card"><span>Mongo assemble / cache hit</span><b>none: assemble 양수, hit 0</b><p>핵심 6조건의 none assemble 평균은 19,194~21,490이다. Caffeine/Redis는 assemble 0, hit 20,722~23,526으로 기록됐다.</p></div>
+        <div class="card"><span>Heap / GC</span><b>일관된 capacity 근거 없음</b><p>전후 heap 차이는 양·음수가 섞인다. Caffeine GC count는 15~21, Redis는 65~76, none은 110~133이지만 단일 로컬 snapshot 차이만으로 일반화하지 않는다.</p></div>
+        <div class="card"><span>Redis used_memory Δ</span><b>+24,995~+52,291 B</b><p>핵심 6조건의 3회 평균. Redis capacity 산정이나 운영 메모리 예측으로 쓰지 않는다.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>보조 조건과 cold 회귀</h2>
+      <div class="table-wrap"><table><thead><tr><th>조건</th><th>none</th><th>Caffeine</th><th>Redis</th><th>해석</th></tr></thead><tbody>
+        <tr><td>Large Hot VU50</td><td>194.67 ms / 163.99/s</td><td>170.07 ms / 182.08/s</td><td>173.12 ms / 178.06/s</td><td>cache 후보 확인, provider 차이 10% 미만</td></tr>
+        <tr><td>Large Mixed VU50</td><td>201.53 ms / 165.00/s</td><td>168.00 ms / 180.03/s</td><td>177.14 ms / 175.11/s</td><td>cache 후보 확인, provider 차이 10% 미만</td></tr>
+        <tr><td>Cold VU50</td><td>231.64 ms / 76.06/s</td><td>361.54 ms / 67.23/s</td><td>260.71 ms / 77.86/s</td><td>NO_MEANINGFUL_IMPROVEMENT</td></tr>
+        <tr><td>Cold burst VU10/50/100</td><td>37.96 / 149.99 / 271.36 ms</td><td>83.20 / 208.28 / 280.71 ms</td><td>46.20 / 224.33 / 291.46 ms</td><td>INCONCLUSIVE / NO_MEANINGFUL_IMPROVEMENT / INCONCLUSIVE</td></tr>
+      </tbody></table></div>
+      <p>large 2개는 기존 v2의 <code>CACHE_CANDIDATE_CONFIRMED</code>를 유지한다. timer 사전 등록 후 Caffeine 12회를 fresh image로 재측정했고, 12개 before에 assemble count 0과 유한한 after delta가 존재한다. v3는 원래 none/Redis와 run 번호로 짝지은 보정 분석이며 Caffeine-only 재측정이라 provider 교차순서 증거에는 포함하지 않는다.</p>
+    </section>
+
+    <section>
+      <h2>포화 탐색: 판정에 넣지 않은 단건</h2>
+      <p>승인 범위는 provider별 run-1 하나였다. Redis run-2 partial은 제외했다. 3회가 필요한 비교기를 saturation에 실행하지 않았으며, 아래는 원시 before/after 차이로 계산한 탐색 관측이다.</p>
+      <div class="table-wrap"><table><thead><tr><th>provider</th><th>p95 / 처리량</th><th>실패 / dropped</th><th>assemble / hit</th><th>GC</th><th>Redis memory</th></tr></thead><tbody>
+        <tr><td>none</td><td>8.112 ms / 70.710/s</td><td>0 / 미측정</td><td>17,249 / 0</td><td>265 / 0.497 s</td><td>미측정</td></tr>
+        <tr><td>Caffeine</td><td>8.618 ms / 70.700/s</td><td>0 / 미측정</td><td>0 / 17,249</td><td>30 / 0.079 s</td><td>미측정</td></tr>
+        <tr><td>Redis</td><td>8.393 ms / 70.392/s</td><td>0 / 미측정</td><td>0 / 17,249</td><td>90 / 0.241 s</td><td>+45,160 B</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section>
+      <h2>Redis 장애 gate</h2>
+      <p class="ok"><strong>통과.</strong> Redis stop 뒤 health는 UP/HTTP 200, verify exit 0, checks 95/95, HTTP failure 0%였다. get/put error는 각각 0→6, 0→3으로 증가해 장애를 관측하면서 DB fallback 응답 성공을 확인했다. restart 뒤 miss 82→88, put success 41→44, 이어 hit 1,590→1,593으로 재채움과 hit 회복을 확인했다.</p>
+      <p>이 안전성 증거는 Redis를 배제하지 않지만, Redis가 Caffeine보다 최소 의미 차이 이상 우수하다는 성능 증거도 아니다.</p>
+    </section>
+
+    <section>
+      <h2>다음 단계와 한계</h2>
+      <ul><li>새 cold evidence는 Caffeine 후보 결론을 약화하지만 core 6개 선택 규칙을 반전하지는 않는다.</li><li>선택된 Caffeine만 남기는 adoption design을 작성하고, cold miss/single-flight와 초기 채움 경로를 별도 검증한다.</li><li>staging은 그 설계 뒤 Mixed/VU50/60초 3회 방향성 확인만 검토하며 saturation은 실행하지 않는다.</li><li>구현 hash는 <code>61b171f0d8e888c04daeb92021aba58bdb911f62</code>지만, 측정 당시 working tree가 미커밋이라 hash만으로 구현을 재현할 수 없다.</li><li>실제 운영 로그·트래픽 기반 증거는 없으며, 로컬 절대 수치와 운영 절대 수치를 합치지 않는다.</li></ul>
+      <p>조건별 raw path, 3회 배열과 v1/v2/v3 artifact 목록은 <a href="commit-content-cache-result.md">상세 Markdown 결과 문서</a>에서 확인할 수 있다.</p>
+    </section>
+  </main>
+</body>
+</html>

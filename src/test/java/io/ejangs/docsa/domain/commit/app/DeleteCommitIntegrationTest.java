@@ -2,6 +2,11 @@ package io.ejangs.docsa.domain.commit.app;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.ejangs.docsa.domain.block.dao.mongodb.BlockRepository;
@@ -10,6 +15,7 @@ import io.ejangs.docsa.domain.branch.dao.mysql.BranchRepository;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
+import io.ejangs.docsa.domain.commit.cache.CommitContentCache;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitIntegrationTestUtils;
 import io.ejangs.docsa.domain.commit.util.TestDocIntegrationDto;
@@ -30,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -63,6 +70,9 @@ public class DeleteCommitIntegrationTest {
 
     @Autowired
     private MongoIdsCollector mongoIdsCollector;
+
+    @MockitoBean
+    private CommitContentCache commitContentCache;
 
     private User testUser;
     private Doc testDoc;
@@ -141,6 +151,26 @@ public class DeleteCommitIntegrationTest {
         assertEquals(beforeEdgeCount - 2, edgeRepository.count());
         assertEquals(beforeCommitCount - 1, commitRepository.count());
         assertEquals(beforeBranchCount, branchRepository.count());
+        verify(commitContentCache).evict(commit22.getCommitMongoId());
+    }
+
+    @Test
+    @DisplayName("삭제된 커밋은 캐시 값이 남아 있어도 MySQL 조회 실패로 반환되지 않는다")
+    void getDeletedCommit_DoesNotReturnStaleCache() {
+        // given
+        Long commitId = commit22.getId();
+        String commitMongoId = commit22.getCommitMongoId();
+        when(commitContentCache.get(anyString(), any()))
+                .thenReturn(List.of(java.util.Map.of("content", "stale")));
+        commitService.deleteCommit(testDoc.getId(), commitId, testUser.getId());
+
+        // when & then
+        assertThatThrownBy(() -> commitService.getCommit(testDoc.getId(), commitId, testUser.getId()))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
+
+        verify(commitContentCache).evict(commitMongoId);
+        verify(commitContentCache, never()).get(anyString(), any());
     }
 
     @Test

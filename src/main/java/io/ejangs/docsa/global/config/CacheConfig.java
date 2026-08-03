@@ -10,12 +10,14 @@ import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @EnableCaching
 @Configuration
 public class CacheConfig {
 
     @Bean
+    @Primary
     public CacheManager cacheManager() {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
 

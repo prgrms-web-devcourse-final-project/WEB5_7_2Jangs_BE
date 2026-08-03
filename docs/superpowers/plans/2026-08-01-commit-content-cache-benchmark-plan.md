@@ -4,7 +4,7 @@
 
 **Goal:** 단일 애플리케이션에서 캐시 없음·Caffeine·Redis의 커밋 본문 조회 성능과 장애 동작을 동일 조건으로 측정하고, 사전에 합의한 기준으로 한 가지 결론을 선택한다.
 
-**Architecture:** 기존 MySQL 커밋 존재 확인 뒤 `commitMongoId`를 key로 조립 완료 본문을 조회하는 cache-aside 계층을 둔다. 기존 인증용 Caffeine `CacheManager`는 그대로 유지하고 커밋 캐시만 별도 `CacheManager`로 격리하며, provider는 실험 실행 시 `none`, `caffeine`, `redis` 중 하나만 활성화한다. 캐시 오류는 원본 MongoDB 조립 경로로 fail-open하고, 같은 key의 동시 miss는 애플리케이션 내부 single-flight로 합친다.
+**Architecture:** 기존 MySQL 커밋 존재 확인 뒤 `commitMongoId`를 key로 조립 완료 본문을 조회하는 cache-aside 계층을 둔다. 기존 인증용 Caffeine `CacheManager`는 그대로 유지하고 커밋 캐시만 별도 `CacheManager`로 격리하며, provider는 실험 실행 시 `none`, `caffeine`, `redis` 중 하나만 활성화한다. 캐시 오류는 원본 MongoDB 조립 경로로 fail-open하고, 같은 key의 동시 miss는 애플리케이션 내부 single-flight로 합친다. 로컬 측정은 `docker-compose.local.yml`의 단일 앱 서비스가 현재 소스를 빌드하고 provider별 재생성을 담당한다.
 
 **Tech Stack:** Java 21, Spring Boot 3.5.3, Spring Cache, Caffeine, Spring Data Redis, Micrometer/Prometheus, JUnit 5, Mockito, Testcontainers, k6, Node.js 내장 테스트 러너, Docker Compose
 
@@ -45,6 +45,10 @@
   - 3회 결과의 변동폭과 최소 의미 차이를 계산해 비교표를 만든다.
 - `perf/read/run_commit_cache_matrix.sh`
   - provider·block 수·패턴·반복 번호를 명시적으로 받아 한 조건을 재현한다.
+- `perf/read/run_commit_cache_matrix.test.sh`
+  - 외부 명령을 stub으로 바꿔 입력 검증, provider별 Compose 분기, prefix 한정 Redis 정리와 비밀값 비기록을 검증한다.
+- `perf/read/measurement_gate.mjs`
+  - localhost에서 k6 setup 완료와 runner snapshot 완료 사이를 동기화한다.
 - `perf/read/results/commit-cache/.gitkeep`
   - 원본 결과 저장 위치를 고정한다.
 - `docs/performance/commit-content-cache-result.md`
@@ -67,7 +71,7 @@
 - `src/test/resources/application-test.yml`
   - 일반 회귀 테스트는 Redis 없이 `none`으로 실행한다.
 - `infra/docker-compose.local.yml`
-  - 로컬 비교용 Redis를 profile로 추가한다.
+  - 현재 소스를 빌드하는 단일 로컬 앱과 profile 기반 Redis를 제공한다.
 - `perf/seed/seed_dataset.js`
   - `COMMIT_BLOCK_CHANGE_RATE`와 결정적 block 재사용을 적용한다.
 - `perf/read/README.md`
@@ -378,7 +382,7 @@ commit_content_cache_eviction_total{result=success|error}
 commit_content_assemble_seconds
 ```
 
-key, commitMongoId, 사용자 정보, 본문은 tag와 로그에 넣지 않는다. Redis의 인프라 `evicted_keys`는 애플리케이션 best-effort evict metric과 별도로 결과 수집 단계에서 기록한다.
+캐시 생성 시 get의 `hit|miss|error`, put과 eviction의 `success|error` counter를 0으로 사전 등록한다. 이벤트가 없었던 label도 Actuator에 명시적 0으로 노출하며 결과 비교기가 누락 series를 0으로 추정하지 않게 한다. key, commitMongoId, 사용자 정보, 본문은 tag와 로그에 넣지 않는다. Redis의 인프라 `evicted_keys`는 애플리케이션 best-effort evict metric과 별도로 결과 수집 단계에서 기록한다.
 
 - [ ] **Step 5: 단위 테스트 통과 확인**
 
@@ -496,8 +500,6 @@ redis:
   container_name: docsa-redis-local
   profiles: ["commit-cache"]
   command: ["redis-server", "--save", "", "--appendonly", "no"]
-  ports:
-    - "${LOCAL_REDIS_PORT:-6379}:6379"
   healthcheck:
     test: ["CMD", "redis-cli", "ping"]
     interval: 5s
@@ -559,10 +561,10 @@ Expected: JSON/namespace/TTL/fail-open/recovery/auth isolation 테스트 PASS.
 
 ```text
 perf/read/results/commit-cache/
-  <provider>/blocks-<count>/<pattern>/run-<1|2|3>/summary.json
+  <provider>/blocks-<count>/<pattern>/<load-profile>/run-<1|2|3>/summary.json
 ```
 
-`handleSummary`에는 provider, block count, pattern, VU/rate, run number를 함께 기록한다. `.gitignore`는 이 디렉터리의 `*.json`을 제외하고 `.gitkeep`은 보존한다.
+`load-profile`은 VU 시나리오의 `vus-<n>` 또는 포화 시나리오의 `rate-25-50-100-200`으로 실제 부하를 나타낸다. `handleSummary`에는 provider, block count, pattern, load profile, VU/rate, run number를 함께 기록한다. `.gitignore`는 이 디렉터리의 `*.json`을 제외하고 `.gitkeep`은 보존한다.
 
 - [ ] **Step 6: k6 정적 검증**
 
@@ -578,13 +580,65 @@ Expected: options와 scenario parsing 성공.
 
 **Files:**
 - Create: `perf/read/run_commit_cache_matrix.sh`
+- Create: `perf/read/run_commit_cache_matrix.test.sh`
+- Create: `perf/read/measurement_gate.mjs`
+- Modify: `perf/read/commit_content_benchmark.js`
 - Modify: `perf/read/README.md`
+- Modify: `infra/docker-compose.local.yml`
 
-- [ ] **Step 1: 필수 입력과 안전장치 작성**
+- [ ] **Step 1: 로컬 앱 서비스를 Compose에 추가**
+
+`infra/docker-compose.local.yml`의 `app`은 저장소 루트를 build context로, `infra/backend/Dockerfile`을 Dockerfile로 사용한다. `docsa-app-local` 컨테이너에 `8080`, `9091`을 노출하고 MySQL, MongoDB, MinIO, Mailpit의 Compose 서비스명을 연결한다.
+
+provider 교차 실행 중 seed 보존을 위해 다음 값을 고정한다.
+
+```text
+SPRING_PROFILES_ACTIVE=local
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+MONGO_LOCAL_CLEANUP_ENABLED=false
+PERF_SEED_USER_COUNT=0
+COMMIT_CONTENT_CACHE_PROVIDER=${COMMIT_CONTENT_CACHE_PROVIDER:-none}
+SPRING_DATA_REDIS_URL=redis://redis:6379
+```
+
+Mongo URI는 `mongodb://mongo:27017/docsa-local?replicaSet=rs0&directConnection=true`를 사용한다. 앱은 Redis에 `depends_on`하지 않아 `none`과 `caffeine`이 Redis 없이 기동하고, runner가 `redis` 조건에서만 `commit-cache` profile의 Redis를 먼저 준비한다.
+
+Run:
+
+```bash
+docker compose -f infra/docker-compose.local.yml config
+docker compose -f infra/docker-compose.local.yml --profile commit-cache config
+```
+
+Expected: 기본 config에 app은 포함되고 Redis는 제외되며, profile config에는 app과 Redis가 모두 포함된다.
+
+- [ ] **Step 2: runner 안전장치 실패 테스트 작성**
+
+`perf/read/run_commit_cache_matrix.test.sh`는 임시 PATH에 `docker`, `curl`, `k6` stub을 만들고 실제 외부 서비스를 건드리지 않은 채 다음을 검증한다.
+
+```text
+필수 입력 누락 시 외부 명령 실행 전 실패
+허용하지 않은 provider와 run 번호 거부
+none/caffeine은 Redis profile을 시작하지 않음
+redis만 commit-cache profile을 시작하고 Redis key prefix scan/delete 수행
+FLUSHDB/FLUSHALL 명령 부재
+environment.txt에 비밀번호·cookie·재시작 명령 값 부재
+Cold/Cold burst는 warm-up 없이 실행
+Hot/Mixed는 verify 뒤 별도 warm-up과 본 측정 실행
+본 k6 setup 완료 → before snapshot → gate 해제 → scenario 시작 순서
+SCAN 실패와 after snapshot 일부 실패가 workload 상태를 숨기지 않음
+기존 결과 디렉터리 재사용 거부
+```
+
+Run: `bash perf/read/run_commit_cache_matrix.test.sh`
+
+Expected: runner 부재 또는 요구 동작 미구현으로 FAIL.
+
+- [ ] **Step 3: 필수 입력과 안전장치 작성**
 
 스크립트는 `PROVIDER`, `BLOCKS_PER_COMMIT`, `PATTERN`, `RUN_NO`, `BASE_URL`을 필수로 받고 provider가 `none|caffeine|redis`, run이 `1|2|3`인지 검사한다. Redis 정리는 전체 DB가 아니라 실험 prefix의 key만 대상으로 한다.
 
-- [ ] **Step 2: 실행 전 환경 기록**
+- [ ] **Step 4: 실행 전 환경 기록**
 
 결과 디렉터리에 다음을 저장한다.
 
@@ -598,15 +652,17 @@ redis-info-before.txt  # Redis 조건만
 
 비밀 환경변수 값은 저장하지 않고 변수 이름과 비민감 설정값만 기록한다.
 
-- [ ] **Step 3: provider별 재시작과 준비 확인**
+- [ ] **Step 5: provider별 재시작과 준비 확인**
 
-앱을 `COMMIT_CONTENT_CACHE_PROVIDER` 값으로 재시작하고 actuator health가 준비될 때까지 bounded retry한다. Caffeine/none은 Redis 실행 여부와 무관해야 하며 Redis 조건만 local Redis profile health를 요구한다.
+runner는 외부 재시작 hook을 받지 않는다. `COMMIT_CONTENT_CACHE_PROVIDER`를 export한 뒤 `docker compose -f infra/docker-compose.local.yml up -d --build --force-recreate app`으로 앱을 재생성하고 `http://localhost:9091/actuator/health`를 bounded retry한다. `redis` 조건은 profile Redis를 먼저 시작하고 health를 확인한다. `none`과 `caffeine`은 Redis를 중지한 상태에서도 앱 health가 성공해야 한다.
 
-- [ ] **Step 4: warm-up과 본 측정 분리**
+- [ ] **Step 6: warm-up과 본 측정 분리**
 
-`verify`를 먼저 실행하고 Hot/Mixed는 별도 짧은 warm-up 후 본 측정을 실행한다. Cold와 Cold burst는 캐시를 비운 뒤 warm-up 없이 실행한다.
+`verify`를 먼저 실행하고 Hot/Mixed는 별도 짧은 warm-up 후 본 측정을 실행한다. Cold와 Cold burst는 Redis prefix를 비우거나 Caffeine 앱을 재생성한 뒤 warm-up 없이 실행한다.
 
-- [ ] **Step 5: 실행 후 snapshot 저장**
+본 측정은 localhost 전용 `measurement_gate.mjs`와 함께 실행한다. `commit_content_benchmark.js`의 setup은 로그인·graph 탐색과 필요한 cache warm-up을 마친 뒤 gate에 준비 완료를 알리고 bounded release 대기를 한다. runner는 준비 완료를 확인하고 before snapshot을 저장한 다음 gate를 해제한다. k6 scenario는 release 이후에만 시작한다.
+
+- [ ] **Step 7: 실행 후 snapshot 저장**
 
 ```text
 prometheus-after.txt
@@ -616,13 +672,13 @@ summary.json
 run.log
 ```
 
-Prometheus snapshot에는 커밋 cache metric, `jvm_memory_*`, `jvm_gc_pause_*`, `http_server_requests_*`만 필터링한다.
+Prometheus snapshot에는 커밋 cache metric, `jvm_memory_*`, `jvm_gc_pause_*`, `http_server_requests_*`만 필터링한다. before는 본 k6 setup과 warm-up이 끝난 뒤, scenario가 시작하기 전에 수집한다.
 
-- [ ] **Step 6: README 명령 검증**
+- [ ] **Step 8: runner 테스트와 README 명령 검증**
 
 README에 400 commit 데이터셋 생성, 100/500/1000 baseline, provider 교차 순서, Redis 중지·복구, staging 제한을 실제 명령으로 기록한다. shellcheck가 있으면 실행하고, 없으면 `bash -n perf/read/run_commit_cache_matrix.sh`를 실행한다.
 
-Expected: shell syntax PASS, 비밀값과 전체 Redis DB 삭제 명령 없음.
+Expected: runner 안전장치 테스트와 shell syntax PASS, 비밀값과 전체 Redis DB 삭제 명령 없음.
 
 추천 커밋 메시지: `perf: automate commit cache measurements`
 
@@ -665,11 +721,11 @@ baseline 반복 변동폭
 최소 의미 차이=max(10%, 변동폭)
 baseline 대비 변화율
 3회 방향 일치 여부
-Mongo assemble/cache hit/error delta
+Mongo assemble/cache hit/get error/put error delta
 heap/GC/Redis memory delta
 ```
 
-자동 판정은 설계의 순서를 그대로 적용한다. 데이터가 없으면 승자를 추정하지 않고 `INSUFFICIENT_DATA`로 종료한다.
+CLI는 `--load-profile`을 필수로 받아 동일한 부하 조건의 3회 결과만 읽는다. 자동 판정은 설계의 순서를 그대로 적용한다. 데이터가 없으면 승자를 추정하지 않고 `INSUFFICIENT_DATA`, 3회 방향이나 성능과 안전 gate가 충돌하면 `INCONCLUSIVE`로 종료한다. JSON에는 후보별 gate와 이유를 구조적으로 남기고 Markdown에는 모든 3회 원시값과 평균을 표시한다.
 
 - [ ] **Step 4: 테스트와 sample 실행 확인**
 
@@ -678,6 +734,9 @@ Run:
 ```bash
 node --test perf/read/compare_commit_cache_results.test.mjs
 node perf/read/compare_commit_cache_results.mjs --help
+node perf/read/compare_commit_cache_results.mjs \
+  --result-root perf/read/results/commit-cache \
+  --blocks 500 --pattern hot --load-profile vus-20
 ```
 
 Expected: tests PASS, 입력 형식과 출력 경로 help 표시.
@@ -689,7 +748,9 @@ Expected: tests PASS, 입력 형식과 출력 경로 help 표시.
 ### Task 9: 기능 회귀와 실험 전 smoke test
 
 **Files:**
-- Test only
+- Modify: `src/main/resources/application.yml`
+- Test with: `infra/docker-compose.local.yml`
+- Test with: `perf/read/run_commit_cache_matrix.sh`
 
 - [ ] **Step 1: Java compile과 집중 테스트**
 
@@ -718,11 +779,45 @@ k6 run perf/seed/seed_dataset.js
 
 Expected: 사용자 1명, 문서 1개, main commit 3개 생성; 첫 commit 신규 block 10개, 이후 commit별 신규 block 1개.
 
-- [ ] **Step 4: 세 provider smoke**
+- [ ] **Step 4: 선택적 Redis health 정책을 RED-GREEN으로 검증**
+
+RED 근거를 보존한다.
+
+```text
+COMMIT_CONTENT_CACHE_PROVIDER=none
+Redis container=stopped
+GET /actuator/health → HTTP 503, status=DOWN
+원인 → RedisHealthIndicator가 redis host 연결 실패를 전체 앱 health에 반영
+```
+
+`src/main/resources/application.yml`의 기존 `management` 아래에 다음 최소 설정을 추가한다.
+
+```yaml
+management:
+  health:
+    redis:
+      enabled: ${MANAGEMENT_HEALTH_REDIS_ENABLED:false}
+```
+
+Compose 앱을 다시 빌드하고 Redis를 중지한 채 `none`, `caffeine` 각각에서 아래를 확인한다.
+
+```bash
+curl -fsS http://localhost:9091/actuator/health
+```
+
+Expected: HTTP 200과 `status=UP`. `MANAGEMENT_HEALTH_REDIS_ENABLED=true`를 명시한 경우에만 Redis indicator를 다시 활성화할 수 있다. Redis 상태는 앱 health에 합치지 않고 Redis container health 및 `commit_content_cache_get_total{result="error"}`, `commit_content_cache_put_total{result="error"}`로 관측한다.
+
+- [ ] **Step 5: 현재 DB 소유관계와 일치하는 새 smoke 데이터셋 생성**
+
+이전 `create-drop` 실행 뒤 남은 MongoDB read model과 현재 MySQL 사용자 ID가 어긋난 데이터는 재사용하지 않는다. 기존 데이터를 삭제하지 않고 고유한 `RUN_ID`로 새 문서·커밋을 생성한 뒤 verify 응답의 문서와 commit graph가 모두 조회되는지 확인한다.
+
+Expected: workload setup에서 `404 DOCUMENT_NOT_FOUND`가 발생하지 않고 deep validation이 통과한다.
+
+- [ ] **Step 6: 세 provider smoke**
 
 각 provider에서 verify와 Hot 10초를 한 번 실행한다.
 
-Expected: API 응답 deep validation 동일, none은 hit 0, Caffeine/Redis는 warm-up 이후 hit 증가, Redis 중지 시 응답 성공과 cache error 증가.
+Expected: API 응답 deep validation 동일, none은 hit 0, Caffeine/Redis는 warm-up 이후 hit 증가. Redis 조건에서는 warm hit 확인 후 Redis를 중지해도 앱 health와 커밋 조회가 성공하고 cache error가 증가하며, Redis 재시작 후 miss/put/hit 흐름이 회복된다.
 
 추천 커밋 메시지: 없음
 
@@ -753,9 +848,9 @@ none, 100/500/1000 blocks, VU20, 60초, 각 3회 실행한다.
 
 Cold는 400 key 각각 1회, VU50, 각 provider 3회. Cold burst는 같은 key에 VU10/50/100을 적용해 loader 실행 수와 대기 지연을 기록한다.
 
-- [ ] **Step 6: 포화점**
+- [ ] **Step 6: 포화점 탐색**
 
-Mixed 500 blocks에서 25→50→100→200 req/s, 단계별 60초를 실행한다. dropped iteration, p95/p99 급증, 오류 시작점, Mongo 조립 수, CPU/heap/GC를 기록한다.
+Mixed 500 blocks에서 25→50→100→200 req/s, 단계별 60초를 provider별 1회 실행한다. dropped iteration, p95/p99 급증, 오류 시작점, Mongo 조립 수, CPU/heap/GC를 기록한다. 앞선 baseline·주 비교·큰 본문·Cold·Cold burst는 계획대로 3회 반복하되, 포화점은 실행 시간이 긴 탐색 조건으로 축소했으므로 반복 신뢰도가 없는 방향성 근거로만 사용하고 단독 채택 근거로 사용하지 않는다.
 
 - [ ] **Step 7: 교차 실행 순서 준수**
 
@@ -765,7 +860,7 @@ Mixed 500 blocks에서 25→50→100→200 req/s, 단계별 60초를 실행한�
 3회: Caffeine → Redis → none
 ```
 
-Expected: 모든 결과 디렉터리에 summary와 before/after snapshot이 있으며 3회 미완료 조건은 판정 대상에서 제외된다.
+Expected: 반복 측정 조건의 모든 결과 디렉터리에 summary와 before/after snapshot이 있으며 3회 미완료 조건은 판정 대상에서 제외된다. 포화점은 provider별 1회 결과를 별도 탐색 근거로 표시한다.
 
 추천 커밋 메시지: 없음 — raw 성능 결과는 기본적으로 commit하지 않는다.
 
@@ -775,6 +870,7 @@ Expected: 모든 결과 디렉터리에 summary와 before/after snapshot이 있�
 
 **Files:**
 - Create after measurements: `docs/performance/commit-content-cache-result.md`
+- Create after measurements: `docs/performance/commit-content-cache-result.html`
 
 - [ ] **Step 1: Redis fail-open 실험**
 
@@ -796,9 +892,9 @@ Caffeine heap/GC 문제를 Redis가 최소 의미 차이 이상 완화 + fail-op
 Redis 장애가 정상 조회를 실패시킴 → Redis 제외
 ```
 
-- [ ] **Step 4: 결과 문서 작성**
+- [ ] **Step 4: AI용 Markdown과 사용자용 HTML 결과 문서 작성**
 
-결과 문서에는 환경, Git revision, 데이터셋, 실행 매트릭스, raw artifact 경로, p95/처리량/Mongo/heap/GC/Redis memory, cold 회귀, 장애 결과, 선택·기각 근거, 실제 운영 로그 부재라는 제한을 포함한다.
+두 결과 문서에는 같은 사실과 판정을 사용한다. Markdown은 후속 AI 작업이 근거를 추적할 수 있는 상세 원문으로, HTML은 사람이 핵심 수치·선택 근거·한계를 빠르게 읽을 수 있는 표와 카드 중심 문서로 작성한다. 환경, Git revision과 미커밋 working tree라는 제한, 데이터셋, 실행 매트릭스, raw artifact 경로, p95/처리량/Mongo/heap/GC/Redis memory, cold 회귀, 장애 결과, 선택·기각 근거, 실제 운영 로그 부재를 포함한다. 사용자 승인으로 saturation은 provider별 1회 탐색만 수행했으며 반복 신뢰도가 없다는 점과 partial run-2가 판정에서 제외됐음을 명시한다.
 
 - [ ] **Step 5: 후속 범위 분기**
 

@@ -126,6 +126,33 @@ CommitController
 → 기존 CommitResponse 반환
 ```
 
+### 로컬 실행 토폴로지
+
+`infra/docker-compose.local.yml`에 애플리케이션 서비스를 포함해 측정 환경의 시작과 재시작을 Docker Compose로 통일한다. 별도의 임의 명령 hook은 두지 않는다.
+
+```text
+docsa-app-local
+├─ mysql:3306
+├─ mongo:27017
+├─ minio:9000
+├─ mailpit:1025
+└─ redis:6379  # provider=redis일 때만 commit-cache profile로 실행
+```
+
+- 앱 이미지는 저장소 루트를 build context로 사용하고 `infra/backend/Dockerfile`에서 현재 소스를 빌드한다.
+- API `8080`과 management `9091`을 호스트에 노출한다.
+- `COMMIT_CONTENT_CACHE_PROVIDER`를 Compose 환경변수로 주입하고 후보를 바꿀 때 앱 컨테이너를 재생성한다.
+- `none`과 `caffeine`에서는 Redis를 시작하지 않아도 앱이 정상 기동해야 한다.
+- `redis`에서는 Redis health 확인 후 앱을 재생성한다.
+- provider 교차 실행 중 seed가 사라지지 않도록 앱 컨테이너에서는 `MONGO_LOCAL_CLEANUP_ENABLED=false`, `SPRING_JPA_HIBERNATE_DDL_AUTO=update`, `PERF_SEED_USER_COUNT=0`을 고정한다.
+- MongoDB replica set은 기존 호스트 실행과 공존하도록 유지하고, 컨테이너 앱은 `directConnection=true`로 `mongo` 서비스에 연결한다.
+
+### 측정 시작 경계
+
+runner는 본 측정 k6 프로세스와 localhost 전용 measurement gate를 함께 시작한다. k6 `setup()`은 로그인, 문서·commit 탐색과 provider별 warm-up을 마친 뒤 gate에 준비 완료를 알리고 대기한다. runner는 그 시점에 Prometheus·container·Redis before snapshot을 저장한 뒤 gate를 해제한다. 따라서 before/after 차이는 본 scenario 요청만 포함하고 setup·warm-up 트래픽은 포함하지 않는다.
+
+Cold와 Cold burst는 사전 verify 뒤 Caffeine 앱을 재생성하거나 Redis experiment prefix를 비운 다음 본 k6 setup을 수행한다. 본 setup에는 commit 조회 warm-up이 없으므로 gate 해제 시점에도 cache가 비어 있어야 한다.
+
 ### 캐시 key와 value
 
 ```text
@@ -198,6 +225,8 @@ MongoDB 원본 오류 → 기존 API 오류 반환
 
 Redis 연결 실패, timeout 또는 역직렬화 실패는 캐시 오류 metric에 기록하고 원본 조회로 대체한다. 이는 별도 서버로 트래픽을 전환한다는 의미가 아니라, 해당 요청이 기존 MongoDB 조립 경로를 실행한다는 의미다.
 
+Redis는 원본 저장소가 아니라 선택적 보조 캐시이므로 Redis 장애가 애플리케이션 전체 health를 `DOWN`으로 만들지 않게 한다. Spring Redis health indicator는 기본 비활성화하고 `MANAGEMENT_HEALTH_REDIS_ENABLED`로 명시적으로 다시 켤 수 있게 한다. 애플리케이션 생존과 API 정상 응답은 `/actuator/health`로 확인하고, Redis 상태는 Redis 컨테이너 health와 `commit_content_cache_get_total{result="error"}`, `commit_content_cache_put_total{result="error"}`로 별도 관측한다. 이렇게 해야 Redis가 없는 none/Caffeine 후보와 Redis 중지 중 Fail-Open 경로를 앱 health gate가 차단하지 않는다.
+
 Redis 장애 실험은 다음 순서로 수행한다.
 
 1. Redis 정상 상태에서 warm 조회를 확인한다.
@@ -205,6 +234,8 @@ Redis 장애 실험은 다음 순서로 수행한다.
 3. 동일 요청이 MongoDB 원본 경로로 성공하는지 확인한다.
 4. cache error, MongoDB 조회 증가와 p95·p99 변화를 기록한다.
 5. Redis를 복구한 뒤 첫 miss에서 다시 저장되고 이후 hit가 발생하는지 확인한다.
+
+장애 실험 중에도 애플리케이션 health는 `UP`을 유지해야 한다. Redis 자체 health는 `DOWN`이어도 정상이며, API 200 응답과 cache error 증가가 함께 확인돼야 Fail-Open 통과로 판정한다.
 
 첫 비교 실험에서는 circuit breaker나 재시도 라이브러리를 추가하지 않는다. Redis가 최종 후보로 선택됐는데 반복 timeout 문제가 관찰되면 후속 운영 적용 설계에서 다룬다.
 
@@ -218,6 +249,8 @@ commit_content_cache_put_total{result=success|error}
 commit_content_cache_eviction_total
 commit_content_assemble_seconds
 ```
+
+캐시 컴포넌트 생성 시 get의 `hit|miss|error`, put과 eviction의 `success|error` counter를 모두 0으로 사전 등록한다. 따라서 이벤트가 발생하지 않은 결과도 snapshot에 명시적 0으로 남고, 비교기는 누락된 series를 0으로 추정하지 않는다.
 
 JVM 및 컨테이너 지표:
 
@@ -381,9 +414,9 @@ Mixed 500블록 조건에서 `ramping-arrival-rate`를 사용한다.
 3회: Caffeine → Redis → 캐시 없음
 ```
 
-각 후보 시작 전에 애플리케이션을 재시작한다. Caffeine은 앱 재시작으로 비우고 Redis는 실험 전용 컨테이너 또는 namespace만 초기화한다. 공유 Redis의 전체 DB를 삭제하지 않는다.
+각 후보 시작 전에 `docker-compose.local.yml`의 앱 컨테이너를 해당 provider로 재생성한다. Caffeine은 앱 재시작으로 비우고 Redis는 실험 전용 key prefix만 초기화한다. 공유 Redis의 전체 DB를 삭제하지 않는다.
 
-로그인, 문서 탐색, graph 기반 commit id 수집, seed와 warm-up은 `op_commit_get_ms`에서 제외한다. 강한 부하 구간에서는 매 요청마다 깊은 JSON 비교를 하지 않고 status와 응답 크기를 확인한다. 별도 사전 검증에서 Block 수와 대표 내용을 확인한다.
+로그인, 문서 탐색, graph 기반 commit id 수집, seed와 warm-up은 `op_commit_get_ms`와 Prometheus before/after delta에서 제외한다. 강한 부하 구간에서는 매 요청마다 깊은 JSON 비교를 하지 않고 status와 응답 크기를 확인한다. 별도 사전 검증에서 Block 수와 대표 내용을 확인한다.
 
 ## 결과 판정
 
@@ -459,6 +492,7 @@ Mock만 사용하지 않고 테스트용 실제 Redis 컨테이너에서 확인�
 - Redis 중지 중 원본 조회 성공
 - Redis 복구 후 cache miss, 저장, 이후 hit
 - 기존 인증용 Caffeine 캐시와의 격리
+- Redis 중지 중 애플리케이션 health `UP` 유지와 cache error 증가
 
 ### 회귀 테스트
 
@@ -482,7 +516,7 @@ Mock만 사용하지 않고 테스트용 실제 Redis 컨테이너에서 확인�
 - Redis 메모리
 - 3회 비교 요약
 
-저장 경로는 `perf/read/results/commit-cache/` 아래에서 provider, block 수, 접근 패턴과 반복 번호를 구분한다. 3회 반복을 완료하지 않은 결과는 포트폴리오 성능 주장에 사용하지 않는다.
+저장 경로는 `perf/read/results/commit-cache/<provider>/blocks-<count>/<pattern>/<load-profile>/run-<1|2|3>/`로 고정한다. `load-profile`은 VU 기반 시나리오의 `vus-20` 또는 포화 시나리오의 `rate-25-50-100-200`처럼 실제 부하를 나타낸다. provider, block 수, 접근 패턴, 부하와 반복 번호가 모두 같은 결과만 비교하며 3회 반복을 완료하지 않은 결과는 포트폴리오 성능 주장에 사용하지 않는다.
 
 ## Staging 검증
 

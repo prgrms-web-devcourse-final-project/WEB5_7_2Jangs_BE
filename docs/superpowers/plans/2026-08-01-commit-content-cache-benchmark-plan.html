@@ -378,7 +378,7 @@
         <div class="phase"><div class="phase-no">02</div><div><h3>데이터 생성 신뢰성</h3><p>첫 commit은 전체 block, 이후 commit은 10%만 신규 생성하고 나머지는 이전 ID를 재사용한다. 무작위 ID를 제거한다.</p></div><div class="verify">Node 테스트 + k6 inspect</div></div>
         <div class="phase"><div class="phase-no">03</div><div><h3>캐시 코어 구현</h3><p>none·Caffeine·Redis provider, 인증 캐시 격리, cache-aside, metric, single-flight, fail-open을 테스트 우선으로 구현한다.</p></div><div class="verify">단위 테스트</div></div>
         <div class="phase"><div class="phase-no">04</div><div><h3>실제 경로 연결</h3><p>CommitService의 기존 권한/MySQL 흐름 뒤에 캐시를 연결하고 삭제 시 best-effort evict를 호출한다.</p></div><div class="verify">조회·삭제 회귀</div></div>
-        <div class="phase"><div class="phase-no">05</div><div><h3>Redis와 부하 도구 검증</h3><p>실제 Redis 컨테이너로 직렬화·TTL·중지·복구를 검증하고 k6 시나리오와 실행기를 완성한다.</p></div><div class="verify">통합 + smoke</div></div>
+        <div class="phase"><div class="phase-no">05</div><div><h3>로컬 앱·Redis와 부하 도구 검증</h3><p>현재 소스를 빌드하는 단일 앱을 로컬 Compose에 추가한다. none·Caffeine은 Redis 없이 앱 health가 UP이어야 한다. Redis provider는 warm hit 뒤 Redis 중지·복구까지 확인하고 k6 시나리오와 실행기를 검증한다.</p></div><div class="verify">Compose + 통합 + smoke</div></div>
         <div class="phase"><div class="phase-no">06</div><div><h3>측정·판정·staging</h3><p>교차 순서로 3회 반복한 뒤 자동 판정한다. 승자 하나만 제한된 staging 조건에서 방향성을 확인한다.</p></div><div class="verify">근거 문서</div></div>
       </section>
 
@@ -393,8 +393,8 @@
               <tr><td><span class="tag">격리</span></td><td><code>CacheConfig.java</code></td><td>기존 bean 이름과 인증 코드는 유지하고 primary 지정만 추가</td></tr>
               <tr><td><span class="tag">Seed</span></td><td><code>perf/seed/*</code></td><td>10% 증분 block 재사용을 결정적으로 생성</td></tr>
               <tr><td><span class="tag">부하</span></td><td><code>perf/read/commit_*</code></td><td>시나리오, 반복 실행, 결과 판정 자동화</td></tr>
-              <tr><td><span class="tag">인프라</span></td><td><code>docker-compose.local.yml</code></td><td>profile로만 켜는 실험용 Redis</td></tr>
-              <tr><td><span class="tag">문서</span></td><td><code>docs/performance/*</code></td><td>측정 조건, 원본 근거, 선택·기각 사유</td></tr>
+              <tr><td><span class="tag">인프라</span></td><td><code>application.yml</code>, <code>docker-compose.local.yml</code></td><td>현재 소스를 빌드하는 단일 앱, profile로만 켜는 실험용 Redis, 선택적 Redis health 분리</td></tr>
+              <tr><td><span class="tag">문서</span></td><td><code>docs/performance/commit-content-cache-result.md</code>, <code>.html</code></td><td>AI용 상세 근거와 사용자용 시각 요약, 선택·기각 사유</td></tr>
             </tbody>
           </table>
         </div>
@@ -412,7 +412,7 @@ void evict(String commitMongoId);</pre></div>
       <section id="tests">
         <h2>검증 전략</h2>
         <div class="grid-3">
-          <div class="card"><h3>순수 함수</h3><p>증분 seed의 신규 block 수, 재사용 수, 회전 구간과 100% 기존 동작을 빠르게 검증한다.</p></div>
+          <div class="card"><h3>순수 함수·Runner</h3><p>증분 seed 계산과 함께 mock 명령 기반 shell 테스트로 입력 검증, provider 분기, Redis prefix 정리와 비밀값 비기록을 검증한다.</p></div>
           <div class="card"><h3>Java 단위</h3><p>hit·miss·오류·동시성·삭제 evict와 metric을 원인별로 검증한다.</p></div>
           <div class="card"><h3>실제 Redis</h3><p>Mock만으로 끝내지 않고 JSON, namespace, TTL, stop/recovery를 컨테이너에서 확인한다.</p></div>
         </div>
@@ -421,6 +421,8 @@ void evict(String commitMongoId);</pre></div>
           <li>첫 조회만 Mongo 조립하고 두 번째 조회는 hit가 된다.</li>
           <li>원본 조회·조립 실패 결과는 캐시하지 않는다.</li>
           <li>cache get·put 오류가 정상 원본 응답을 실패시키지 않는다.</li>
+          <li>Redis가 중지돼도 앱 health는 UP이며, Redis 장애는 container health와 cache error metric으로 별도 관측된다.</li>
+          <li>캐시 생성 시 get·put·eviction의 모든 결과 label counter가 0으로 노출된다.</li>
           <li>같은 key 동시 20요청에서도 loader가 한 번만 실행된다.</li>
           <li>삭제된 commit은 캐시가 남아 있어도 MySQL 확인 단계에서 차단된다.</li>
           <li>기존 인증 캐시와 전체 Gradle 회귀 테스트가 통과한다.</li>
@@ -429,11 +431,14 @@ void evict(String commitMongoId);</pre></div>
 k6 inspect perf/seed/seed_dataset.js
 k6 inspect perf/read/commit_content_benchmark.js
 ./gradlew test --tests '*CommitContentCache*'
-./gradlew test</pre></div></details>
+./gradlew test
+curl -fsS http://localhost:9091/actuator/health</pre></div></details>
+        <div class="notice" style="margin-top:16px"><strong>Redis health 정책:</strong> Redis는 원본 저장소가 아닌 선택적 캐시다. 따라서 Spring Redis health indicator는 기본 비활성화하고, 필요할 때만 <code>MANAGEMENT_HEALTH_REDIS_ENABLED=true</code>로 다시 켠다. Fail-Open 성공은 Redis 중지 중 앱 health <code>UP</code>, 커밋 API 정상 응답, cache error 증가를 함께 확인해 판정한다.</div>
       </section>
 
       <section id="matrix">
         <h2>부하 매트릭스</h2>
+        <div class="callout"><strong>로컬 실행 기준</strong><br>앱은 Compose가 8080·9091을 노출하고 provider마다 재생성한다. Mongo 자동 정리와 JPA create-drop은 꺼서 seed를 보존한다. 본 k6 setup 완료 뒤 runner가 before snapshot을 저장하고 localhost gate를 해제하므로 로그인·탐색·warm-up은 측정 delta에 포함하지 않는다.</div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>목적</th><th>조건</th><th>반복</th><th>보는 것</th></tr></thead>
@@ -443,10 +448,13 @@ k6 inspect perf/read/commit_content_benchmark.js
               <tr><td>큰 본문</td><td>세 provider · Hot/Mixed · 1,000 blocks · VU50</td><td>각 3회</td><td>heap·GC·Redis 직렬화</td></tr>
               <tr><td>Cold</td><td>400 key를 각각 1회 · VU50</td><td>각 3회</td><td>miss와 write 회귀</td></tr>
               <tr><td>Cold burst</td><td>같은 key · VU10/50/100</td><td>조건별</td><td>single-flight와 대기 지연</td></tr>
-              <tr><td>포화점</td><td>Mixed 500 · 25→50→100→200 req/s</td><td>단계 60초</td><td>dropped request와 급변 구간</td></tr>
+              <tr><td>포화점 탐색</td><td>Mixed 500 · 25→50→100→200 req/s</td><td>provider별 1회 · 단계 60초</td><td>dropped request와 급변 구간 · 반복 신뢰도 없음</td></tr>
             </tbody>
           </table>
         </div>
+        <div class="callout"><strong>결과 경로에 부하를 포함한다</strong><br><code>.../&lt;provider&gt;/blocks-&lt;count&gt;/&lt;pattern&gt;/&lt;load-profile&gt;/run-&lt;1|2|3&gt;/</code><br>VU 조건은 <code>vus-20</code>처럼, 포화 조건은 <code>rate-25-50-100-200</code>처럼 저장해 같은 패턴의 다른 부하가 충돌하지 않게 한다.<pre>node perf/read/compare_commit_cache_results.mjs \
+  --result-root perf/read/results/commit-cache \
+  --blocks 500 --pattern hot --load-profile vus-20</pre></div>
         <h3>실행 순서 편향 통제</h3>
         <div class="grid-3">
           <div class="card"><h3>1회</h3><p>none → Caffeine → Redis</p></div>

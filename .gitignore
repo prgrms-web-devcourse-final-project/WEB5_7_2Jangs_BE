@@ -52,6 +52,9 @@ infra/mysql/logs/
 # Perf benchmark outputs
 perf/**/results/*
 !perf/**/results/.gitkeep
+!perf/read/results/commit-cache/
+perf/read/results/commit-cache/**
+!perf/read/results/commit-cache/.gitkeep
 
 # Local documentation and portfolio drafts
 docs/local/

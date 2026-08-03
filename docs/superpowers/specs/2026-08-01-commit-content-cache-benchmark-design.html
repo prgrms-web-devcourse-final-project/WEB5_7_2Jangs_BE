@@ -575,6 +575,11 @@
           <div class="decision-row"><span>캐시 저장 오류</span><strong>조립 본문 정상 반환</strong></div>
           <div class="decision-row"><span>MongoDB 원본 오류</span><strong>기존 API 오류</strong></div>
         </div>
+        <p class="callout amber">
+          Redis는 선택적 보조 캐시이므로 장애가 애플리케이션 전체 health를 <code>DOWN</code>으로 만들지 않는다.
+          Spring Redis health indicator는 기본 비활성화하고 필요할 때 <code>MANAGEMENT_HEALTH_REDIS_ENABLED</code>로 다시 켠다.
+          앱 상태는 <code>/actuator/health</code>, Redis 상태는 컨테이너 health와 cache get/put error metric으로 분리해 관측한다.
+        </p>
         <details open>
           <summary>Redis 장애 실험</summary>
           <div>
@@ -584,6 +589,7 @@
               <li>요청이 MongoDB 조립 경로로 성공하는지 확인한다.</li>
               <li>cache error, MongoDB 조회 증가, p95·p99를 기록한다.</li>
               <li>Redis 복구 후 miss → 저장 → hit 순서를 확인한다.</li>
+              <li>장애 중에도 앱 health는 <code>UP</code>, API는 200이고 cache error는 증가하는지 확인한다.</li>
             </ol>
           </div>
         </details>
@@ -669,6 +675,10 @@
           <strong>최소 의미 차이 = max(10%, baseline 3회 반복 변동폭)</strong><br>
           3회 모두 같은 방향이고 최소 의미 차이보다 큰 결과만 개선으로 인정한다.
         </div>
+        <div class="callout">
+          <strong>조건 식별자</strong><br>
+          결과는 <code>.../&lt;provider&gt;/blocks-&lt;count&gt;/&lt;pattern&gt;/&lt;load-profile&gt;/run-&lt;1|2|3&gt;/</code>에 저장한다. <code>vus-20</code>과 <code>vus-50</code>, <code>rate-25-50-100-200</code>를 별도 조건으로 취급하며 비교기는 <code>--load-profile vus-20</code>처럼 같은 load profile을 명시한 결과만 읽는다.
+        </div>
         <div class="decision">
           <div class="decision-row"><span>캐시 효과가 최소 의미 차이보다 작음</span><strong>캐시 미도입</strong></div>
           <div class="decision-row"><span>Caffeine과 Redis 차이가 작음</span><strong>Caffeine</strong></div>
@@ -710,7 +720,11 @@
             <ul>
               <li>로그인, seed, ID 탐색과 warm-up은 측정에서 제외한다.</li>
               <li>강한 부하에서는 status와 응답 크기만 검사하고 깊은 비교는 사전 검증에서 수행한다.</li>
-              <li>각 후보 시작 전 앱을 재시작하고 해당 캐시만 초기화한다.</li>
+              <li>각 후보 시작 전 로컬 Compose 앱을 해당 provider로 재생성하고 해당 캐시만 초기화한다.</li>
+              <li><code>none</code>·<code>caffeine</code>은 Redis 없이, <code>redis</code>만 선택 profile Redis와 함께 실행한다.</li>
+              <li>앱 재시작 중에도 seed가 유지되도록 Mongo 자동 정리와 JPA create-drop을 비활성화한다.</li>
+              <li>k6 setup 완료 뒤 before snapshot을 저장하고 gate를 해제해 준비 트래픽을 측정 delta에서 제외한다.</li>
+              <li>get의 hit·miss·error, put과 eviction의 success·error counter를 생성 시 0으로 등록해 이벤트가 없던 label도 명시적으로 보존한다.</li>
               <li>원본 k6 JSON, Git revision, JVM·캐시 설정과 자원 snapshot을 보존한다.</li>
               <li>3회 반복이 없으면 포트폴리오 성능 주장에 사용하지 않는다.</li>
             </ul>
@@ -727,7 +741,8 @@
               <li>커밋 본문 캐시 후보와 지표</li>
               <li>API 기반 증분 seed 옵션</li>
               <li>커밋 조회 전용 k6 벤치마크</li>
-              <li>Redis 후보용 실험 컨테이너</li>
+              <li>현재 소스를 빌드하는 단일 로컬 앱 컨테이너</li>
+              <li>Redis 후보용 선택적 실험 컨테이너</li>
             </ul>
           </div>
           <div class="card">
