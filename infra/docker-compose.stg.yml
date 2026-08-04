@@ -84,8 +84,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/nginx.stg.conf:/etc/nginx/nginx.conf:ro
-      - /srv/docsa/infra/certbot/etc:/etc/letsencrypt:ro
-      - /srv/docsa/infra/certbot/www:/var/www/certbot:ro
+      - /srv/gateway/certbot/etc:/etc/letsencrypt:ro
     ports:
       - "8080:80"
       - "8443:443"
