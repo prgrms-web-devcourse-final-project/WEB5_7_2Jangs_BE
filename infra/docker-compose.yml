@@ -27,7 +27,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
-      - ./mysql/logs:/var/log/mysql
+      - ./mysql/logs/prod:/var/log/mysql
     networks:
       - docsa_net
     healthcheck:
@@ -88,6 +88,10 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
     depends_on:
       - cadvisor
     volumes:
@@ -95,6 +99,7 @@ services:
       - prom_data:/prometheus
     networks:
       - docsa_net
+      - docsa_monitoring_net
 
   # ===== LOGS =====
   loki:
@@ -146,3 +151,6 @@ volumes:
 
 networks:
   docsa_net:
+  docsa_monitoring_net:
+    external: true
+    name: docsa_monitoring_net

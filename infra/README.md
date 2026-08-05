@@ -17,10 +17,22 @@ Docsa Compose는 애플리케이션, 데이터베이스, 모니터링과 스테�
 ## Compose 책임
 
 - docker-compose.yml: 운영 애플리케이션, MySQL, 메트릭, 로그 및 대시보드
-- docker-compose.stg.yml: 스테이징 애플리케이션, MySQL, Nginx, Mailpit 및 관측 구성
+- docker-compose.stg.yml: 스테이징 애플리케이션, MySQL, Nginx와 Mailpit
 - deploy.sh: 브랜치 이미지 태그를 적용하고 애플리케이션 health를 확인
 
 운영 Nginx와 Certbot 서비스는 공용 Gateway로 이전했으므로 이 저장소에서 다시 실행하지 않습니다.
+
+## 모니터링
+
+운영 Compose가 Prometheus, Grafana, Loki, Promtail, cAdvisor와 Node Exporter를 한 세트만 실행합니다. Prometheus는 외부 `docsa_monitoring_net`을 통해 스테이징 앱과 MySQL Exporter도 수집하며 `environment` label로 운영과 스테이징을 구분합니다.
+
+Promtail은 Docker Compose project가 `docsa` 또는 `docsa-stg`인 컨테이너 로그만 Loki에 전달합니다. 운영과 스테이징 MySQL slow log는 각각 `mysql/logs/prod`와 `mysql/logs/staging`에 기록합니다.
+
+최초 반영 전 네트워크를 한 번 생성합니다.
+
+    docker network inspect docsa_monitoring_net >/dev/null 2>&1 || docker network create docsa_monitoring_net
+
+Prometheus 데이터는 15일, Loki 로그는 7일 보존합니다. 스테이징 `/grafana/` 요청은 통합 운영 Grafana로 이동합니다.
 
 ## 모니터링 cron
 

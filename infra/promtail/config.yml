@@ -17,6 +17,9 @@ scrape_configs:
     pipeline_stages:
       - docker: {}
     relabel_configs:
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        regex: docsa|docsa-stg
+        action: keep
       - { source_labels: ['__meta_docker_container_name'], target_label: 'container', regex: '/(.*)' }
       - { source_labels: ['__meta_docker_container_label_com_docker_compose_service'], target_label: 'compose_service' }
       - { source_labels: ['__meta_docker_container_label_com_docker_compose_project'], target_label: 'compose_project' }
@@ -30,13 +33,28 @@ scrape_configs:
           job: syslog
           __path__: /var/log/syslog
 
-  - job_name: mysql-slowlog
+  - job_name: mysql-slowlog-production
     static_configs:
       - targets: [ localhost ]
         labels:
           job: mysql-slowlog
           compose_service: mysql
-          __path__: /mnt/mysql-logs/slow.log
+          environment: production
+          __path__: /mnt/mysql-logs/prod/slow.log
+    pipeline_stages:
+      - multiline:
+          firstline: '^# Time:'
+          max_lines: 200
+          max_wait_time: 3s
+
+  - job_name: mysql-slowlog-staging
+    static_configs:
+      - targets: [ localhost ]
+        labels:
+          job: mysql-slowlog
+          compose_service: mysql
+          environment: staging
+          __path__: /mnt/mysql-logs/staging/slow.log
     pipeline_stages:
       - multiline:
           firstline: '^# Time:'
