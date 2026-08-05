@@ -79,6 +79,7 @@ services:
         condition: service_healthy
     networks:
       - docsa_stg_net
+      - docsa_monitoring_net
 
   nginx:
     image: nginx:stable-alpine-slim

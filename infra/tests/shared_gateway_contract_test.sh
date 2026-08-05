@@ -34,6 +34,14 @@ for duplicated_service in cadvisor node_exporter prometheus loki promtail grafan
   fi
 done
 
+staging_exporter_config=$(printf '%s\n' "$staging_config" | awk '
+  /^  mysqld-exporter:/ { in_exporter = 1; next }
+  in_exporter && /^  [[:alnum:]_-]+:/ { exit }
+  in_exporter { print }
+')
+printf '%s\n' "$staging_exporter_config" | grep -Fq 'docsa_monitoring_net' ||
+  fail "스테이징 MySQL Exporter가 공용 모니터링 네트워크를 사용해야 함"
+
 prod_config=$(docker compose -f "$INFRA_DIR/docker-compose.yml" config --no-interpolate)
 printf '%s\n' "$prod_config" | grep -Fq 'docsa_monitoring_net' ||
   fail "운영 Prometheus가 공용 모니터링 네트워크를 사용해야 함"
