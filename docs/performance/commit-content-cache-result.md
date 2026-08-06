@@ -1,8 +1,8 @@
 # 커밋 본문 캐시 로컬 벤치마크 최종 판정
 
-- 판정일: 2026-08-02 (KST)
-- 최종 판정: **Caffeine 후보 선택 (DONE_WITH_CONCERNS)**
-- 결론 한 줄: formal-main 6개 핵심 조건은 모두 cache 후보를 확인했고 Redis가 Caffeine보다 최소 의미 차이 이상 우수하지 않아 Caffeine을 채택 후보로 둔다. 보정된 cold 4조건은 후보 결론을 반전하지 않지만, `NO_MEANINGFUL_IMPROVEMENT` 2건과 `INCONCLUSIVE` 2건으로 cold 경로의 우려를 강화한다.
+- 판정일: 2026-08-04 (KST)
+- 최종 판정: **단일 인스턴스 Caffeine 조건부 채택 (DONE_WITH_CONCERNS)**
+- 결론 한 줄: Redis 비교 결과를 근거로 Caffeine을 선택하고 최종 운영 구현을 Spring Cache 어노테이션으로 단순화했다. 새 구현에서도 Hot/Mixed 개선은 유지됐고 동일 키 Cold Burst 50건은 한 번의 본문 조립으로 합쳐졌다. JVM 조건을 대칭으로 맞춘 Cold는 개선·악화 방향이 섞여 `INCONCLUSIVE`로 판정했다. hit ratio와 cold latency를 운영 관측하고 `enabled=false` 즉시 비활성화 경로를 유지한다.
 
 ## 범위와 재현성
 
@@ -12,6 +12,51 @@
 - 단, 측정 당시 working tree는 미커밋 변경을 포함했다. 따라서 이 hash만으로 실제 cache/runner 구현을 재현할 수 없으며, hash는 식별자일 뿐 완전한 재현 근거가 아니다.
 - dataset: 사용자 20명 × 사용자당 문서 2개 × main commit 10개, 핵심 비교 block 500, main 데이터셋 `run_id=task10-20260802-c-b500-r01` 계열이다. 환경 파일은 `base_url`, health endpoint 및 비민감 구성만 저장하며 민감값은 기록하지 않는다.
 - staging 부하 테스트는 사용자 지시로 실행하지 않았고, 이번 작업에서도 실행하지 않았다.
+
+## 2026-08-03 최종 구현 재검증
+
+최종 운영 코드는 비교 실험용 수동 캐시 경계를 제거하고 `@Cacheable(sync = true)` 및 `@CacheEvict`로 단순화했다. 캐시 구현은 Caffeine 하나만 남겼고 Redis runtime 의존성·Compose 서비스·통합 테스트를 제거했다. Caffeine은 `expireAfterAccess=10분`, `maximumSize=400`, `recordStats()`를 사용한다. `commit.content.cache.enabled=false`는 성능 baseline과 운영상 즉시 비활성화를 위한 `NoOpCacheManager` 경로다.
+
+MongoDB 조회 및 본문 조립 시간은 캐시 miss에서만 실행되는 `CommitContentAssembler` 내부를 직접 `Timer`로 감쌌다. `@Timed`를 cache proxy 바깥 메서드에 붙이면 hit까지 포함한 전체 메서드 시간을 기록할 수 있어, 실제 DB 조립 비용만 분리하려는 목적과 맞지 않기 때문이다.
+
+- Hot/Mixed raw root: `perf/read/results/commit-cache/final-annotation-20260803-r2/` (12/12)
+- 대칭 Cold raw root: `perf/read/results/commit-cache/final-annotation-cold-symmetric-20260803/` (6/6)
+- 조건: 500 Block, VU 50, Hot/Mixed/Cold, none/Caffeine 각 3회. Cold는 두 provider 모두 verify 후 앱을 동일하게 재시작했다.
+- 미실행: staging, saturation, Redis 재측정
+- 유효한 18회: `http_req_failed{op:commit_get}`와 `commit_get_failed` 0, dropped iteration 0. 전역 HTTP 실패에는 measurement gate 대기 중 의도된 425가 포함되므로 0이라고 주장하지 않는다.
+
+| 조건 | none p95 | 어노테이션 Caffeine p95 | 3회 평균 p95 변화 | 반복 일관성 | cache 관측 |
+| --- | ---: | ---: | ---: | --- | --- |
+| Hot VU50 | 182.02 ms | 149.58 ms | **17.8% 개선** | p95 3/3 개선 | hit 19,797~21,467, miss·assemble 0 |
+| Mixed VU50 | 187.77 ms | 151.35 ms | **19.4% 개선** | p95 3/3 개선 | hit 20,484~21,689, miss·assemble 0 |
+| Cold VU50 | 505.06 ms | 422.34 ms | 평균 16.4% 개선이나 **INCONCLUSIVE** | p95 2/3 개선, baseline 변동폭 약 26% | hit 0, miss·assemble 400, eviction 0 |
+
+`summary.json`의 `iterations.values.rate`는 k6 setup과 measurement gate 대기까지 포함한 전체 실행시간 기준이라 실제 조회 구간 처리량으로 사용하지 않는다. 위 최종 판정은 gate 해제 뒤 요청에 tag된 `op_commit_get_ms` p95만 사용한다.
+
+Mixed는 80/20 대상 분포를 사용하지만 runner의 10초 사전 warm-up 동안 전체 working set이 채워져 본 측정 cache miss가 0이었다. 따라서 이 결과는 부분 miss 상황이 아니라 **더 넓은 working set의 steady-state warm 성능**으로 해석한다.
+
+### 현재 어노테이션 구현의 동일 키 Single-Flight 검증
+
+- raw root: `perf/read/results/commit-cache/final-annotation-single-flight-20260804-r2/`
+- 조건: 로컬 단일 앱, Caffeine 활성화, 500 Block, 빈 캐시, 동일 커밋 1개, VU 50, VU당 1회 요청
+- 데이터셋: 사용자 20명 × 문서 2개 × main commit 10개, `run_id=commit-cache-sf-b500-20260804`
+- 결과: 측정 요청 50/50 성공, `commit_get_failed=0`, commit 조회 HTTP failure rate 0, interrupted iteration 0
+- cache 증분: miss 1, hit 49, put 1, size 1, eviction 0
+- 조립 증분: `commit_content_assemble_seconds_count` 0→1
+- 참고 관측: 평균 196.63 ms, p95 265.50 ms, 응답 크기 72,293 bytes
+
+현재 `@Cacheable(sync = true)`와 실제 Caffeine을 통과한 API 요청 50건이 한 번의 `CommitContentAssembler.assemble()` 실행으로 합쳐졌으므로 동일 키 Cold Miss의 부하 증폭 방지 계약은 **PASS**로 판정한다. k6의 동시 시작만으로 모든 요청이 조립 도중 겹쳤다고 보장하지는 않으므로, latch로 실제 실행 겹침을 만든 동시 요청 20개 자동화 테스트와 함께 근거로 사용한다.
+
+이 측정은 Single-Flight 동작 검증을 위한 단건이다. none baseline과 반복 측정이 없으므로 p95 265.50 ms를 성능 개선율이나 운영 절대 성능으로 일반화하지 않는다. `dropped_iterations` key는 없었고 50개 iteration이 모두 완료됐으므로 기존 비교기 규칙에 따라 dropped 0으로 해석한다.
+
+최초 최종 측정과 이전 수동 Caffeine 측정은 Cold에서 Caffeine만 verify 후 앱을 재시작해 `none`에 JVM/JIT 예열 이점이 남는 비대칭이 있었다. 따라서 해당 53.7% 및 약 56% 회귀 수치는 최종 Cold 근거에서 제외한다. 대칭 재측정은 2/3 개선, 1/3 악화였고 평균 개선폭도 baseline 변동폭보다 작아, one-hit 경로는 **체계적 회귀가 확인된 것이 아니라 아직 결론을 낼 수 없는 위험**으로 남긴다.
+
+최종 판정은 **Caffeine 조건부 채택**이다. 반복 조회에서는 3회 모두 의미 있는 개선을 유지했고, 단일 인스턴스에서 Redis의 네트워크·운영 복잡도를 추가할 근거는 없었다. 다만 실제 hit ratio가 낮거나 cold p95가 중요한 서비스라면 캐시가 손해이므로 다음 gate를 둔다.
+
+- Grafana/Prometheus: `cache_gets_total`, `cache_evictions_total`, `cache_size`, `cache_puts_total`, `commit_content_assemble_seconds`
+- 경고 관점: hit ratio 하락, eviction 증가, assemble count 재상승, cold p95 상승을 함께 본다.
+- 즉시 대응: `COMMIT_CONTENT_CACHE_ENABLED=false`로 비활성화한다.
+- 랜덤 TTL: 현재 구현하지 않는다. commit 내용은 불변이고 동시 만료/eviction churn이 관측되지 않았으므로 복잡도를 추가할 근거가 없다.
 
 ## 판정 방법과 자동 결과
 
@@ -107,9 +152,11 @@ Task 9의 별도 fail-open/recovery artifact는 **Redis Fail-Open** 안전성 ga
 
 - **채택 후보:** Caffeine. core 6개는 모두 cache 후보를 확인했다. Caffeine과 Redis의 짝지은 p95/처리량 차이는 모든 core 조건에서 해당 최소 의미 차이(10.00% 또는 10.61%) 미만이며, Redis의 heap/GC 완화도 일관되게 우수하지 않다. Hot VU50/VU100에서는 Redis 자체 p95 개선도 최소 의미 차이에 미달했다. 규칙상 동률/최소 의미 차이 미만이면 Caffeine을 선택한다.
 - **기각:** Redis의 fail-open 자체는 기각하지 않는다. 다만 Redis가 Caffeine보다 p95/처리량에서 최소 의미 차이 이상 우수하거나 Caffeine의 heap/GC 문제를 그렇게 완화했다는 증거가 없으므로 이 선택에서는 채택하지 않는다.
-- **보정 판정:** 새 evidence는 Caffeine 후보 결론을 **약화하지만 반전하지 않는다**. 핵심 선택 규칙의 formal-main 6개는 그대로인 반면, cold 4개는 후보 확인이 하나도 없고 `NO_MEANINGFUL_IMPROVEMENT` 2건과 `INCONCLUSIVE` 2건이다.
-- **보류 위험:** Cold VU50에서 Caffeine은 none보다 p95가 56% 높고 처리량이 약 12% 낮다(3회 평균 값 기준). cold-burst도 Caffeine p95 회귀 또는 방향 불일치를 보였으므로 adoption 설계에서 cold miss/single-flight와 초기 채움 경로를 별도 검증해야 한다.
-- **다음 단계:** 선택된 provider만 남기는 `commit-content-cache-adoption-design`을 작성한다. staging은 그 설계 이후 500 blocks/Mixed/VU50/60초 3회 방향성 확인만 검토하며 saturation은 실행하지 않는다.
+- **과거 cold 판정 정정:** 기존 cold 수치는 provider별 JVM 재시작 조건이 비대칭이어서 최종 채택 근거에서 제외한다. 대칭 Cold VU50 재측정은 Caffeine p95가 2/3 개선·1/3 악화이고 baseline 변동폭 약 26%를 넘지 못해 `INCONCLUSIVE`다.
+- **보류 위험:** cold miss latency와 초기 채움 경로의 성능 이득 또는 회귀는 확인되지 않았다. 운영 hit ratio와 cold p95를 함께 관측해야 한다.
+- **Single-Flight 확인:** 현재 어노테이션 구현의 동일 키 Cold Burst VU50에서 요청 50건이 조립 1회, miss 1회, hit 49회로 처리됐다. 이는 부하 증폭 방지 동작의 근거이며 p95 개선 근거는 아니다.
+- **최종 구현:** Caffeine만 남기고 Spring Cache 어노테이션 경계로 전환했다. 과거 비교 구현은 체크포인트 커밋 `62a2d19`로 보존했으며 최종 변경은 사용자 검토를 위해 미커밋 상태로 둔다.
+- **운영 다음 단계:** 실제 hit ratio와 cold p95를 Grafana로 관측하고 손해가 확인되면 캐시를 비활성화한다. staging 부하와 saturation은 사용자 지시에 따라 실행하지 않았다.
 - **운영 한계:** 실제 운영 트래픽·로그 기반 hit rate/latency/error evidence는 없다. 로컬 단일 app/데이터셋/환경 수치와 운영 절대 수치를 합치지 않는다.
 
 ## 생성 artifact

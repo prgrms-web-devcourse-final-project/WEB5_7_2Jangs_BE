@@ -22,20 +22,50 @@
 <body>
   <main class="shell">
     <header class="hero">
-      <p class="eyebrow">Local benchmark decision · 2026-08-02</p>
-      <h1>커밋 본문 캐시는<br>Caffeine 후보로 선택합니다.</h1>
-      <p class="lead">핵심 6개 조건은 모두 cache 후보를 확인했습니다. Redis가 Caffeine보다 최소 의미 차이 이상 우수하지 않아 선택 규칙은 Caffeine을 가리키지만, 보정된 cold 4조건은 이 결론을 약화합니다.</p>
-      <div class="pills"><div class="pill">핵심 6조건 · 모두 CACHE_CANDIDATE_CONFIRMED</div><div class="pill">Redis Fail-Open · 통과</div><div class="pill">staging 부하 · 미실행</div></div>
+      <p class="eyebrow">Local benchmark decision · 2026-08-04</p>
+      <h1>단일 인스턴스에는<br>Caffeine을 조건부 채택합니다.</h1>
+      <p class="lead">Spring Cache 어노테이션으로 단순화한 최종 구현에서도 Hot/Mixed 개선은 유지됐고, 동일 키 Cold Burst 50건은 한 번의 본문 조립으로 합쳐졌습니다. 대칭 Cold 성능은 결론을 보류하고 hit ratio 관측과 즉시 비활성화 경로를 채택 조건으로 둡니다.</p>
+      <div class="pills"><div class="pill">최종 구현 · @Cacheable + Caffeine</div><div class="pill">Single-Flight · 50요청 / 조립 1회</div><div class="pill">staging 부하 · 미실행</div></div>
     </header>
 
     <section>
       <h2>결론과 이유</h2>
       <div class="grid">
-        <div class="card good"><span>최종 판정</span><b>Caffeine 후보 선택</b><p>핵심 6개 조건이 cache 후보를 확인했고, Caffeine/Redis의 차이는 최소 의미 차이 미만이다.</p></div>
-        <div class="card warn"><span>보류 위험</span><b>cold 경로는 후보 확인 0건</b><p>보정된 4조건은 NO_MEANINGFUL_IMPROVEMENT 2건, INCONCLUSIVE 2건이며 Caffeine p95 회귀 또는 방향 불일치를 보였다.</p></div>
-        <div class="card good"><span>안전성 gate</span><b>Redis Fail-Open 통과</b><p>Redis stop 후에도 health UP/API 성공, restart 뒤 miss·put·hit 회복을 확인했다.</p></div>
+        <div class="card good"><span>최종 판정</span><b>Caffeine 조건부 채택</b><p>반복 조회 개선은 일관됐고, 단일 인스턴스에 Redis 운영 복잡도를 더할 근거는 없었다.</p></div>
+        <div class="card warn"><span>보류 위험</span><b>Cold는 INCONCLUSIVE</b><p>대칭 재측정에서 2회 개선·1회 악화였고 baseline 변동폭이 커 이득이나 회귀를 확정할 수 없다.</p></div>
+        <div class="card good"><span>운영 gate</span><b>지표 관측 + 즉시 비활성화</b><p>cache hit/miss·eviction·assemble을 보고, 필요하면 enabled=false로 전환한다.</p></div>
       </div>
       <p class="note">실제 성공 VU/rate summary에서 <code>dropped_iterations</code> key가 없음을 재현했다. 공식 k6 정의(실행하지 못한 iteration Counter)와 TDD 검증에 따라, 유효한 metrics 객체에서 key만 없으면 0으로 해석한다. key가 존재하지만 count가 null이거나 metrics 객체가 없으면 null을 유지한다.</p>
+    </section>
+
+    <section>
+      <h2>최종 어노테이션 구현 재검증</h2>
+      <p>비교 실험용 수동 캐시 구현을 <code>@Cacheable(sync = true)</code>과 <code>@CacheEvict</code>로 줄이고, Caffeine만 남겼습니다. 설정은 접근 후 10분 만료, 최대 400개, <code>recordStats()</code>입니다. Redis runtime 의존성과 로컬 Compose 서비스는 제거했습니다.</p>
+      <div class="table-wrap"><table><thead><tr><th>500 Block · VU50</th><th>none p95</th><th>Caffeine p95</th><th>변화</th><th>cache 관측</th></tr></thead><tbody>
+        <tr><td>Hot · 3회 평균</td><td>182.02 ms</td><td>149.58 ms</td><td><strong>17.8% 개선<br>3/3 개선</strong></td><td>hit 19,797~21,467<br>miss·assemble 0</td></tr>
+        <tr><td>Mixed · 3회 평균</td><td>187.77 ms</td><td>151.35 ms</td><td><strong>19.4% 개선<br>3/3 개선</strong></td><td>hit 20,484~21,689<br>miss·assemble 0</td></tr>
+        <tr><td>Cold · 대칭 3회 평균</td><td>505.06 ms</td><td>422.34 ms</td><td><strong>평균 16.4% 개선<br>INCONCLUSIVE</strong></td><td>2/3 개선<br>miss·assemble 400</td></tr>
+      </tbody></table></div>
+      <p class="note">유효한 18회에서 commit 조회 실패와 dropped iteration은 0이었습니다. 전역 HTTP 실패에는 measurement gate 대기 중 의도된 425가 포함됩니다. Mixed는 10초 사전 warm-up 동안 전체 working set이 채워져 본 측정 miss가 0이므로 steady-state warm 결과로 해석합니다.</p>
+      <p><code>iterations.values.rate</code>는 setup과 gate 대기까지 포함하므로 실제 조회 구간 처리량으로 주장하지 않습니다. 최종 판정은 gate 해제 뒤 요청의 <code>op_commit_get_ms</code> p95를 사용합니다.</p>
+      <div class="grid">
+        <div class="card good"><span>Hot/Mixed</span><b>p95 3/3 개선</b><p>수동 구현을 어노테이션으로 바꿔도 반복 조회 이득이 유지됐다.</p></div>
+        <div class="card warn"><span>Cold</span><b>2/3 개선 · 1/3 악화</b><p>baseline 변동폭 약 26%보다 평균 개선폭이 작아 이득이나 회귀를 확정하지 않는다.</p></div>
+        <div class="card"><span>성능 비교 범위</span><b>로컬 18회</b><p>Single-Flight 1회는 별도 동작 검증이며 staging 부하는 실행하지 않았다.</p></div>
+      </div>
+      <h3>동일 키 Cold Burst · Single-Flight PASS</h3>
+      <p>현재 <code>@Cacheable(sync = true)</code>와 실제 Caffeine을 사용하는 최종 코드로 앱을 재시작해 캐시를 비운 뒤, 500 Block인 동일 커밋에 VU 50이 한 번씩 요청했습니다.</p>
+      <div class="grid">
+        <div class="card good"><span>요청 결과</span><b>50/50 성공</b><p>commit 조회 HTTP failure rate 0, interrupted iteration 0이었다.</p></div>
+        <div class="card good"><span>Single-Flight</span><b>miss 1 · assemble 1</b><p>나머지 49건은 cache hit으로 처리됐고 put 1, cache size 1이었다.</p></div>
+        <div class="card"><span>참고 관측</span><b>p95 265.50 ms</b><p>평균 196.63 ms, 응답 72,293 bytes. 단건이므로 개선율이나 운영 성능으로 일반화하지 않는다.</p></div>
+      </div>
+      <p class="note">k6의 동시 시작만으로 모든 요청이 조립 도중 겹쳤다고 보장하지는 않습니다. latch로 실제 실행 겹침을 만든 동시 요청 20개 자동화 테스트에서도 조립 1회를 확인했으므로 두 근거를 함께 사용합니다. raw root는 <code>perf/read/results/commit-cache/final-annotation-single-flight-20260804-r2/</code>입니다.</p>
+      <h3>왜 <code>@Timed</code>가 아니라 직접 Timer인가</h3>
+      <p>목표 지표는 cache hit까지 포함한 메서드 전체 시간이 아니라, miss일 때만 발생하는 MongoDB 조회·본문 조립 시간입니다. 그래서 <code>CommitContentAssembler</code>의 실제 조립 구간만 직접 <code>Timer</code>로 감쌌습니다.</p>
+      <h3>Grafana에서 볼 지표</h3>
+      <p><code>cache_gets_total</code>, <code>cache_evictions_total</code>, <code>cache_size</code>, <code>cache_puts_total</code>, <code>commit_content_assemble_seconds</code>가 Prometheus에 실제 노출되는 것을 확인했습니다. hit ratio 하락, eviction 증가, assemble 재상승과 API p95를 함께 봅니다.</p>
+      <p class="ok"><strong>대응:</strong> 실제 트래픽에서 캐시가 손해라면 <code>COMMIT_CONTENT_CACHE_ENABLED=false</code>로 즉시 비활성화합니다. 최초 Cold 회귀 수치는 Caffeine만 재시작한 비대칭 조건이라 폐기했습니다. 랜덤 TTL은 동시 만료나 eviction churn 증거가 없어 이번 범위에 넣지 않았습니다.</p>
     </section>
 
     <section>
@@ -62,7 +92,8 @@
     </section>
 
     <section>
-      <h2>보조 조건과 cold 회귀</h2>
+      <h2>과거 보조 조건 · Cold 수치는 최종 판정 제외</h2>
+      <p class="note">아래 Cold/Cold-burst는 당시 provider별 JVM 재시작 조건이 대칭이 아니었으므로 이력으로만 보존하고 최종 채택 근거에는 사용하지 않습니다. 최종 Cold 판정은 위 대칭 6회 결과입니다.</p>
       <div class="table-wrap"><table><thead><tr><th>조건</th><th>none</th><th>Caffeine</th><th>Redis</th><th>해석</th></tr></thead><tbody>
         <tr><td>Large Hot VU50</td><td>194.67 ms / 163.99/s</td><td>170.07 ms / 182.08/s</td><td>173.12 ms / 178.06/s</td><td>cache 후보 확인, provider 차이 10% 미만</td></tr>
         <tr><td>Large Mixed VU50</td><td>201.53 ms / 165.00/s</td><td>168.00 ms / 180.03/s</td><td>177.14 ms / 175.11/s</td><td>cache 후보 확인, provider 차이 10% 미만</td></tr>
@@ -90,7 +121,7 @@
 
     <section>
       <h2>다음 단계와 한계</h2>
-      <ul><li>새 cold evidence는 Caffeine 후보 결론을 약화하지만 core 6개 선택 규칙을 반전하지는 않는다.</li><li>선택된 Caffeine만 남기는 adoption design을 작성하고, cold miss/single-flight와 초기 채움 경로를 별도 검증한다.</li><li>staging은 그 설계 뒤 Mixed/VU50/60초 3회 방향성 확인만 검토하며 saturation은 실행하지 않는다.</li><li>구현 hash는 <code>61b171f0d8e888c04daeb92021aba58bdb911f62</code>지만, 측정 당시 working tree가 미커밋이라 hash만으로 구현을 재현할 수 없다.</li><li>실제 운영 로그·트래픽 기반 증거는 없으며, 로컬 절대 수치와 운영 절대 수치를 합치지 않는다.</li></ul>
+      <ul><li>Caffeine 채택은 실제 반복 조회 비율이 충분하다는 조건부 결정이다. hit ratio가 낮으면 비활성화한다.</li><li>cold miss와 초기 채움 p95는 Grafana에서 별도 위험 지표로 본다.</li><li>Cold 대칭 재측정은 평균 개선이 있었지만 반복 방향과 baseline 변동폭 기준으로 INCONCLUSIVE다.</li><li>staging 부하와 saturation은 사용자 지시에 따라 실행하지 않았다.</li><li>과거 비교 구현은 체크포인트 커밋 <code>62a2d19</code>로 보존했고, 최종 어노테이션 변경은 검토를 위해 미커밋 상태로 남긴다.</li><li>실제 운영 로그·트래픽 기반 증거는 없으며, 로컬 절대 수치와 운영 절대 수치를 합치지 않는다.</li></ul>
       <p>조건별 raw path, 3회 배열과 v1/v2/v3 artifact 목록은 <a href="commit-content-cache-result.md">상세 Markdown 결과 문서</a>에서 확인할 수 있다.</p>
     </section>
   </main>
