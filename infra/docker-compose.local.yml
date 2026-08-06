@@ -15,7 +15,8 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/docsa-local?replicaSet=rs0&directConnection=true
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       MONGO_LOCAL_CLEANUP_ENABLED: "false"
-      PERF_SEED_USER_COUNT: "0"
+      PERF_SEED_USER_COUNT: ${PERF_SEED_USER_COUNT:-0}
+      PERF_SEED_DOCS_PER_USER: ${PERF_SEED_DOCS_PER_USER:-0}
       MAIL_HOST: mailpit
       MAIL_PORT: "1025"
       LOCAL_MINIO_ENDPOINT: http://minio:9000
@@ -23,8 +24,7 @@ services:
       LOCAL_MINIO_ROOT_USER: ${LOCAL_MINIO_ROOT_USER:-docsa-local}
       LOCAL_MINIO_ROOT_PASSWORD: ${LOCAL_MINIO_ROOT_PASSWORD:-docsa-local-password}
       LOCAL_MINIO_BUCKET: ${LOCAL_MINIO_BUCKET:-docsa-local}
-      COMMIT_CONTENT_CACHE_PROVIDER: ${COMMIT_CONTENT_CACHE_PROVIDER:-none}
-      SPRING_DATA_REDIS_URL: redis://redis:6379
+      COMMIT_CONTENT_CACHE_ENABLED: ${COMMIT_CONTENT_CACHE_ENABLED:-true}
     depends_on:
       mysql:
         condition: service_healthy
@@ -83,20 +83,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - docsa_local_net
-
-  redis:
-    image: redis:7.4-alpine
-    container_name: docsa-redis-local
-    profiles:
-      - commit-cache
-    command: redis-server --save "" --appendonly no
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
     networks:
       - docsa_local_net
 

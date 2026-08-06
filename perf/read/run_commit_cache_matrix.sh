@@ -18,8 +18,8 @@ for required in PROVIDER BLOCKS_PER_COMMIT PATTERN RUN_NO BASE_URL RUN_ID; do
 done
 
 case "$PROVIDER" in
-  none|caffeine|redis) ;;
-  *) die "PROVIDER는 none, caffeine, redis 중 하나여야 합니다" ;;
+  none|caffeine) ;;
+  *) die "PROVIDER는 none, caffeine 중 하나여야 합니다" ;;
 esac
 case "$PATTERN" in
   cold|hot|mixed|cold_burst|saturation) ;;
@@ -85,9 +85,7 @@ GATE_SCRIPT="$SCRIPT_DIR/measurement_gate.mjs"
 ACTUATOR_PROMETHEUS_URL="${ACTUATOR_HEALTH_URL%/health}/prometheus"
 RESULT_ROOT="${RESULT_ROOT:-$SCRIPT_DIR/results/commit-cache}"
 RESULT_DIR="$RESULT_ROOT/$PROVIDER/blocks-$BLOCKS_PER_COMMIT/$PATTERN/$LOAD_PROFILE/run-$RUN_NO"
-REDIS_CONTAINER_NAME="${REDIS_CONTAINER_NAME:-docsa-redis-local}"
 APP_CONTAINER_NAME="${APP_CONTAINER_NAME:-docsa-app-local}"
-COMMIT_CONTENT_CACHE_KEY_PREFIX='docsa:experiment:commit-content:'
 MEASUREMENT_GATE_URL=""
 
 [[ ! -e "$RESULT_DIR" ]] || die "결과 디렉터리가 이미 존재합니다: $RESULT_DIR"
@@ -119,16 +117,6 @@ compose() {
   docker compose -f "$COMPOSE_FILE" "$@"
 }
 
-wait_for_redis() {
-  local attempt status
-  for ((attempt = 1; attempt <= HEALTH_RETRIES; attempt += 1)); do
-    status="$(docker inspect --format '{{.State.Health.Status}}' "$REDIS_CONTAINER_NAME" 2>/dev/null || true)"
-    [[ "$status" == healthy ]] && return 0
-    sleep "$HEALTH_INTERVAL_SECONDS"
-  done
-  die "Redis가 제한 시간 안에 healthy 상태가 되지 않았습니다"
-}
-
 wait_for_app() {
   local attempt
   for ((attempt = 1; attempt <= HEALTH_RETRIES; attempt += 1)); do
@@ -140,41 +128,10 @@ wait_for_app() {
   die "애플리케이션이 제한 시간 안에 UP 상태가 되지 않았습니다"
 }
 
-stop_redis_if_present() {
-  local redis_id
-  redis_id="$(compose --profile commit-cache ps -q redis)" || die "Redis 상태를 확인하지 못했습니다"
-  if [[ -n "$redis_id" ]]; then
-    compose --profile commit-cache stop redis >>"$RUN_LOG" 2>&1 \
-      || die "Redis 컨테이너 중지에 실패했습니다"
-  else
-    echo 'Redis container is not created; stop skipped' >>"$RUN_LOG"
-  fi
-}
-
-clear_redis_namespace() {
-  local scan_file key
-  scan_file="$(mktemp "${TMPDIR:-/tmp}/commit-cache-redis-scan.XXXXXX")"
-  if ! docker exec "$REDIS_CONTAINER_NAME" redis-cli --raw --scan \
-      --pattern "${COMMIT_CONTENT_CACHE_KEY_PREFIX}*" >"$scan_file"; then
-    rm -f "$scan_file"
-    die "Redis key SCAN에 실패했습니다"
-  fi
-  while IFS= read -r key; do
-    [[ -z "$key" || "$key" == "$COMMIT_CONTENT_CACHE_KEY_PREFIX"* ]] \
-      || { rm -f "$scan_file"; die "실험 prefix 밖의 Redis key를 거부했습니다"; }
-  done <"$scan_file"
-  while IFS= read -r key; do
-    [[ -n "$key" ]] || continue
-    docker exec "$REDIS_CONTAINER_NAME" redis-cli UNLINK "$key" >/dev/null \
-      || { rm -f "$scan_file"; die "Redis key UNLINK에 실패했습니다"; }
-  done <"$scan_file"
-  rm -f "$scan_file"
-}
-
 snapshot_prometheus() {
   local destination="$1"
   curl -fsS "$ACTUATOR_PROMETHEUS_URL" 2>/dev/null \
-    | awk '/^(commit_content_|jvm_memory_|jvm_gc_pause_|http_server_requests_)/' \
+    | awk '/^(commit_content_|cache_gets_|cache_evictions_|cache_size|cache_puts_|jvm_memory_|jvm_gc_pause_|http_server_requests_)/' \
     >"$destination"
 }
 
@@ -183,14 +140,6 @@ snapshot_container() {
   docker stats --no-stream \
     --format '{{.Name}} {{.CPUPerc}} {{.MemUsage}} {{.NetIO}} {{.BlockIO}} {{.PIDs}}' \
     "$APP_CONTAINER_NAME" >"$destination" 2>/dev/null
-}
-
-snapshot_redis() {
-  local destination="$1"
-  docker exec "$REDIS_CONTAINER_NAME" redis-cli INFO memory \
-    | tr -d '\r' \
-    | awk -F: '/^(used_memory|used_memory_peak|maxmemory|maxmemory_policy|mem_fragmentation_ratio):/ { print }' \
-    >"$destination"
 }
 
 run_workload() {
@@ -251,15 +200,10 @@ wait_for_setup_complete() {
 }
 
 cd "$REPO_ROOT"
-export COMMIT_CONTENT_CACHE_PROVIDER="$PROVIDER"
-export COMMIT_CONTENT_CACHE_KEY_PREFIX
-
-if [[ "$PROVIDER" == redis ]]; then
-  compose --profile commit-cache up -d redis >>"$RUN_LOG" 2>&1
-  wait_for_redis
-  clear_redis_namespace
+if [[ "$PROVIDER" == caffeine ]]; then
+  export COMMIT_CONTENT_CACHE_ENABLED=true
 else
-  stop_redis_if_present
+  export COMMIT_CONTENT_CACHE_ENABLED=false
 fi
 
 compose up -d --build --force-recreate app >>"$RUN_LOG" 2>&1
@@ -278,7 +222,7 @@ run_id=$RUN_ID
 user_count=20
 docs_per_user=2
 main_commits=10
-cache_key_prefix=$COMMIT_CONTENT_CACHE_KEY_PREFIX
+cache_enabled=$COMMIT_CONTENT_CACHE_ENABLED
 sensitive_values=not_recorded
 EOF
 
@@ -286,12 +230,8 @@ VERIFY_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/commit-cache-verify.XXXXXX")"
 run_workload verify "$VERIFY_ROOT" >>"$RUN_LOG" 2>&1
 
 if [[ "$PATTERN" == cold || "$PATTERN" == cold_burst ]]; then
-  if [[ "$PROVIDER" == redis ]]; then
-    clear_redis_namespace
-  elif [[ "$PROVIDER" == caffeine ]]; then
-    compose up -d --force-recreate --no-deps app >>"$RUN_LOG" 2>&1
-    wait_for_app
-  fi
+  compose up -d --force-recreate --no-deps app >>"$RUN_LOG" 2>&1
+  wait_for_app
 elif [[ "$PATTERN" == hot || "$PATTERN" == mixed ]]; then
   WARMUP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/commit-cache-warmup.XXXXXX")"
   run_workload "$PATTERN" "$WARMUP_ROOT" \
@@ -315,9 +255,6 @@ wait_for_setup_complete
 
 snapshot_prometheus "$RESULT_DIR/prometheus-before.txt"
 snapshot_container "$RESULT_DIR/container-stats-before.txt"
-if [[ "$PROVIDER" == redis ]]; then
-  snapshot_redis "$RESULT_DIR/redis-info-before.txt"
-fi
 
 curl -fsS -X POST "$MEASUREMENT_GATE_URL/gate/release" >/dev/null \
   || die "measurement gate 해제에 실패했습니다"
@@ -335,9 +272,6 @@ snapshot_status=0
 set +e
 snapshot_prometheus "$RESULT_DIR/prometheus-after.txt" || snapshot_status=1
 snapshot_container "$RESULT_DIR/container-stats-after.txt" || snapshot_status=1
-if [[ "$PROVIDER" == redis ]]; then
-  snapshot_redis "$RESULT_DIR/redis-info-after.txt" || snapshot_status=1
-fi
 set -e
 
 if (( workload_status != 0 )); then

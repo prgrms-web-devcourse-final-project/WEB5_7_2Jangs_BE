@@ -53,20 +53,10 @@ printf 'docker %s\n' "$*" >>"$COMMAND_LOG"
 if [[ " $* " == *" up -d --force-recreate --no-deps app "* ]]; then
   printf 'caffeine_reset\n' >>"$ORDER_LOG"
 fi
-if [[ " $* " == *" --profile commit-cache stop redis "* && "${FAIL_REDIS_STOP:-0}" == "1" ]]; then
-  exit 17
+if [[ " $* " == *" compose "*" up -d --build --force-recreate app "* ]]; then
+  printf 'cache_enabled=%s\n' "${COMMIT_CONTENT_CACHE_ENABLED:-unset}" >>"$COMMAND_LOG"
 fi
-if [[ " $* " == *" compose "*" ps -q redis "* ]]; then
-  if [[ "${REDIS_EXISTS:-0}" == "1" ]]; then echo redis-container-id; fi
-elif [[ " $* " == *" inspect "* ]]; then
-  echo healthy
-elif [[ " $* " == *" exec "*" --scan "* ]]; then
-  if [[ "${FAIL_REDIS_SCAN:-0}" == "1" ]]; then exit 9; fi
-  printf '%s\n' "${COMMIT_CONTENT_CACHE_KEY_PREFIX}key-a" "${COMMIT_CONTENT_CACHE_KEY_PREFIX}key-b"
-elif [[ " $* " == *" exec "*" INFO memory "* ]]; then
-  if [[ -f "$GATE_STATE/released" ]]; then printf 'snapshot_after_redis\n' >>"$ORDER_LOG"; fi
-  printf 'used_memory:1024\r\nmaxmemory:0\r\n'
-elif [[ " $* " == *" stats "* ]]; then
+if [[ " $* " == *" stats "* ]]; then
   if [[ -f "$GATE_STATE/released" ]]; then printf 'snapshot_after_container\n' >>"$ORDER_LOG"; fi
   echo 'docsa-app-local 0.10% 256MiB / 1GiB'
 fi
@@ -102,6 +92,9 @@ commit_content_cache_eviction_total{result="error"} 0
 jvm_memory_used_bytes{area="heap"} 1024
 jvm_gc_pause_seconds_count 0
 commit_content_assemble_seconds_count 1
+cache_gets_total{cache="commitContentCache",result="hit"} 1
+cache_gets_total{cache="commitContentCache",result="miss"} 0
+cache_evictions_total{cache="commitContentCache"} 0
 http_server_requests_seconds_count{uri="/api/document/{docId}/commit/{commitId}"} 1
 process_cpu_usage 0.1
 METRICS
@@ -205,10 +198,10 @@ test_required_input_fails_before_external_command() {
   [[ ! -s "$case_dir/commands.log" ]] || fail '필수 입력 검증 전에 외부 명령을 실행했습니다'
 }
 
-test_invalid_provider_and_run_are_rejected() {
+test_redis_provider_and_invalid_run_are_rejected() {
   local case_dir="$TMP_ROOT/invalid"
-  if run_runner "$case_dir" PROVIDER=memory BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=1 BASE_URL=http://localhost:8080 >/dev/null 2>&1; then
-    fail '허용하지 않은 provider를 허용했습니다'
+  if run_runner "$case_dir" PROVIDER=redis BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=1 BASE_URL=http://localhost:8080 >/dev/null 2>&1; then
+    fail '제거된 Redis provider를 허용했습니다'
   fi
   [[ ! -s "$case_dir/commands.log" ]] || fail 'provider 검증 전에 외부 명령을 실행했습니다'
 
@@ -227,52 +220,19 @@ test_snapshot_fields_reject_embedded_credentials() {
   [[ ! -s "$case_dir/commands.log" ]] || fail 'actuator URL 검증 전에 외부 명령을 실행했습니다'
 }
 
-test_none_and_caffeine_do_not_start_redis_profile() {
+test_none_and_caffeine_set_cache_enabled_flag() {
   local provider case_dir
   for provider in none caffeine; do
     case_dir="$TMP_ROOT/$provider"
     run_runner "$case_dir" PROVIDER="$provider" BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=1 BASE_URL=http://localhost:8080 >/dev/null
-    assert_not_contains "$case_dir/commands.log" '--profile commit-cache up -d redis'
     assert_contains "$case_dir/commands.log" 'up -d --build --force-recreate app'
+    assert_count "$case_dir/commands.log" 1 'up -d --force-recreate --no-deps app'
+    if [[ "$provider" == none ]]; then
+      assert_contains "$case_dir/commands.log" 'cache_enabled=false'
+    else
+      assert_contains "$case_dir/commands.log" 'cache_enabled=true'
+    fi
   done
-
-  case_dir="$TMP_ROOT/redis-stop"
-  run_runner "$case_dir" PROVIDER=none BLOCKS_PER_COMMIT=100 PATTERN=hot RUN_NO=1 \
-    BASE_URL=http://localhost:8080 REDIS_EXISTS=1 >/dev/null
-  assert_contains "$case_dir/commands.log" '--profile commit-cache stop redis'
-
-  case_dir="$TMP_ROOT/redis-stop-failure"
-  if run_runner "$case_dir" PROVIDER=caffeine BLOCKS_PER_COMMIT=100 PATTERN=hot RUN_NO=1 \
-      BASE_URL=http://localhost:8080 REDIS_EXISTS=1 FAIL_REDIS_STOP=1 >/dev/null 2>&1; then
-    fail 'Redis stop 실패를 무시했습니다'
-  fi
-}
-
-test_redis_starts_profile_and_clears_only_prefix() {
-  local case_dir="$TMP_ROOT/redis"
-  run_runner "$case_dir" PROVIDER=redis BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=1 BASE_URL=http://localhost:8080 >/dev/null
-  assert_contains "$case_dir/commands.log" '--profile commit-cache up -d redis'
-  assert_contains "$case_dir/commands.log" '--scan --pattern docsa:experiment:commit-content:*'
-  assert_contains "$case_dir/commands.log" 'UNLINK docsa:experiment:commit-content:key-a'
-  assert_not_contains "$case_dir/commands.log" 'FLUSHDB'
-  assert_not_contains "$case_dir/commands.log" 'FLUSHALL'
-}
-
-test_fixed_prefix_rejects_runtime_override() {
-  local case_dir="$TMP_ROOT/fixed-prefix"
-  run_runner "$case_dir" PROVIDER=redis BLOCKS_PER_COMMIT=100 PATTERN=hot RUN_NO=1 \
-    BASE_URL=http://localhost:8080 COMMIT_CONTENT_CACHE_KEY_PREFIX=unsafe: >/dev/null
-  assert_contains "$case_dir/commands.log" '--scan --pattern docsa:experiment:commit-content:*'
-  assert_not_contains "$case_dir/commands.log" '--scan --pattern unsafe:*'
-}
-
-test_redis_scan_failure_stops_before_unlink() {
-  local case_dir="$TMP_ROOT/scan-failure"
-  if run_runner "$case_dir" PROVIDER=redis BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=1 \
-      BASE_URL=http://localhost:8080 FAIL_REDIS_SCAN=1 >/dev/null 2>&1; then
-    fail 'Redis SCAN 실패를 무시했습니다'
-  fi
-  assert_not_contains "$case_dir/commands.log" 'UNLINK '
 }
 
 test_stale_result_directory_is_rejected() {
@@ -388,13 +348,12 @@ test_gate_child_death_is_rejected_before_http_or_k6() {
 test_after_snapshot_attempts_all_and_preserves_workload_failure() {
   local case_dir="$TMP_ROOT/after-failure"
   set +e
-  run_runner "$case_dir" PROVIDER=redis BLOCKS_PER_COMMIT=100 PATTERN=hot RUN_NO=1 BASE_URL=http://localhost:8080 \
+  run_runner "$case_dir" PROVIDER=none BLOCKS_PER_COMMIT=100 PATTERN=hot RUN_NO=1 BASE_URL=http://localhost:8080 \
     FAIL_AFTER_PROMETHEUS=1 K6_MAIN_EXIT=23 >/dev/null 2>&1
   local status=$?
   set -e
   [[ "$status" == 23 ]] || fail "workload exit 23이 보존되지 않았습니다: actual=$status"
   assert_contains "$case_dir/order.log" 'snapshot_after_container'
-  assert_contains "$case_dir/order.log" 'snapshot_after_redis'
 
   case_dir="$TMP_ROOT/after-only-failure"
   if run_runner "$case_dir" PROVIDER=none BLOCKS_PER_COMMIT=100 PATTERN=hot RUN_NO=1 BASE_URL=http://localhost:8080 \
@@ -406,17 +365,13 @@ test_after_snapshot_attempts_all_and_preserves_workload_failure() {
 test_compose_config() {
   [[ -n "$REAL_DOCKER" ]] || fail 'docker compose config 검증에 docker가 필요합니다'
   local default_services="$TMP_ROOT/default-services.txt"
-  local profile_services="$TMP_ROOT/profile-services.txt"
   local rendered="$TMP_ROOT/compose-rendered.txt"
   "$REAL_DOCKER" compose -f "$COMPOSE_FILE" config --services >"$default_services"
-  "$REAL_DOCKER" compose -f "$COMPOSE_FILE" --profile commit-cache config --services >"$profile_services"
-  "$REAL_DOCKER" compose -f "$COMPOSE_FILE" --profile commit-cache config >"$rendered"
+  "$REAL_DOCKER" compose -f "$COMPOSE_FILE" config >"$rendered"
   assert_contains "$default_services" 'app'
   assert_not_contains "$default_services" 'redis'
-  assert_contains "$profile_services" 'app'
-  assert_contains "$profile_services" 'redis'
   assert_contains "$rendered" 'container_name: docsa-app-local'
-  assert_contains "$rendered" 'COMMIT_CONTENT_CACHE_PROVIDER: none'
+  assert_contains "$rendered" 'COMMIT_CONTENT_CACHE_ENABLED: "true"'
   assert_contains "$rendered" 'MONGO_LOCAL_CLEANUP_ENABLED: "false"'
   assert_contains "$rendered" 'PERF_SEED_USER_COUNT: "0"'
   assert_contains "$rendered" 'SPRING_JPA_HIBERNATE_DDL_AUTO: update'
@@ -424,12 +379,9 @@ test_compose_config() {
 }
 
 test_required_input_fails_before_external_command
-test_invalid_provider_and_run_are_rejected
+test_redis_provider_and_invalid_run_are_rejected
 test_snapshot_fields_reject_embedded_credentials
-test_none_and_caffeine_do_not_start_redis_profile
-test_redis_starts_profile_and_clears_only_prefix
-test_fixed_prefix_rejects_runtime_override
-test_redis_scan_failure_stops_before_unlink
+test_none_and_caffeine_set_cache_enabled_flag
 test_stale_result_directory_is_rejected
 test_load_profile_separates_hot_vu_results
 test_snapshots_do_not_persist_secret_values
