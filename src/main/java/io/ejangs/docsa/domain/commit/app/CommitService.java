@@ -37,7 +37,6 @@ public class CommitService {
     private final EdgeService edgeService;
 
     private final CommitCreateOrchestrator commitCreateOrchestrator;
-    private final CommitContentAssembler assembler;
     private final CommitContentCache commitContentCache;
     private final MongoIdsCollector mongoIdsCollector;
     private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
@@ -68,7 +67,7 @@ public class CommitService {
     private List<Map<String, Object>> getWholeContent(Long commitId) {
         Commit commit = commitReader.getById(commitId);
         String commitMongoId = commit.getCommitMongoId();
-        return commitContentCache.get(commitMongoId, () -> assembler.assemble(commitMongoId));
+        return commitContentCache.get(commitMongoId);
     }
 
     @Transactional(rollbackFor = Exception.class)

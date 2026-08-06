@@ -3,7 +3,6 @@ package io.ejangs.docsa.domain.commit.app;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -23,7 +22,6 @@ import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,9 +41,6 @@ class GetCommitMockTest {
 
     @Mock
     private DocReader docReader;
-
-    @Mock
-    private CommitContentAssembler assembler;
 
     @Mock
     private CommitContentCache commitContentCache;
@@ -90,7 +85,7 @@ class GetCommitMockTest {
         String commitMongoId = "mongo-commit-id";
 
         given(commitReader.getById(commitId)).willReturn(targetCommit);
-        given(commitContentCache.get(eq(commitMongoId), any())).willReturn(mockContent);
+        given(commitContentCache.get(commitMongoId)).willReturn(mockContent);
 
         // when
         CommitResponse response = commitService.getCommit(docId, commitId, userDetails.getId());
@@ -101,32 +96,7 @@ class GetCommitMockTest {
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitReader).getById(commitId);
-        verify(commitContentCache).get(eq(commitMongoId), any());
-        verify(assembler, never()).assemble(any());
-    }
-
-    @Test
-    @DisplayName("getCommit - 캐시 로더 실행 시 커밋 내용을 조립하여 반환한다")
-    void getCommit_CacheLoader_AssemblesContent() {
-        // given
-        Long docId = 1L;
-        Long commitId = 1L;
-        String commitMongoId = "mongo-commit-id";
-
-        given(commitReader.getById(commitId)).willReturn(targetCommit);
-        given(assembler.assemble(commitMongoId)).willReturn(mockContent);
-        given(commitContentCache.get(eq(commitMongoId), any())).willAnswer(invocation -> {
-            Supplier<List<Map<String, Object>>> loader = invocation.getArgument(1);
-            return loader.get();
-        });
-
-        // when
-        CommitResponse response = commitService.getCommit(docId, commitId, userDetails.getId());
-
-        // then
-        assertThat(response.content()).isEqualTo(mockContent);
-        verify(commitContentCache).get(eq(commitMongoId), any());
-        verify(assembler).assemble(commitMongoId);
+        verify(commitContentCache).get(commitMongoId);
     }
 
     @Test
@@ -145,8 +115,7 @@ class GetCommitMockTest {
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitReader).getById(commitId);
-        verify(commitContentCache, never()).get(any(), any());
-        verify(assembler, never()).assemble(any());
+        verify(commitContentCache, never()).get(any());
     }
 
     @Test
@@ -165,8 +134,7 @@ class GetCommitMockTest {
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitReader, never()).getById(any());
-        verify(commitContentCache, never()).get(any(), any());
-        verify(assembler, never()).assemble(any());
+        verify(commitContentCache, never()).get(any());
     }
 
 }

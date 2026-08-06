@@ -6,20 +6,12 @@ spring:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:${MONGO_URI}}
       auto-index-creation: ${SPRING_DATA_MONGODB_AUTO_INDEX_CREATION:true}
-    redis:
-      url: ${SPRING_DATA_REDIS_URL:redis://localhost:6379}
-      connect-timeout: 200ms
-      timeout: 200ms
-
   mail:
     connection-timeout: 5000
     timeout: 5000
     write-timeout: 5000
 
 management:
-  health:
-    redis:
-      enabled: ${MANAGEMENT_HEALTH_REDIS_ENABLED:false}
   server:
     port: 9091
   endpoints:
@@ -45,10 +37,9 @@ auth:
 commit:
   content:
     cache:
-      provider: ${COMMIT_CONTENT_CACHE_PROVIDER:none}
+      enabled: ${COMMIT_CONTENT_CACHE_ENABLED:true}
       ttl: ${COMMIT_CONTENT_CACHE_TTL:PT10M}
       maximum-size: ${COMMIT_CONTENT_CACHE_MAXIMUM_SIZE:400}
-      key-prefix: ${COMMIT_CONTENT_CACHE_KEY_PREFIX:docsa:experiment:commit-content:}
 
 default:
   branch: main

@@ -160,7 +160,7 @@ public class DeleteCommitIntegrationTest {
         // given
         Long commitId = commit22.getId();
         String commitMongoId = commit22.getCommitMongoId();
-        when(commitContentCache.get(anyString(), any()))
+        when(commitContentCache.get(anyString()))
                 .thenReturn(List.of(java.util.Map.of("content", "stale")));
         commitService.deleteCommit(testDoc.getId(), commitId, testUser.getId());
 
@@ -170,7 +170,7 @@ public class DeleteCommitIntegrationTest {
                 .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
 
         verify(commitContentCache).evict(commitMongoId);
-        verify(commitContentCache, never()).get(anyString(), any());
+        verify(commitContentCache, never()).get(anyString());
     }
 
     @Test

@@ -6,15 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("commit.content.cache")
 public record CommitContentCacheProperties(
-        Provider provider,
         Duration ttl,
-        long maximumSize,
-        String keyPrefix
+        long maximumSize
 ) {
-
-    public enum Provider {
-        NONE,
-        CAFFEINE,
-        REDIS
-    }
 }

@@ -49,11 +49,6 @@ auth:
   passcode-cache-name: passCodeCache
   pwd-reset-code-cache-name: pwdResetCodeCache
 
-commit:
-  content:
-    cache:
-      provider: none
-
 default:
   branch: main
 
