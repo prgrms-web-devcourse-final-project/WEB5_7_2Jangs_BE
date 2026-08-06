@@ -115,7 +115,7 @@
 - Modify: `infra/docker-compose.local.yml`
 - Modify: `src/main/resources/application.yml`
 - Modify: `src/test/resources/application-test.yml`
-- Modify: `perf/read/run_commit_cache_matrix.sh`
+- Modify: `perf/read/commit-cache/run_commit_cache_matrix.sh`
 - Modify: `perf/read/README.md`
 
 **Interfaces:**
@@ -134,14 +134,14 @@
 
   Run: `bash ./gradlew test`
 
-  Run: `node --test perf/seed/commit_block_plan.test.mjs perf/read/commit_content_benchmark_helpers.test.mjs perf/read/compare_commit_cache_results.test.mjs`
+  Run: `node --test perf/seed/commit_block_plan.test.mjs perf/read/commit-cache/commit_content_benchmark_helpers.test.mjs perf/read/commit-cache/compare_commit_cache_results.test.mjs`
 
-  Run: `bash perf/read/run_commit_cache_matrix.test.sh`
+  Run: `bash perf/read/commit-cache/run_commit_cache_matrix.test.sh`
 
 ### Task 5: 대표 성능 재검증과 문서 갱신
 
 **Files:**
-- Modify: `perf/read/run_commit_cache_matrix.sh`
+- Modify: `perf/read/commit-cache/run_commit_cache_matrix.sh`
 - Modify: `docs/performance/commit-content-cache-result.md`
 - Modify: `docs/performance/commit-content-cache-result.html`
 

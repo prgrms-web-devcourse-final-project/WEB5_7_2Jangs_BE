@@ -1,0 +1,43 @@
+{
+  "measurement_revision": "62a2d1949ad81a8db75cc1609222b04477cb5c3f",
+  "measurement_type": "manual_caffeine_comparison",
+  "implementation_note": "수동 Caffeine 캐시 구현을 사용한 비교 결과이며 최종 @Cacheable(sync=true) 구현의 성능 재측정 결과가 아님",
+  "conditions": {
+    "blocks_per_commit": 500,
+    "vus": 50,
+    "runs_per_condition": 3,
+    "dataset": "20 users x 2 docs/user x 10 main commits",
+    "patterns": ["hot", "mixed"]
+  },
+  "p95_ms": {
+    "hot": {
+      "none": [188.59675, 169.25265, 188.19735],
+      "caffeine": [139.08690, 156.62100, 153.03050],
+      "none_average": 182.02,
+      "caffeine_average": 149.58,
+      "improvement_percent": 17.8
+    },
+    "mixed": {
+      "none": [188.07520, 196.45600, 178.77860],
+      "caffeine": [155.10560, 154.39270, 144.55440],
+      "none_average": 187.77,
+      "caffeine_average": 151.35,
+      "improvement_percent": 19.4
+    }
+  },
+  "cache_observation": {
+    "hot": {
+      "caffeine_assemble_count": [41, 41, 41],
+      "caffeine_miss": [41, 41, 41],
+      "caffeine_hit": [24868, 23070, 23190],
+      "caffeine_eviction": [0, 0, 0]
+    },
+    "mixed": {
+      "caffeine_assemble_count": [400, 400, 400],
+      "caffeine_miss": [400, 400, 400],
+      "caffeine_hit": [23612, 23455, 24615],
+      "caffeine_eviction": [0, 0, 0]
+    }
+  },
+  "calculation": "(none_average - caffeine_average) / none_average * 100"
+}

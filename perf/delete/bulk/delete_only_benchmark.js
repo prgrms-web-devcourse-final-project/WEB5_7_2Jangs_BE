@@ -133,6 +133,6 @@ export default function () {
 export function handleSummary(data) {
   return {
     stdout: `\n[delete-only] run_id=${RUN_ID}, users=${USER_COUNT}, docs_per_user=${DOCS_PER_USER}, total_docs=${TOTAL_DOCS}\n`,
-    'perf/delete/results/delete_only_summary.json': JSON.stringify(data, null, 2),
+    'perf/delete/bulk/results/delete/delete_only_summary.json': JSON.stringify(data, null, 2),
   };
 }

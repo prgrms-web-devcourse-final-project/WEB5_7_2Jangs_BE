@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 RUNNER="$SCRIPT_DIR/run_commit_cache_matrix.sh"
 COMPOSE_FILE="$REPO_ROOT/infra/docker-compose.local.yml"
 REAL_DOCKER="$(command -v docker || true)"

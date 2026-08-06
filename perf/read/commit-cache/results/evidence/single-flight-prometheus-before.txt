@@ -1,0 +1,7 @@
+# Sanitized Prometheus excerpt
+cache_gets_total{cache="commitContentCache",result="hit"} 0
+cache_gets_total{cache="commitContentCache",result="miss"} 0
+cache_puts_total{cache="commitContentCache"} 0
+cache_evictions_total{cache="commitContentCache"} 0
+cache_size{cache="commitContentCache"} 0
+commit_content_assemble_seconds_count 0

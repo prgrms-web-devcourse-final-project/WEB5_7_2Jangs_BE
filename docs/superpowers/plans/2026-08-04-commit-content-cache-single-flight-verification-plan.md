@@ -43,7 +43,7 @@ Expected: 삭제 시 eviction 호출과 삭제된 커밋의 stale cache 미반�
 ### Task 2: 현재 어노테이션 구현의 API Cold Burst 검증
 
 **Files:**
-- Create: `perf/read/results/commit-cache/final-annotation-single-flight-20260804-r2/caffeine/blocks-500/cold_burst/vus-50/run-1/*`
+- Create: `perf/read/commit-cache/results/final-annotation-single-flight-20260804-r2/caffeine/blocks-500/cold_burst/vus-50/run-1/*`
 
 **Interfaces:**
 - Consumes: `PATTERN=cold_burst`, `COLD_BURST_VUS=50`, Prometheus before/after snapshot
@@ -51,7 +51,7 @@ Expected: 삭제 시 eviction 호출과 삭제된 커밋의 stale cache 미반�
 
 - [x] **Step 1: 로컬 Caffeine Cold Burst를 1회 실행한다**
 
-Run: `RESULT_ROOT=perf/read/results/commit-cache/final-annotation-single-flight-20260804-r2 PROVIDER=caffeine BLOCKS_PER_COMMIT=500 PATTERN=cold_burst RUN_NO=1 RUN_ID=commit-cache-sf-b500-20260804 BASE_URL=http://localhost:8080 USER_PASSWORD="$USER_PASSWORD" COLD_BURST_VUS=50 bash perf/read/run_commit_cache_matrix.sh`
+Run: `RESULT_ROOT=perf/read/commit-cache/results/final-annotation-single-flight-20260804-r2 PROVIDER=caffeine BLOCKS_PER_COMMIT=500 PATTERN=cold_burst RUN_NO=1 RUN_ID=commit-cache-sf-b500-20260804 BASE_URL=http://localhost:8080 USER_PASSWORD="$USER_PASSWORD" COLD_BURST_VUS=50 bash perf/read/commit-cache/run_commit_cache_matrix.sh`
 
 - [x] **Step 2: snapshot 차이를 계산해 판정한다**
 

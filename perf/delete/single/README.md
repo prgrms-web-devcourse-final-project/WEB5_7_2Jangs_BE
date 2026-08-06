@@ -41,7 +41,7 @@
 - `RUN_ID` (default: timestamp)
 - `DELETE_MAX_DURATION` (default: `40m`)
 - `DELETE_P95_THRESHOLD_MS` (default: `15000`)
-- `RESULT_DIR` (default: `perf/single_delete/results`)
+- `RESULT_DIR` (default: `perf/delete/single/results`)
 
 ## Run examples
 
@@ -53,7 +53,7 @@ TEST_EMAIL='test@test.com' TEST_PASSWORD='Testtest1' \
 TARGET='doc' TARGET_COUNT=5 \
 MAIN_COMMITS=8 FEATURE_COMMITS=5 BLOCKS_PER_COMMIT=500 \
 RUN_ID='doc_run01' \
-k6 run perf/single_delete/single_user_delete_benchmark.js
+k6 run perf/delete/single/single_user_delete_benchmark.js
 ```
 
 ### 2) Heavy branch delete (single user)
@@ -64,7 +64,7 @@ TEST_EMAIL='test@test.com' TEST_PASSWORD='Testtest1' \
 TARGET='branch' TARGET_COUNT=5 \
 MAIN_COMMITS=8 FEATURE_COMMITS=5 BLOCKS_PER_COMMIT=500 \
 RUN_ID='branch_run01' \
-k6 run perf/single_delete/single_user_delete_benchmark.js
+k6 run perf/delete/single/single_user_delete_benchmark.js
 ```
 
 ### 3) Heavy commit delete (single user)
@@ -75,7 +75,7 @@ TEST_EMAIL='test@test.com' TEST_PASSWORD='Testtest1' \
 TARGET='commit' TARGET_COUNT=5 \
 MAIN_COMMITS=8 FEATURE_COMMITS=5 BLOCKS_PER_COMMIT=500 \
 RUN_ID='commit_run01' \
-k6 run perf/single_delete/single_user_delete_benchmark.js
+k6 run perf/delete/single/single_user_delete_benchmark.js
 ```
 
 ## Branch comparison
@@ -83,9 +83,9 @@ k6 run perf/single_delete/single_user_delete_benchmark.js
 동일한 `TARGET`/파라미터로 `dev`, `Refactor/178-outbox`를 각각 실행한 뒤:
 
 ```bash
-node perf/single_delete/compare_single_delete_summary.mjs \
-  perf/single_delete/results/<base>.json \
-  perf/single_delete/results/<target>.json
+node perf/delete/single/compare_single_delete_summary.mjs \
+  perf/delete/single/results/<base>.json \
+  perf/delete/single/results/<target>.json
 ```
 
 ## Notes

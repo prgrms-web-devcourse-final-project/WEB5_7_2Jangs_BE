@@ -12,7 +12,7 @@ const DOCS_PER_USER = Number(__ENV.DOCS_PER_USER || 3);
 const PAGE_SIZE = Number(__ENV.PAGE_SIZE || 10);
 const RUN_ID = __ENV.RUN_ID;
 const DATASET_RUN_ID = __ENV.DATASET_RUN_ID || RUN_ID;
-const RESULT_DIR = __ENV.RESULT_DIR || 'perf/read/results';
+const RESULT_DIR = __ENV.RESULT_DIR || 'perf/read/cqrs/results';
 const SEARCH_PREFIX = __ENV.SEARCH_PREFIX || 'PDEL';
 
 if (!RUN_ID) {

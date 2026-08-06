@@ -516,7 +516,7 @@ Mock만 사용하지 않고 테스트용 실제 Redis 컨테이너에서 확인�
 - Redis 메모리
 - 3회 비교 요약
 
-저장 경로는 `perf/read/results/commit-cache/<provider>/blocks-<count>/<pattern>/<load-profile>/run-<1|2|3>/`로 고정한다. `load-profile`은 VU 기반 시나리오의 `vus-20` 또는 포화 시나리오의 `rate-25-50-100-200`처럼 실제 부하를 나타낸다. provider, block 수, 접근 패턴, 부하와 반복 번호가 모두 같은 결과만 비교하며 3회 반복을 완료하지 않은 결과는 포트폴리오 성능 주장에 사용하지 않는다.
+저장 경로는 `perf/read/commit-cache/results/<provider>/blocks-<count>/<pattern>/<load-profile>/run-<1|2|3>/`로 고정한다. `load-profile`은 VU 기반 시나리오의 `vus-20` 또는 포화 시나리오의 `rate-25-50-100-200`처럼 실제 부하를 나타낸다. provider, block 수, 접근 패턴, 부하와 반복 번호가 모두 같은 결과만 비교하며 3회 반복을 완료하지 않은 결과는 포트폴리오 성능 주장에 사용하지 않는다.
 
 ## Staging 검증
 

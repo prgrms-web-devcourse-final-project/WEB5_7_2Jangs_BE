@@ -39,17 +39,17 @@
   - 변경률에 따라 새 block과 재사용 blockOrders를 결정적으로 계산한다.
 - `perf/seed/commit_block_plan.test.mjs`
   - 100%/10% 변경, 회전 구간, 길이 보존을 Node 내장 테스트로 검증한다.
-- `perf/read/commit_content_benchmark.js`
+- `perf/read/commit-cache/commit_content_benchmark.js`
   - Cold/Hot/Mixed/Cold burst/포화 시나리오를 실행하고 원본 JSON을 저장한다.
-- `perf/read/compare_commit_cache_results.mjs`
+- `perf/read/commit-cache/compare_commit_cache_results.mjs`
   - 3회 결과의 변동폭과 최소 의미 차이를 계산해 비교표를 만든다.
-- `perf/read/run_commit_cache_matrix.sh`
+- `perf/read/commit-cache/run_commit_cache_matrix.sh`
   - provider·block 수·패턴·반복 번호를 명시적으로 받아 한 조건을 재현한다.
-- `perf/read/run_commit_cache_matrix.test.sh`
+- `perf/read/commit-cache/run_commit_cache_matrix.test.sh`
   - 외부 명령을 stub으로 바꿔 입력 검증, provider별 Compose 분기, prefix 한정 Redis 정리와 비밀값 비기록을 검증한다.
-- `perf/read/measurement_gate.mjs`
+- `perf/read/commit-cache/measurement_gate.mjs`
   - localhost에서 k6 setup 완료와 runner snapshot 완료 사이를 동기화한다.
-- `perf/read/results/commit-cache/.gitkeep`
+- `perf/read/commit-cache/results/.gitkeep`
   - 원본 결과 저장 위치를 고정한다.
 - `docs/performance/commit-content-cache-result.md`
   - 측정 완료 후 환경, 원본 결과 링크, 판정과 남은 리스크를 기록한다.
@@ -522,8 +522,8 @@ Expected: JSON/namespace/TTL/fail-open/recovery/auth isolation 테스트 PASS.
 ### Task 6: 커밋 조회 전용 k6 시나리오 구현
 
 **Files:**
-- Create: `perf/read/commit_content_benchmark.js`
-- Create: `perf/read/results/commit-cache/.gitkeep`
+- Create: `perf/read/commit-cache/commit_content_benchmark.js`
+- Create: `perf/read/commit-cache/results/.gitkeep`
 - Modify: `.gitignore`
 
 - [ ] **Step 1: setup에서 대상 커밋을 정확히 수집**
@@ -560,7 +560,7 @@ Expected: JSON/namespace/TTL/fail-open/recovery/auth isolation 테스트 PASS.
 - [ ] **Step 5: raw result 경로 고정**
 
 ```text
-perf/read/results/commit-cache/
+perf/read/commit-cache/results/
   <provider>/blocks-<count>/<pattern>/<load-profile>/run-<1|2|3>/summary.json
 ```
 
@@ -568,7 +568,7 @@ perf/read/results/commit-cache/
 
 - [ ] **Step 6: k6 정적 검증**
 
-Run: `k6 inspect perf/read/commit_content_benchmark.js`
+Run: `k6 inspect perf/read/commit-cache/commit_content_benchmark.js`
 
 Expected: options와 scenario parsing 성공.
 
@@ -579,10 +579,10 @@ Expected: options와 scenario parsing 성공.
 ### Task 7: 한 조건 실행기와 관측 snapshot 구현
 
 **Files:**
-- Create: `perf/read/run_commit_cache_matrix.sh`
-- Create: `perf/read/run_commit_cache_matrix.test.sh`
-- Create: `perf/read/measurement_gate.mjs`
-- Modify: `perf/read/commit_content_benchmark.js`
+- Create: `perf/read/commit-cache/run_commit_cache_matrix.sh`
+- Create: `perf/read/commit-cache/run_commit_cache_matrix.test.sh`
+- Create: `perf/read/commit-cache/measurement_gate.mjs`
+- Modify: `perf/read/commit-cache/commit_content_benchmark.js`
 - Modify: `perf/read/README.md`
 - Modify: `infra/docker-compose.local.yml`
 
@@ -614,7 +614,7 @@ Expected: 기본 config에 app은 포함되고 Redis는 제외되며, profile co
 
 - [ ] **Step 2: runner 안전장치 실패 테스트 작성**
 
-`perf/read/run_commit_cache_matrix.test.sh`는 임시 PATH에 `docker`, `curl`, `k6` stub을 만들고 실제 외부 서비스를 건드리지 않은 채 다음을 검증한다.
+`perf/read/commit-cache/run_commit_cache_matrix.test.sh`는 임시 PATH에 `docker`, `curl`, `k6` stub을 만들고 실제 외부 서비스를 건드리지 않은 채 다음을 검증한다.
 
 ```text
 필수 입력 누락 시 외부 명령 실행 전 실패
@@ -630,7 +630,7 @@ SCAN 실패와 after snapshot 일부 실패가 workload 상태를 숨기지 않�
 기존 결과 디렉터리 재사용 거부
 ```
 
-Run: `bash perf/read/run_commit_cache_matrix.test.sh`
+Run: `bash perf/read/commit-cache/run_commit_cache_matrix.test.sh`
 
 Expected: runner 부재 또는 요구 동작 미구현으로 FAIL.
 
@@ -676,7 +676,7 @@ Prometheus snapshot에는 커밋 cache metric, `jvm_memory_*`, `jvm_gc_pause_*`,
 
 - [ ] **Step 8: runner 테스트와 README 명령 검증**
 
-README에 400 commit 데이터셋 생성, 100/500/1000 baseline, provider 교차 순서, Redis 중지·복구, staging 제한을 실제 명령으로 기록한다. shellcheck가 있으면 실행하고, 없으면 `bash -n perf/read/run_commit_cache_matrix.sh`를 실행한다.
+README에 400 commit 데이터셋 생성, 100/500/1000 baseline, provider 교차 순서, Redis 중지·복구, staging 제한을 실제 명령으로 기록한다. shellcheck가 있으면 실행하고, 없으면 `bash -n perf/read/commit-cache/run_commit_cache_matrix.sh`를 실행한다.
 
 Expected: runner 안전장치 테스트와 shell syntax PASS, 비밀값과 전체 Redis DB 삭제 명령 없음.
 
@@ -687,8 +687,8 @@ Expected: runner 안전장치 테스트와 shell syntax PASS, 비밀값과 전�
 ### Task 8: 3회 결과 비교와 판정 자동화
 
 **Files:**
-- Create: `perf/read/compare_commit_cache_results.mjs`
-- Create: `perf/read/compare_commit_cache_results.test.mjs`
+- Create: `perf/read/commit-cache/compare_commit_cache_results.mjs`
+- Create: `perf/read/commit-cache/compare_commit_cache_results.test.mjs`
 
 - [ ] **Step 1: 실패하는 판정식 테스트 작성**
 
@@ -704,7 +704,7 @@ assert.equal(sameDirection([12, -2, 11]), false);
 
 - [ ] **Step 2: 함수 부재로 실패 확인**
 
-Run: `node --test perf/read/compare_commit_cache_results.test.mjs`
+Run: `node --test perf/read/commit-cache/compare_commit_cache_results.test.mjs`
 
 Expected: module/function 부재로 FAIL.
 
@@ -732,10 +732,10 @@ CLI는 `--load-profile`을 필수로 받아 동일한 부하 조건의 3회 결�
 Run:
 
 ```bash
-node --test perf/read/compare_commit_cache_results.test.mjs
-node perf/read/compare_commit_cache_results.mjs --help
-node perf/read/compare_commit_cache_results.mjs \
-  --result-root perf/read/results/commit-cache \
+node --test perf/read/commit-cache/compare_commit_cache_results.test.mjs
+node perf/read/commit-cache/compare_commit_cache_results.mjs --help
+node perf/read/commit-cache/compare_commit_cache_results.mjs \
+  --result-root perf/read/commit-cache/results \
   --blocks 500 --pattern hot --load-profile vus-20
 ```
 
@@ -750,7 +750,7 @@ Expected: tests PASS, 입력 형식과 출력 경로 help 표시.
 **Files:**
 - Modify: `src/main/resources/application.yml`
 - Test with: `infra/docker-compose.local.yml`
-- Test with: `perf/read/run_commit_cache_matrix.sh`
+- Test with: `perf/read/commit-cache/run_commit_cache_matrix.sh`
 
 - [ ] **Step 1: Java compile과 집중 테스트**
 
@@ -826,7 +826,7 @@ Expected: API 응답 deep validation 동일, none은 hit 0, Caffeine/Redis는 wa
 ### Task 10: 로컬 측정 매트릭스 실행
 
 **Files:**
-- Write generated artifacts under: `perf/read/results/commit-cache/`
+- Write generated artifacts under: `perf/read/commit-cache/results/`
 
 - [ ] **Step 1: 데이터셋 생성과 사전 검증**
 
@@ -911,7 +911,7 @@ Redis 장애가 정상 조회를 실패시킴 → Redis 제외
 **Files:**
 - Conditional modify: `src/main/resources/application-stg.yml`
 - Conditional modify: `infra/docker-compose.stg.yml`
-- Write generated artifacts under: `perf/read/results/commit-cache/staging/`
+- Write generated artifacts under: `perf/read/commit-cache/results/staging/`
 
 - [ ] **Step 1: 로컬 승자 하나만 준비**
 

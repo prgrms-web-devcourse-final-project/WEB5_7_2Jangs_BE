@@ -1,0 +1,27 @@
+{
+  "measurement_revision": "62a2d1949ad81a8db75cc1609222b04477cb5c3f",
+  "measurement_type": "api_single_key_cold_burst_observation",
+  "implementation_note": "어노테이션 전환 과정의 API 관측이며, 실행 시점의 working tree 변경은 revision hash에 포함되지 않음",
+  "conditions": {
+    "blocks_per_commit": 500,
+    "vus": 50,
+    "iterations": 50,
+    "same_commit": true,
+    "cache_state": "empty"
+  },
+  "result": {
+    "completed_iterations": 50,
+    "checks_passed": 131,
+    "checks_failed": 0,
+    "commit_get_failed": 0,
+    "cache_miss_delta": 1,
+    "cache_hit_delta": 49,
+    "cache_put_delta": 1,
+    "cache_eviction_delta": 0,
+    "assemble_count_delta": 1,
+    "avg_ms": 196.62968,
+    "p95_ms": 265.50195,
+    "payload_bytes": 72293
+  },
+  "interpretation": "동일 키 요청 50건에서 조립 1회와 hit 49회를 관측했다. working-tree 관측이므로 최종 코드의 재현 가능한 근거는 커밋된 latch 기반 테스트이며, 단일 실행 p95는 성능 개선율로 일반화하지 않는다."
+}

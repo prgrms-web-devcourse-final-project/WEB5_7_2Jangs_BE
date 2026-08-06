@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 if (process.argv.length < 4) {
-  console.error('Usage: node perf/delete/compare_delete_summary.mjs <dev-summary.json> <refactor-summary.json>');
+  console.error('Usage: node perf/delete/bulk/compare_delete_summary.mjs <dev-summary.json> <refactor-summary.json>');
   process.exit(1);
 }
 

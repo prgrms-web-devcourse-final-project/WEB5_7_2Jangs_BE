@@ -14,7 +14,8 @@ const FEATURE_COMMITS = Number(__ENV.FEATURE_COMMITS || 4);
 const BLOCKS_PER_COMMIT = Number(__ENV.BLOCKS_PER_COMMIT || 300);
 
 const RUN_ID = __ENV.RUN_ID || Math.floor(Date.now() / 1000).toString(36);
-const RESULT_DIR = __ENV.RESULT_DIR || 'perf/single_delete/results';
+const RESULT_DIR = __ENV.RESULT_DIR
+  || `perf/delete/single/${TARGET === 'doc' ? 'document' : TARGET}/results`;
 const DELETE_P95_THRESHOLD_MS = Number(__ENV.DELETE_P95_THRESHOLD_MS || 15000);
 
 if (!['doc', 'branch', 'commit'].includes(TARGET)) {

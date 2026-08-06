@@ -298,7 +298,7 @@ test('load profile로 VU 조건을 정확히 선택한다', async () => {
   await mkdir(otherProfile, { recursive: true });
   await writeFile(path.join(otherProfile, 'summary.json'), '{"not":"selected"}');
   const result = spawnSync(process.execPath, [
-    path.resolve('perf/read/compare_commit_cache_results.mjs'),
+    path.resolve('perf/read/commit-cache/compare_commit_cache_results.mjs'),
     '--result-root', root,
     '--blocks', '20',
     '--pattern', 'hot',
@@ -315,7 +315,7 @@ test('load profile로 VU 조건을 정확히 선택한다', async () => {
 
 test('경로 구분자로 탈출하려는 load profile을 거부한다', () => {
   const result = spawnSync(process.execPath, [
-    path.resolve('perf/read/compare_commit_cache_results.mjs'),
+    path.resolve('perf/read/commit-cache/compare_commit_cache_results.mjs'),
     '--result-root', '/tmp/results',
     '--blocks', '20',
     '--pattern', 'hot',
@@ -328,7 +328,7 @@ test('경로 구분자로 탈출하려는 load profile을 거부한다', () => {
 
 test('허용하지 않은 pattern 경로를 거부한다', () => {
   const result = spawnSync(process.execPath, [
-    path.resolve('perf/read/compare_commit_cache_results.mjs'),
+    path.resolve('perf/read/commit-cache/compare_commit_cache_results.mjs'),
     '--result-root', '/tmp/results',
     '--blocks', '20',
     '--pattern', '../hot',
@@ -341,7 +341,7 @@ test('허용하지 않은 pattern 경로를 거부한다', () => {
 
 function runCli(root, output, extra = []) {
   return spawnSync(process.execPath, [
-    path.resolve('perf/read/compare_commit_cache_results.mjs'),
+    path.resolve('perf/read/commit-cache/compare_commit_cache_results.mjs'),
     '--result-root', root,
     '--blocks', '20',
     '--pattern', 'hot',

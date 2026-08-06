@@ -588,7 +588,7 @@ function helpText() {
   return `커밋 본문 캐시의 동일 조건 3회 결과를 비교합니다.
 
 사용법:
-  node perf/read/compare_commit_cache_results.mjs \\
+  node perf/read/commit-cache/compare_commit_cache_results.mjs \\
     --result-root <dir> --blocks <n> --pattern <pattern> --load-profile <profile> \\
     [--output-dir <dir>] \\
     [--redis-fail-open-passed]
