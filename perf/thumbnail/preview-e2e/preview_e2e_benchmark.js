@@ -12,7 +12,7 @@ const DOCS_PER_USER = Number(__ENV.DOCS_PER_USER || 20);
 const RUN_ID = __ENV.RUN_ID || 'e2e_u1d20';
 const E2E_VUS = Number(__ENV.E2E_VUS || 1);
 const E2E_DURATION = __ENV.E2E_DURATION || '30s';
-const RESULT_DIR = __ENV.RESULT_DIR || 'perf/thumbnail/results';
+const RESULT_DIR = __ENV.RESULT_DIR || 'perf/thumbnail/preview-e2e/results';
 
 export const options = {
   summaryTrendStats: ['min', 'med', 'avg', 'p(90)', 'p(95)', 'p(99)', 'max'],

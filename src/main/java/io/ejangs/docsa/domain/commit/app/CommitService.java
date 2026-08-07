@@ -3,6 +3,7 @@ package io.ejangs.docsa.domain.commit.app;
 import io.ejangs.docsa.domain.branch.app.BranchReader;
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
+import io.ejangs.docsa.domain.commit.cache.CommitContentCache;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
 import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
@@ -36,7 +37,7 @@ public class CommitService {
     private final EdgeService edgeService;
 
     private final CommitCreateOrchestrator commitCreateOrchestrator;
-    private final CommitContentAssembler assembler;
+    private final CommitContentCache commitContentCache;
     private final MongoIdsCollector mongoIdsCollector;
     private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
@@ -65,7 +66,8 @@ public class CommitService {
 
     private List<Map<String, Object>> getWholeContent(Long commitId) {
         Commit commit = commitReader.getById(commitId);
-        return assembler.assemble(commit.getCommitMongoId());
+        String commitMongoId = commit.getCommitMongoId();
+        return commitContentCache.get(commitMongoId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -73,6 +75,7 @@ public class CommitService {
         Doc doc = docReader.getByIdAndUserId(docId, userId);
 
         Commit commit = commitReader.getById(commitId);
+        String commitMongoId = commit.getCommitMongoId();
         // LeafCommit일 경우에만 삭제 가능
         checkLeafCommit(commit);
         // 어느 브랜치의 FromCommit이나 MergeTargetCommit일 경우 삭제 불가능
@@ -101,6 +104,7 @@ public class CommitService {
         commitWriter.deleteById(commit.getId());
 
         mongoDeleteJobEnqueuer.enqueueCommitDeletion(commitId, commitDeleteMongoIds);
+        commitContentCache.evict(commitMongoId);
     }
 
     private void checkFromOrMergeTargetCommit(Commit commit) {

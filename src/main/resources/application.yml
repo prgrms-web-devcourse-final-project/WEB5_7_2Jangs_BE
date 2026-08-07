@@ -6,7 +6,6 @@ spring:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:${MONGO_URI}}
       auto-index-creation: ${SPRING_DATA_MONGODB_AUTO_INDEX_CREATION:true}
-
   mail:
     connection-timeout: 5000
     timeout: 5000
@@ -34,6 +33,13 @@ auth:
   passcode-cache-name: passCodeCache
   pwd-reset-code-cache-name: pwdResetCodeCache
   resend-limit-cache-name: resendLimitCache
+
+commit:
+  content:
+    cache:
+      enabled: ${COMMIT_CONTENT_CACHE_ENABLED:true}
+      ttl: ${COMMIT_CONTENT_CACHE_TTL:PT10M}
+      maximum-size: ${COMMIT_CONTENT_CACHE_MAXIMUM_SIZE:400}
 
 default:
   branch: main

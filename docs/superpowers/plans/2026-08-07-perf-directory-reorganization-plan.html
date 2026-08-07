@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Perf 디렉터리 재구성 계획</title><style>body{max-width:860px;margin:48px auto;padding:0 24px;font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18212f}h1{font-size:32px}code,pre{background:#f3f5f8;border-radius:6px;padding:2px 5px}pre{padding:18px;overflow:auto}section{margin:32px 0;padding:24px;border:1px solid #e4e8ee;border-radius:12px}li{margin:6px 0}.note{color:#52606d}</style></head>
+<body>
+<h1>Perf 디렉터리 재구성 계획</h1>
+<p>성능 측정 주제를 <code>results</code> 아래가 아니라 <code>perf</code> 계층에서 먼저 분리합니다. 기존 결과는 삭제하지 않고 이동하며, raw 결과는 계속 Git에서 제외합니다.</p>
+<section><h2>목표 구조</h2><pre>perf/
+├── seed/
+├── read/
+│   ├── commit-cache/results/
+│   ├── cqrs/results/
+│   ├── graph/results/
+│   └── simple-read-probes/results/
+├── delete/
+│   ├── bulk/results/
+│   └── single/results/
+└── thumbnail/
+    ├── preview-e2e/results/
+    └── workflow/results/</pre></section>
+<section><h2>정리 원칙</h2><ul><li>도메인 → 시나리오 → 실행 파일과 <code>results</code> 순서로 배치</li><li>공용 seed는 <code>perf/seed</code> 유지</li><li>사람용 결론 문서는 <code>docs/performance</code> 유지</li><li>raw 결과는 Git 제외, 검증용 요약만 <code>results/evidence</code> 추적</li><li><code>single_delete</code>는 <code>delete/single</code>로 통합</li></ul></section>
+<section><h2>검증</h2><p>경로 참조를 갱신한 뒤 Node/Bash 테스트, 이전 경로 검색, diff 공백 검사를 수행합니다.</p><p class="note">커밋과 push는 이 작업에서 수행하지 않습니다.</p></section>
+</body></html>

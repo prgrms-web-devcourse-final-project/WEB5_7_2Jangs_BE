@@ -1,6 +1,45 @@
 name: docsa-local
 
 services:
+  app:
+    build:
+      context: ..
+      dockerfile: infra/backend/Dockerfile
+    container_name: docsa-app-local
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${LOCAL_MYSQL_DATABASE:-docsa}
+      SPRING_DATASOURCE_USERNAME: ${LOCAL_MYSQL_USER:-docsa}
+      SPRING_DATASOURCE_PASSWORD: ${LOCAL_MYSQL_PASSWORD:-docsa}
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/docsa-local?replicaSet=rs0&directConnection=true
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      MONGO_LOCAL_CLEANUP_ENABLED: "false"
+      PERF_SEED_USER_COUNT: ${PERF_SEED_USER_COUNT:-0}
+      PERF_SEED_DOCS_PER_USER: ${PERF_SEED_DOCS_PER_USER:-0}
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      LOCAL_MINIO_ENDPOINT: http://minio:9000
+      LOCAL_MINIO_PUBLIC_BASE_URL: http://localhost:${LOCAL_MINIO_API_PORT:-9000}/${LOCAL_MINIO_BUCKET:-docsa-local}
+      LOCAL_MINIO_ROOT_USER: ${LOCAL_MINIO_ROOT_USER:-docsa-local}
+      LOCAL_MINIO_ROOT_PASSWORD: ${LOCAL_MINIO_ROOT_PASSWORD:-docsa-local-password}
+      LOCAL_MINIO_BUCKET: ${LOCAL_MINIO_BUCKET:-docsa-local}
+      COMMIT_CONTENT_CACHE_ENABLED: ${COMMIT_CONTENT_CACHE_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    ports:
+      - "${LOCAL_APP_PORT:-8080}:8080"
+      - "${LOCAL_MANAGEMENT_PORT:-9091}:9091"
+    networks:
+      - docsa_local_net
+
   mysql:
     image: mysql:9.4.0
     container_name: docsa-mysql-local
