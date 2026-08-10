@@ -136,3 +136,37 @@ jobs:
               export DEPLOY_TAG='${{ steps.tag.outputs.value }}'
               bash -lc '/srv/docsa/infra/deploy.sh dev'
             fi
+
+      - name: Verify public endpoint
+        shell: bash
+        env:
+          STAGING_HEALTH_URL: https://stg.api.docsa.o-r.kr:8443/actuator/health
+          PRODUCTION_HEALTH_URL: https://api.docsa.o-r.kr/actuator/health
+        run: |
+          if [ "${{ github.ref_name }}" = "staging" ]; then
+            HEALTH_URL="$STAGING_HEALTH_URL"
+          else
+            HEALTH_URL="$PRODUCTION_HEALTH_URL"
+          fi
+
+          for attempt in {1..12}; do
+            if curl \
+              --fail \
+              --silent \
+              --show-error \
+              --connect-timeout 5 \
+              --max-time 10 \
+              "$HEALTH_URL"; then
+              echo
+              echo "Public endpoint is healthy: $HEALTH_URL"
+              exit 0
+            fi
+
+            echo "Public health check failed: $attempt/12"
+            if [ "$attempt" -lt 12 ]; then
+              sleep 5
+            fi
+          done
+
+          echo "Public endpoint did not become healthy: $HEALTH_URL"
+          exit 1
