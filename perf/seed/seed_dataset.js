@@ -2,6 +2,7 @@ import http from 'k6/http';
 import exec from 'k6/execution';
 import { check } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
+import { buildCommitBlockPlan } from './commit_block_plan.mjs';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const USER_PREFIX = __ENV.USER_PREFIX || 'perfuser';
@@ -13,6 +14,7 @@ const MAIN_COMMITS = Number(__ENV.MAIN_COMMITS || 6);
 const FEATURE_BRANCHES = Number(__ENV.FEATURE_BRANCHES || 1);
 const FEATURE_COMMITS = Number(__ENV.FEATURE_COMMITS || 4);
 const BLOCKS_PER_COMMIT = Number(__ENV.BLOCKS_PER_COMMIT || 20);
+const COMMIT_BLOCK_CHANGE_RATE = Number(__ENV.COMMIT_BLOCK_CHANGE_RATE || 1.0);
 const RUN_ID = __ENV.RUN_ID || Math.floor(Date.now() / 1000).toString(36);
 const RESULT_DIR = __ENV.RESULT_DIR || '';
 
@@ -127,21 +129,14 @@ function findBranchIdByName(graph, name) {
   return found ? found.id : null;
 }
 
-function buildCommitBody(title, branchId) {
-  const blocks = [];
-  const blockOrders = [];
-
-  for (let i = 0; i < BLOCKS_PER_COMMIT; i += 1) {
-    const blockId = `${title}-b${i}-${Math.floor(Math.random() * 1e6)}`;
-    blocks.push({
-      id: blockId,
-      type: 'paragraph',
-      data: {
-        text: `${title}-text-${i}`,
-      },
-    });
-    blockOrders.push(blockId);
-  }
+function buildCommitBody(title, branchId, key, commitIndex, previousBlockIds) {
+  const { blocks, blockOrders } = buildCommitBlockPlan({
+    key,
+    commitIndex,
+    blockCount: BLOCKS_PER_COMMIT,
+    changeRate: COMMIT_BLOCK_CHANGE_RATE,
+    previousBlockIds,
+  });
 
   return {
     title,
@@ -152,8 +147,8 @@ function buildCommitBody(title, branchId) {
   };
 }
 
-function createCommit(cookie, docId, branchId, title) {
-  const body = buildCommitBody(title, branchId);
+function createCommit(cookie, docId, branchId, title, key, commitIndex, previousBlockIds) {
+  const body = buildCommitBody(title, branchId, key, commitIndex, previousBlockIds);
   const res = http.post(
     `${BASE_URL}/api/document/${docId}/commit`,
     JSON.stringify(body),
@@ -161,7 +156,10 @@ function createCommit(cookie, docId, branchId, title) {
   );
   tCommitCreate.add(res.timings.duration);
   ensureStatus(res, [201], 'seed_commit_create');
-  return json(res, 'seed_commit_create');
+  return {
+    result: json(res, 'seed_commit_create'),
+    blockOrders: body.blockOrders,
+  };
 }
 
 function createBranch(cookie, docId, name, fromCommitId) {
@@ -191,10 +189,13 @@ export default function () {
   const mainId = mainBranchId(graph0);
 
   const mainCommits = [];
+  let mainBlockIds = [];
   for (let i = 0; i < MAIN_COMMITS; i += 1) {
-    const title = `m${i}-${key}`.slice(0, 28);
-    const commit = createCommit(cookie, doc.id, mainId, title);
-    mainCommits.push(commit.id);
+    const commitKey = `m${i}-${key}`;
+    const title = commitKey.slice(0, 28);
+    const commit = createCommit(cookie, doc.id, mainId, title, commitKey, i, mainBlockIds);
+    mainBlockIds = commit.blockOrders;
+    mainCommits.push({ id: commit.result.id, blockOrders: commit.blockOrders });
   }
 
   if (FEATURE_BRANCHES <= 0 || mainCommits.length < 2) {
@@ -203,7 +204,9 @@ export default function () {
 
   for (let branchNo = 1; branchNo <= FEATURE_BRANCHES; branchNo += 1) {
     const featureName = `feat-${branchNo}-${key}`.slice(0, 100);
-    const fromCommitId = mainCommits[Math.min(branchNo - 1, mainCommits.length - 2)];
+    const baseCommit = mainCommits[Math.min(branchNo - 1, mainCommits.length - 2)];
+    const fromCommitId = baseCommit.id;
+    let featureBlockIds = baseCommit.blockOrders.slice();
 
     const branchRes = createBranch(cookie, doc.id, featureName, fromCommitId);
     let featureBranchId = branchRes.branchId;
@@ -217,8 +220,18 @@ export default function () {
     }
 
     for (let i = 0; i < FEATURE_COMMITS; i += 1) {
-      const title = `f${branchNo}-${i}-${key}`.slice(0, 28);
-      createCommit(cookie, doc.id, featureBranchId, title);
+      const commitKey = `f${branchNo}-${i}-${key}`;
+      const title = commitKey.slice(0, 28);
+      const commit = createCommit(
+        cookie,
+        doc.id,
+        featureBranchId,
+        title,
+        commitKey,
+        i,
+        featureBlockIds,
+      );
+      featureBlockIds = commit.blockOrders;
     }
   }
 }

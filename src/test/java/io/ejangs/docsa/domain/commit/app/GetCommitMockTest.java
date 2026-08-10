@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import io.ejangs.docsa.domain.branch.entity.Branch;
 import io.ejangs.docsa.domain.commit.dto.response.CommitResponse;
+import io.ejangs.docsa.domain.commit.cache.CommitContentCache;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocReader;
@@ -42,7 +43,7 @@ class GetCommitMockTest {
     private DocReader docReader;
 
     @Mock
-    private CommitContentAssembler assembler;
+    private CommitContentCache commitContentCache;
 
     @InjectMocks
     private CommitService commitService;
@@ -84,7 +85,7 @@ class GetCommitMockTest {
         String commitMongoId = "mongo-commit-id";
 
         given(commitReader.getById(commitId)).willReturn(targetCommit);
-        given(assembler.assemble(commitMongoId)).willReturn(mockContent);
+        given(commitContentCache.get(commitMongoId)).willReturn(mockContent);
 
         // when
         CommitResponse response = commitService.getCommit(docId, commitId, userDetails.getId());
@@ -95,7 +96,7 @@ class GetCommitMockTest {
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitReader).getById(commitId);
-        verify(assembler).assemble(commitMongoId);
+        verify(commitContentCache).get(commitMongoId);
     }
 
     @Test
@@ -114,7 +115,7 @@ class GetCommitMockTest {
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitReader).getById(commitId);
-        verify(assembler, never()).assemble(any());
+        verify(commitContentCache, never()).get(any());
     }
 
     @Test
@@ -133,7 +134,7 @@ class GetCommitMockTest {
 
         verify(docReader).checkByIdAndUserId(docId, userDetails.getId());
         verify(commitReader, never()).getById(any());
-        verify(assembler, never()).assemble(any());
+        verify(commitContentCache, never()).get(any());
     }
 
 }

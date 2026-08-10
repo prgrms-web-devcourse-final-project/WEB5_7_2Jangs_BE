@@ -9,7 +9,6 @@ import io.ejangs.docsa.global.exception.CustomException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.util.List;
@@ -22,10 +21,10 @@ import static org.mockito.Mockito.*;
 
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 class CommitContentAssemblerTest {
 
-    @InjectMocks
     private CommitContentAssembler assembler;
 
     @Mock
@@ -34,9 +33,20 @@ class CommitContentAssemblerTest {
     @Mock
     private BlockRepository blockRepository;
 
+    private SimpleMeterRegistry meterRegistry;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        meterRegistry = new SimpleMeterRegistry();
+        assembler = new CommitContentAssembler(
+                commitBlockSequenceRepository, blockRepository, meterRegistry);
+    }
+
+    @Test
+    @DisplayName("본문 조립 전에도 조립 시간 메트릭을 0으로 노출한다")
+    void assembleTimerIsRegisteredBeforeFirstAssembly() {
+        assertThat(meterRegistry.get("commit_content_assemble_seconds").timer().count()).isZero();
     }
 
     @Test
@@ -63,6 +73,7 @@ class CommitContentAssemblerTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).get("text")).isEqualTo("hello");
         assertThat(result.get(1).get("text")).isEqualTo("world");
+        assertThat(meterRegistry.get("commit_content_assemble_seconds").timer().count()).isEqualTo(1);
     }
 
     @Test
@@ -74,6 +85,7 @@ class CommitContentAssemblerTest {
 
         // expect
         assertThrows(CustomException.class, () -> assembler.assemble(commitMongoId));
+        assertThat(meterRegistry.get("commit_content_assemble_seconds").timer().count()).isEqualTo(1);
     }
 
     @Test

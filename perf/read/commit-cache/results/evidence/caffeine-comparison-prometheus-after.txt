@@ -1,0 +1,54 @@
+# Sanitized excerpts from final-annotation-20260803-r2 raw results.
+# Measurement revision: 62a2d1949ad81a8db75cc1609222b04477cb5c3f
+
+[none/hot/run-1]
+commit_content_assemble_seconds_count 20304
+[none/hot/run-2]
+commit_content_assemble_seconds_count 20830
+[none/hot/run-3]
+commit_content_assemble_seconds_count 19443
+
+[caffeine/hot/run-1]
+cache_gets_total{cache="commitContentCache",result="hit"} 24868
+cache_gets_total{cache="commitContentCache",result="miss"} 41
+cache_puts_total{cache="commitContentCache"} 41
+cache_evictions_total{cache="commitContentCache"} 0
+commit_content_assemble_seconds_count 41
+[caffeine/hot/run-2]
+cache_gets_total{cache="commitContentCache",result="hit"} 23070
+cache_gets_total{cache="commitContentCache",result="miss"} 41
+cache_puts_total{cache="commitContentCache"} 41
+cache_evictions_total{cache="commitContentCache"} 0
+commit_content_assemble_seconds_count 41
+[caffeine/hot/run-3]
+cache_gets_total{cache="commitContentCache",result="hit"} 23190
+cache_gets_total{cache="commitContentCache",result="miss"} 41
+cache_puts_total{cache="commitContentCache"} 41
+cache_evictions_total{cache="commitContentCache"} 0
+commit_content_assemble_seconds_count 41
+
+[none/mixed/run-1]
+commit_content_assemble_seconds_count 20668
+[none/mixed/run-2]
+commit_content_assemble_seconds_count 20114
+[none/mixed/run-3]
+commit_content_assemble_seconds_count 21256
+
+[caffeine/mixed/run-1]
+cache_gets_total{cache="commitContentCache",result="hit"} 23612
+cache_gets_total{cache="commitContentCache",result="miss"} 400
+cache_puts_total{cache="commitContentCache"} 400
+cache_evictions_total{cache="commitContentCache"} 0
+commit_content_assemble_seconds_count 400
+[caffeine/mixed/run-2]
+cache_gets_total{cache="commitContentCache",result="hit"} 23455
+cache_gets_total{cache="commitContentCache",result="miss"} 400
+cache_puts_total{cache="commitContentCache"} 400
+cache_evictions_total{cache="commitContentCache"} 0
+commit_content_assemble_seconds_count 400
+[caffeine/mixed/run-3]
+cache_gets_total{cache="commitContentCache",result="hit"} 24615
+cache_gets_total{cache="commitContentCache",result="miss"} 400
+cache_puts_total{cache="commitContentCache"} 400
+cache_evictions_total{cache="commitContentCache"} 0
+commit_content_assemble_seconds_count 400

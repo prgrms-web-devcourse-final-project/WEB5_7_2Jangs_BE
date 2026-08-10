@@ -11,6 +11,7 @@ services:
           condition: service_healthy
     networks:
       - docsa_stg_net
+      - docsa_monitoring_net
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:9091/actuator/health"]
       interval: 30s
@@ -46,9 +47,10 @@ services:
     volumes:
       - stg_mysql_data:/var/lib/mysql
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
-      - ./mysql/logs:/var/log/mysql
+      - ./mysql/logs/staging:/var/log/mysql
     networks:
       - docsa_stg_net
+      - docsa_monitoring_net
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
       interval: 10s
@@ -77,6 +79,7 @@ services:
         condition: service_healthy
     networks:
       - docsa_stg_net
+      - docsa_monitoring_net
 
   nginx:
     image: nginx:stable-alpine-slim
@@ -84,8 +87,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/nginx.stg.conf:/etc/nginx/nginx.conf:ro
-      - /srv/docsa/infra/certbot/etc:/etc/letsencrypt:ro
-      - /srv/docsa/infra/certbot/www:/var/www/certbot:ro
+      - /srv/gateway/certbot/etc:/etc/letsencrypt:ro
     ports:
       - "8080:80"
       - "8443:443"
@@ -96,97 +98,12 @@ services:
       - docsa_stg_net
 
 
- # ===== METRICS =====
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor-stg
-    restart: unless-stopped
-    privileged: true
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    networks:
-      - docsa_stg_net
-
-  node_exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter-stg
-    restart: unless-stopped
-    pid: host
-    command: ['--path.rootfs=/host']
-    volumes:
-      - /:/host:ro,rslave
-    networks:
-      - docsa_stg_net
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus-stg
-    restart: unless-stopped
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.enable-remote-write-receiver"
-    ports:
-      - "${PROMETHEUS_BIND_ADDR:-127.0.0.1}:9090:9090"
-    depends_on:
-      - cadvisor
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - stg_prom_data:/prometheus
-    networks:
-      - docsa_stg_net
-
-# ===== LOGS =====
-  loki:
-    image: grafana/loki:3.5.5
-    container_name: loki-stg
-    restart: unless-stopped
-    command: ["-config.file=/etc/loki/config.yml"]
-    volumes:
-      - ./loki/config.yml:/etc/loki/config.yml:ro
-      - stg_loki_data:/loki
-    networks:
-      - docsa_stg_net
-
-  promtail:
-    image: grafana/promtail:3.5
-    container_name: promtail-stg
-    restart: unless-stopped
-    command: ["-config.file=/etc/promtail/config.yml"]
-    volumes:
-      - ./promtail/config.yml:/etc/promtail/config.yml:ro
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./mysql/logs:/mnt/mysql-logs:ro
-    networks: [docsa_stg_net]
-
-# ===== DASHBOARD =====
-  grafana:
-    image: grafana/grafana-oss:latest
-    container_name: grafana-stg
-    restart: unless-stopped
-    depends_on: [prometheus, loki]
-    volumes:
-      - stg_grafana_data:/var/lib/grafana
-      - ./grafana/provisioning/datasources/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      GF_SERVER_ROOT_URL: 'https://stg.api.docsa.o-r.kr/grafana/'
-      GF_SERVER_SERVE_FROM_SUB_PATH: 'true'
-    networks: [docsa_stg_net]
-
-
 volumes:
   stg_mysql_data:
-  stg_prom_data:
-  stg_loki_data:
-  stg_grafana_data:
   mailpit_data:
 
 networks:
   docsa_stg_net:
+  docsa_monitoring_net:
+    external: true
+    name: docsa_monitoring_net

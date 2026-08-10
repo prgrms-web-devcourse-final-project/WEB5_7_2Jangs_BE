@@ -4,11 +4,17 @@ global:
 
 scrape_configs:
   # Spring Actuator
-  - job_name: 'spring-app'
+  - job_name: 'docsa-production'
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['app:9091']
-        labels: { app: docsa }
+      - targets: ['docsa-app:9091']
+        labels: { app: docsa, environment: production }
+
+  - job_name: 'docsa-staging'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['docsa-app-stg:9091']
+        labels: { app: docsa, environment: staging }
 
   # 컨테이너 리소스
   - job_name: 'cadvisor'
@@ -20,6 +26,12 @@ scrape_configs:
     static_configs:
       - targets: ['node_exporter:9100']  # node_exporter(host 네트워크)
 
-  - job_name: 'mysql'
+  - job_name: 'mysql-production'
     static_configs:
       - targets: ['mysqld-exporter:9104']
+        labels: { app: docsa, environment: production }
+
+  - job_name: 'mysql-staging'
+    static_configs:
+      - targets: ['mysqld-exporter-stg:9104']
+        labels: { app: docsa, environment: staging }

@@ -12,7 +12,7 @@ RUN ./gradlew --no-daemon dependencies || true
 
 COPY . .
 
-RUN ./gradlew clean bootJar -x test --no-daemon
+RUN chmod +x ./gradlew && ./gradlew clean bootJar -x test --no-daemon
 
 # ---- Runtime Stage ----
 FROM eclipse-temurin:21-jre-alpine

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>커밋 본문 캐시 Single-Flight 검증 계획</title>
+  <style>
+    :root { --bg:#f4f7fb; --surface:#fff; --line:#dbe4ef; --text:#182033; --muted:#64748b; --navy:#172554; --blue:#2563eb; --green:#047857; --green-soft:#ecfdf5; --amber:#b45309; --amber-soft:#fffbeb; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif; line-height:1.65; }
+    main { max-width:1040px; margin:auto; padding:28px 20px 64px; }
+    header,section { border-radius:18px; background:var(--surface); box-shadow:0 16px 42px rgba(15,23,42,.07); }
+    header { padding:36px; color:#fff; background:linear-gradient(135deg,var(--navy),var(--blue)); }
+    h1 { margin:0; font-size:clamp(29px,5vw,43px); line-height:1.2; letter-spacing:-.03em; }
+    header p { max-width:760px; margin:14px 0 0; color:#dbeafe; }
+    section { margin-top:20px; padding:27px; border:1px solid var(--line); }
+    h2 { margin:0 0 15px; font-size:23px; } h3 { margin:20px 0 8px; font-size:17px; }
+    p { margin:0 0 12px; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:13px; }
+    .card { padding:16px; border:1px solid var(--line); border-radius:11px; background:#f8fafc; }
+    .card span { color:var(--muted); font-size:13px; } .card b { display:block; margin-top:3px; font-size:19px; }
+    .good { border-color:#a7f3d0; background:var(--green-soft); }
+    .note { padding:13px 15px; border-left:4px solid var(--amber); border-radius:8px; background:var(--amber-soft); }
+    code { padding:2px 6px; border-radius:5px; background:#eaf0f7; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; overflow-wrap:anywhere; }
+    ul { margin:8px 0 0; padding-left:20px; } li + li { margin-top:5px; }
+    a { color:var(--blue); }
+    @media (max-width:720px) { main { padding:14px 12px 44px; } header,section { padding:21px; } .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>커밋 본문 캐시<br>Single-Flight 검증</h1>
+      <p>현재 <code>@Cacheable(sync = true)</code>와 Caffeine이 동일 커밋의 동시 Cold 요청을 한 번의 본문 조립으로 합치는지 로컬 API 경계에서 확인합니다.</p>
+    </header>
+
+    <section>
+      <h2>검증 조건</h2>
+      <div class="grid">
+        <div class="card"><span>대상</span><b>동일 커밋 1개</b><p>500 Block 본문을 캐시가 빈 상태에서 조회합니다.</p></div>
+        <div class="card"><span>부하</span><b>VU 50 × 1회</b><p>총 50개 요청을 measurement gate 이후 집중시킵니다.</p></div>
+        <div class="card"><span>범위</span><b>로컬 단건</b><p>staging과 추가 반복은 실행하지 않습니다.</p></div>
+      </div>
+      <p class="note">목표는 성능 개선율 측정이 아니라 동일 키 Cold Miss의 조립 부하 증폭 방지 여부 확인입니다. 따라서 p95는 참고값으로만 기록합니다.</p>
+    </section>
+
+    <section>
+      <h2>실행 결과</h2>
+      <div class="grid">
+        <div class="card good"><span>요청</span><b>50/50 성공</b><p>commit 조회 failure rate 0, interrupted iteration 0입니다.</p></div>
+        <div class="card good"><span>캐시</span><b>Miss 1 · Hit 49</b><p>Put 1, Size 1, Eviction 0입니다.</p></div>
+        <div class="card good"><span>본문 조립</span><b>1회</b><p><code>assemble count</code>가 0에서 1로 증가했습니다.</p></div>
+      </div>
+      <h3>판정</h3>
+      <p><strong>PASS.</strong> 현재 어노테이션 구현에서 API 요청 50건이 한 번의 본문 조립으로 합쳐졌습니다. p95 265.50ms는 none baseline과 반복 측정이 없는 단건이므로 성능 개선 수치로 사용하지 않습니다.</p>
+    </section>
+
+    <section>
+      <h2>근거와 한계</h2>
+      <ul>
+        <li>raw artifact: <code>perf/read/commit-cache/results/final-annotation-single-flight-20260804-r2/</code></li>
+        <li>자동화 테스트는 latch로 실제 실행이 겹치도록 만들고 동시 요청 20개에서 조립 1회를 확인합니다.</li>
+        <li>k6 결과는 HTTP부터 Spring Cache, Caffeine, MongoDB 조립까지 전체 경로를 확인합니다.</li>
+        <li>운영 트래픽과 다중 인스턴스 환경으로 일반화하지 않습니다.</li>
+      </ul>
+      <p><a href="2026-08-04-commit-content-cache-single-flight-verification-plan.md">AI용 상세 Markdown 계획 보기</a></p>
+    </section>
+  </main>
+</body>
+</html>
