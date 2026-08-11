@@ -63,3 +63,4 @@ perf/**/results/**
 # Local documentation and portfolio drafts
 docs/local/
 perf/**/local/
+_workspace/
