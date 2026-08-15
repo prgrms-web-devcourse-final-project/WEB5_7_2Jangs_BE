@@ -7,6 +7,7 @@
 - `single-flight-summary.json`: 최종 어노테이션 동시 요청 50건의 요약
 - `single-flight-prometheus-before.txt`, `single-flight-prometheus-after.txt`: Single-Flight 전후 핵심 메트릭
 - `core-comparison-summary.json`: 과거 3-provider 핵심 6조건(Hot/Mixed × VU 20·50·100)의 비민감 3회 평균과 자원 관측값
+- `core-comparison-run-summary.json`: 위 6조건의 run별 p95·처리량·오류·dropped 요약
 
 ## 재현성 범위
 
@@ -14,4 +15,4 @@ Hot/Mixed 비교 결과의 실제 측정 revision은 `62a2d1949ad81a8db75cc16092
 
 최종 어노테이션 구현은 `8fab327`이며, 해당 구현의 동작 검증 결과는 `single-flight-summary.json`에 별도로 기록한다. 전체 raw 결과는 인증·환경 정보와 용량 문제로 커밋하지 않는다.
 
-`core-comparison-summary.json`은 과거 수동 캐시 실험의 집계 근거다. `meanFields`의 순서대로 각 provider 배열을 해석하면 보고서의 p95·처리량·heap/GC·Redis memory 수치를 재계산할 수 있다. 이 결과를 최종 `@Cacheable(sync = true)` 구현의 성능으로 일반화하지 않는다.
+`core-comparison-summary.json`은 과거 수동 캐시 실험의 집계 근거다. `meanFields`의 순서대로 각 provider 배열을 해석하면 보고서의 p95·처리량·heap/GC·Redis memory 수치를 재계산할 수 있다. `core-comparison-run-summary.json`은 같은 run 번호의 p95 변화율과 baseline 변동폭을 검산한다. 이 결과를 최종 `@Cacheable(sync = true)` 구현의 성능으로 일반화하지 않는다.

@@ -88,7 +88,7 @@ core와 large의 v2 결과는 그대로 유지한다. 기존 formal-cold와 form
 
 ## 핵심 6조건: p95와 처리량 관측값
 
-아래는 각 provider 3회의 평균이며, 괄호의 p95 변화율은 run 번호를 짝지은 `(none - candidate) / none`의 평균이다. 이 과거 3-provider core 비교의 측정 revision은 `61b171f`이며, 이후 최종 Caffeine 구현 검증(`62a2d19`, `8fab327`)과 구분한다. [`core-comparison-summary.json`](../../perf/read/commit-cache/results/evidence/core-comparison-summary.json)의 `meanFields`와 provider 배열로 p95·처리량·heap/GC·Redis memory를 재계산할 수 있다. `commit_get_failed`와 cache get/put error는 기록된 모든 core run에서 0이었고, raw key가 없는 dropped는 k6 Counter 의미에 따라 0으로 판정됐다.
+아래는 각 provider 3회의 평균이며, 괄호의 p95 변화율은 run 번호를 짝지은 `(none - candidate) / none`의 평균이다. 이 과거 3-provider core 비교의 측정 revision은 `61b171f`이며, 이후 최종 Caffeine 구현 검증(`62a2d19`, `8fab327`)과 구분한다. [`core-comparison-summary.json`](../../perf/read/commit-cache/results/evidence/core-comparison-summary.json)의 `meanFields`와 provider 배열로 p95·처리량·heap/GC·Redis memory를 재계산할 수 있고, [`core-comparison-run-summary.json`](../../perf/read/commit-cache/results/evidence/core-comparison-run-summary.json)으로 run 번호별 p95 변화율과 baseline 변동폭을 검산할 수 있다. `commit_get_failed`와 cache get/put error는 기록된 모든 core run에서 0이었고, raw key가 없는 dropped는 k6 Counter 의미에 따라 0으로 판정됐다.
 
 | 조건 | none p95 / 처리량 | Caffeine p95 / 처리량 (p95 변화) | Redis p95 / 처리량 (p95 변화) | baseline 변동폭 / 최소 의미 차이 |
 | --- | --- | --- | --- | --- |
