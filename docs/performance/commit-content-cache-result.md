@@ -7,7 +7,7 @@
 ## 범위와 재현성
 
 - 전체 raw root: `perf/read/commit-cache/results/` (로컬 전용, `.gitignore` 대상)
-- 커밋된 최소 증거: `perf/read/commit-cache/results/evidence/`
+- 커밋된 최소 증거: `perf/read/commit-cache/results/evidence/` (`core-comparison-summary.json`은 3-provider 핵심 6조건, 나머지는 최종 Caffeine 구현 검증)
 - 비교 실험 측정 revision: `62a2d1949ad81a8db75cc1609222b04477cb5c3f` (수동 Caffeine 구현)
 - 최종 어노테이션 구현: `8fab327`, 성능 테스트 도구: `4f96481`, 결과 문서: `77eab3c`
 - 최종 어노테이션 Cold Burst는 실행 시 working tree 변경을 포함했으므로 hash만으로 그 API 측정을 재현할 수 없다. 해당 결과는 동작 참고 관측으로만 사용하고, 현재 코드의 계약은 커밋된 자동화 테스트로 검증한다.
@@ -88,7 +88,7 @@ core와 large의 v2 결과는 그대로 유지한다. 기존 formal-cold와 form
 
 ## 핵심 6조건: p95와 처리량 관측값
 
-아래는 각 provider 3회의 평균이며, 괄호의 p95 변화율은 run 번호를 짝지은 `(none - candidate) / none`의 평균이다. `commit_get_failed`와 cache get/put error는 기록된 모든 core run에서 0이었고, raw key가 없는 dropped는 k6 Counter 의미에 따라 0으로 판정됐다.
+아래는 각 provider 3회의 평균이며, 괄호의 p95 변화율은 run 번호를 짝지은 `(none - candidate) / none`의 평균이다. 이 과거 3-provider core 비교의 측정 revision은 `61b171f`이며, 이후 최종 Caffeine 구현 검증(`62a2d19`, `8fab327`)과 구분한다. [`core-comparison-summary.json`](../../perf/read/commit-cache/results/evidence/core-comparison-summary.json)의 `meanFields`와 provider 배열로 p95·처리량·heap/GC·Redis memory를 재계산할 수 있다. `commit_get_failed`와 cache get/put error는 기록된 모든 core run에서 0이었고, raw key가 없는 dropped는 k6 Counter 의미에 따라 0으로 판정됐다.
 
 | 조건 | none p95 / 처리량 | Caffeine p95 / 처리량 (p95 변화) | Redis p95 / 처리량 (p95 변화) | baseline 변동폭 / 최소 의미 차이 |
 | --- | --- | --- | --- | --- |

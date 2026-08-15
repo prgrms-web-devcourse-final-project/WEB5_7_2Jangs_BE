@@ -1,7 +1,9 @@
-# Single-User Heavy Delete Comparison
-- base:   ../document/results/doc_delete_stg_30x3_avg.json
-- target: ../document/results/doc_delete_stg_aftermerge_30x3_no_spike_avg.json
-- metric: op_doc_delete_ms
+# 스테이징 단일 사용자 document 삭제 비교(변동 구간 제외)
+
+- 비교 대상: baseline과 병합 후 변동 구간을 제외한 30회 × 3회 집계
+- 지표: `op_doc_delete_ms`
+- 검산 근거: [`stg-30x3-summary.json`](../../perf/delete/single/document/results/evidence/stg-30x3-summary.json)
+- 변화율: `(병합 후 - 병합 전) / 병합 전 × 100`
 
 | Metric | base | target | Delta | Direction |
 |---|---:|---:|---:|---|

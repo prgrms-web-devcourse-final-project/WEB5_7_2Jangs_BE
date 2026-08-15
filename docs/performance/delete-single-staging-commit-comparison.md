@@ -1,7 +1,9 @@
-# Single-User Heavy Delete Comparison
-- base:   ../commit/results/commit_delete_stg_30x3_avg.json
-- target: ../commit/results/commit_delete_stg_aftermerge_30x3_avg.json
-- metric: op_commit_delete_ms
+# 스테이징 단일 사용자 commit 삭제 비교
+
+- 비교 대상: outbox 병합 전후의 30회 × 3회 집계
+- 지표: `op_commit_delete_ms`
+- 검산 근거: [`stg-30x3-summary.json`](../../perf/delete/single/commit/results/evidence/stg-30x3-summary.json)
+- 변화율: `(병합 후 - 병합 전) / 병합 전 × 100`
 
 | Metric | base | target | Delta | Direction |
 |---|---:|---:|---:|---|

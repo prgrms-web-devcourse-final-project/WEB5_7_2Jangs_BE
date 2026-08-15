@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-03-10~2026-03-11",
+  "scenario": "단일 사용자 대용량 삭제, 대상별 30회 실행을 3회 반복",
+  "parameters": {
+    "targetCount": 30,
+    "mainCommits": 8,
+    "featureCommits": 5,
+    "blocksPerCommit": 500
+  },
+  "sources": {
+    "baseline": "doc_delete_stg_30x3_avg.json",
+    "afterOutbox": "doc_delete_stg_aftermerge_30x3_avg.json",
+    "afterOutboxNoSpike": "doc_delete_stg_aftermerge_30x3_no_spike_avg.json"
+  },
+  "metrics": {
+    "baseline": { "deleteP50Ms": 3309.069833333333, "deleteP95Ms": 5555.594933333333, "deleteAvgMs": 2853.6311333333324, "httpP95Ms": 2068.4436666666666, "httpAvgMs": 1609.7424497843506, "httpFailedRate": 0, "deleteFailedRate": 0 },
+    "afterOutbox": { "deleteP50Ms": 1114.6251666666667, "deleteP95Ms": 5279.284733333331, "deleteAvgMs": 1682.5331888888888, "httpP95Ms": 2058.1193333333335, "httpAvgMs": 1603.1643062230432, "httpFailedRate": 0, "deleteFailedRate": 0 },
+    "afterOutboxNoSpike": { "deleteP50Ms": 1112.0702500000002, "deleteP95Ms": 1287.50865, "deleteAvgMs": 1133.511566666667, "httpP95Ms": 2053.1785, "httpAvgMs": 1560.3344676524944, "httpFailedRate": 0, "deleteFailedRate": 0 }
+  },
+  "deltaFormula": "(target - baseline) / baseline * 100"
+}

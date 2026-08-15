@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Docsa 운영 및 스테이징 모니터링 통합 설계</title><link rel="stylesheet" href="../document.css"></head>
+<body><main>
+<header><p class="eyebrow">DESIGN · 2026-08-05</p><h1>운영·스테이징 모니터링 통합</h1><p class="lead">동일 홈서버를 중복 관찰하던 두 관측 스택을 운영 Compose의 단일 스택으로 합친다.</p></header>
+<section><h2>구조</h2><p>운영 Prometheus는 운영·스테이징 앱과 MySQL Exporter, cAdvisor, Node Exporter를 수집한다. 단일 Promtail은 Compose project가 <code>docsa</code> 또는 <code>docsa-stg</code>인 로그만 Loki에 보낸다.</p></section>
+<section><h2>명시된 수치와 경계</h2><ul><li>현재 모니터링 컨테이너 사용량은 약 1.86GiB, 중복 스테이징 스택은 약 724MiB다.</li><li>Prometheus 보존 기간은 15일, Loki 보존 기간은 7일이다.</li><li>운영과 스테이징 MySQL slow log는 서로 다른 경로로 수집한다.</li></ul></section>
+<section><h2>삭제와 롤백</h2><p>target과 Grafana·Loki를 검증한 뒤 스테이징 Prometheus·Grafana·Loki 데이터 볼륨만 삭제한다. MySQL과 Mailpit 볼륨은 제외한다. 관측 데이터는 복구하지 않지만, 구성 장애 시 이전 Git 구성으로 새 볼륨을 만들어 복구할 수 있다.</p></section>
+<footer>전체 설계와 검증 항목은 <a href="2026-08-05-monitoring-consolidation-design.md">Markdown 설계</a>에서 확인한다.</footer>
+</main></body></html>

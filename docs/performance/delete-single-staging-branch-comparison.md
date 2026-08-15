@@ -1,7 +1,9 @@
-# Single-User Heavy Delete Comparison
-- base:   ../branch/results/branch_delete_stg_30x3_avg.json
-- target: ../branch/results/branch_delete_stg_aftermerge_30x3_avg.json
-- metric: op_branch_delete_ms
+# 스테이징 단일 사용자 branch 삭제 비교
+
+- 비교 대상: outbox 병합 전후의 30회 × 3회 집계
+- 지표: `op_branch_delete_ms`
+- 검산 근거: [`stg-30x3-summary.json`](../../perf/delete/single/branch/results/evidence/stg-30x3-summary.json)
+- 변화율: `(병합 후 - 병합 전) / 병합 전 × 100`
 
 | Metric | base | target | Delta | Direction |
 |---|---:|---:|---:|---|

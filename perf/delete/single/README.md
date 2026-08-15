@@ -23,8 +23,8 @@
   - 단일 유저/대용량 블록 삭제 벤치
 - `compare_single_delete_summary.mjs`
   - 두 결과 JSON 비교 표 출력
-- `results/`
-  - 실행 결과 JSON 저장
+- `<target>/results/`
+  - 실행 결과 JSON 저장 (`doc`는 `document/results/`)
 - `../cleanup_perf_docs.sh`
   - 생성된 perf 문서 정리 (`MODE=single` 또는 `MODE=all`)
 
@@ -41,7 +41,7 @@
 - `RUN_ID` (default: timestamp)
 - `DELETE_MAX_DURATION` (default: `40m`)
 - `DELETE_P95_THRESHOLD_MS` (default: `15000`)
-- `RESULT_DIR` (default: `perf/delete/single/results`)
+- `RESULT_DIR` (기본값: `TARGET=doc`면 `perf/delete/single/document/results`, 그 외에는 `perf/delete/single/<target>/results`)
 
 ## Run examples
 
@@ -84,9 +84,11 @@ k6 run perf/delete/single/single_user_delete_benchmark.js
 
 ```bash
 node perf/delete/single/compare_single_delete_summary.mjs \
-  perf/delete/single/results/<base>.json \
-  perf/delete/single/results/<target>.json
+  perf/delete/single/document/results/<base>.json \
+  perf/delete/single/document/results/<target>.json
 ```
+
+`TARGET=branch` 또는 `TARGET=commit`을 비교할 때는 위 경로의 `document`를 각각 `branch`, `commit`으로 바꾼다. 기본 경로와 다른 위치에 결과를 저장했다면 두 인자에 그 `RESULT_DIR`의 JSON 경로를 전달한다.
 
 ## Notes
 

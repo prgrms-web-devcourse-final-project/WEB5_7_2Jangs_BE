@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>공용 Gateway 운영 구조 정리 구현 계획</title><link rel="stylesheet" href="../document.css"></head>
+<body><main>
+<header><p class="eyebrow">IMPLEMENTATION PLAN · 2026-08-05</p><h1>공용 Gateway 운영 구조 정리</h1><p class="lead">Docsa와 home-gateway의 Nginx·인증서 책임을 실제 운영 구조에 맞추고, 서버 레거시를 롤백 가능하게 정리한다.</p></header>
+<section><h2>책임 분리</h2><p>공용 Gateway가 외부 80/443과 인증서를 소유한다. Docsa는 애플리케이션·모니터링과 스테이징 Nginx를 관리하며, 스테이징 Nginx는 Gateway 인증서를 읽는다.</p></section>
+<section><h2>작업 순서</h2><ol><li>Docsa Compose의 운영 Nginx·Certbot 책임을 제거하고 계약 테스트로 고정한다.</li><li>home-gateway의 갱신 스크립트·cron·운영 문서를 정리한다.</li><li>서버 파일과 crontab을 날짜별로 백업한 뒤 HTTPS와 health를 검증하며 전환한다.</li></ol></section>
+<section><h2>검증과 범위</h2><p>Compose 렌더링, 셸 문법, 인증서 갱신 dry-run, Gateway·운영·스테이징 HTTPS 및 health를 확인한다. 전체 백엔드 테스트는 이 인프라 작업의 범위가 아니다.</p></section>
+<section><h2>위험</h2><p class="note">서버 변경 전 롤백 백업을 반드시 만든다. 기능 브랜치의 사용자 변경은 건드리지 않는다.</p></section>
+<footer>세부 파일과 전환 순서는 <a href="2026-08-05-shared-gateway-cleanup.md">Markdown 구현 계획</a>에서 확인한다.</footer>
+</main></body></html>

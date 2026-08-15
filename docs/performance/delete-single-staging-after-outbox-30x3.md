@@ -4,6 +4,9 @@
 - Base URL: https://192.168.0.143:8443
 - Params: TARGET_COUNT=30, MAIN_COMMITS=8, FEATURE_COMMITS=5, BLOCKS_PER_COMMIT=500
 - Rounds: doc 3회 + branch 3회 + commit 3회
+- 검산 근거: 대상별 [`document`](../../perf/delete/single/document/results/evidence/stg-30x3-summary.json) · [`branch`](../../perf/delete/single/branch/results/evidence/stg-30x3-summary.json) · [`commit`](../../perf/delete/single/commit/results/evidence/stg-30x3-summary.json) 집계값
+
+원본 raw 결과는 인증·환경 정보와 용량 문제로 커밋하지 않는다. 아래 비교 수치는 위 비민감 집계값으로 재계산할 수 있다.
 
 ## Round Results (After Merge)
 
