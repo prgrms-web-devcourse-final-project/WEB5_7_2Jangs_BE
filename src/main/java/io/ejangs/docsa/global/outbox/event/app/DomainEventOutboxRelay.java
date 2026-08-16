@@ -52,23 +52,16 @@ public class DomainEventOutboxRelay {
         }
     }
 
+    @Deprecated
     public void run(Long outboxId) {
-        if (!running.compareAndSet(false, true)) {
-            return;
-        }
-
-        try {
-            processOne(outboxId);
-        } finally {
-            running.set(false);
-        }
+        run();
     }
 
     private void doRun() {
         recoverTimedOutProcessing();
 
         List<DomainEventOutbox> events =
-                repository.findTop100ByStatusOrderByCreatedAtAsc(OutboxStatus.OPEN);
+                repository.findTop100ByStatusOrderByCreatedAtAscIdAsc(OutboxStatus.OPEN);
 
         for (DomainEventOutbox event : events) {
             processOne(event.getId());

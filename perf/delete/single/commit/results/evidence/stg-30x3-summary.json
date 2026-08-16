@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-03-10~2026-03-11",
+  "scenario": "단일 사용자 대용량 commit 삭제, 30회 실행을 3회 반복",
+  "parameters": { "targetCount": 30, "mainCommits": 8, "featureCommits": 5, "blocksPerCommit": 500 },
+  "sources": { "baseline": "commit_delete_stg_30x3_avg.json", "afterOutbox": "commit_delete_stg_aftermerge_30x3_avg.json" },
+  "metrics": {
+    "baseline": { "deleteP50Ms": 84.3705, "deleteP95Ms": 2921.491683333333, "deleteAvgMs": 620.8232777777779, "httpP95Ms": 2056.846, "httpAvgMs": 1485.7383943314853, "httpFailedRate": 0, "deleteFailedRate": 0 },
+    "afterOutbox": { "deleteP50Ms": 105.36483333333332, "deleteP95Ms": 163.42273333333333, "deleteAvgMs": 116.2328888888889, "httpP95Ms": 2052.8333333333335, "httpAvgMs": 1486.028848428835, "httpFailedRate": 0, "deleteFailedRate": 0 }
+  },
+  "deltaFormula": "(target - baseline) / baseline * 100"
+}

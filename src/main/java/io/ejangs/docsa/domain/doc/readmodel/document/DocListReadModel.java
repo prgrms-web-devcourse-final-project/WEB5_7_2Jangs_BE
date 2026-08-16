@@ -45,6 +45,10 @@ public class DocListReadModel {
     private boolean deleted;
 
     private Long lastProjectedEventId;
+    private Long titleProjectedEventId;
+    private Long activityProjectedEventId;
+    private Long thumbnailProjectedEventId;
+    private Long deletedEventId;
 
     public static DocListReadModel create(DocCreatedPayload payload, Long eventId) {
         DocListReadModel model = new DocListReadModel();
@@ -58,6 +62,10 @@ public class DocListReadModel {
         model.thumbnailStatus = payload.thumbnailStatus();
         model.deleted = false;
         model.lastProjectedEventId = eventId;
+        model.titleProjectedEventId = eventId;
+        model.activityProjectedEventId = eventId;
+        model.thumbnailProjectedEventId = eventId;
+        model.deletedEventId = null;
         return model;
     }
 
@@ -86,51 +94,79 @@ public class DocListReadModel {
     }
 
     public boolean changeTitle(DocTitleChangedPayload payload, Long eventId) {
-        if (isAlreadyProjected(eventId)) {
+        if (isDeletedTerminal() || isAlreadyProjected(this.titleProjectedEventId, eventId)) {
             return false;
         }
 
         this.title = payload.title();
-        this.updatedAt = payload.updatedAt();
-        this.deleted = false;
-        this.lastProjectedEventId = eventId;
+        this.updatedAt = maxUpdatedAt(payload.updatedAt());
+        this.titleProjectedEventId = eventId;
+        touchLastProjectedEventId(eventId);
         return true;
     }
 
     public boolean changeActivity(DocActivityChangedPayload payload, Long eventId) {
-        if (isAlreadyProjected(eventId)) {
+        if (isDeletedTerminal() || isAlreadyProjected(this.activityProjectedEventId, eventId)) {
             return false;
         }
 
         this.recentSaveId = payload.recentSaveId();
-        this.updatedAt = payload.updatedAt();
-        this.deleted = false;
-        this.lastProjectedEventId = eventId;
+        this.updatedAt = maxUpdatedAt(payload.updatedAt());
+        this.activityProjectedEventId = eventId;
+        touchLastProjectedEventId(eventId);
         return true;
     }
 
     public boolean changeThumbnail(DocThumbnailChangedPayload payload, Long eventId) {
-        if (isAlreadyProjected(eventId)) {
+        if (isDeletedTerminal() || isAlreadyProjected(this.thumbnailProjectedEventId, eventId)) {
             return false;
         }
 
         this.thumbnailObjectKey = payload.thumbnailObjectKey();
         this.thumbnailStatus = payload.thumbnailStatus();
-        this.lastProjectedEventId = eventId;
+        this.thumbnailProjectedEventId = eventId;
+        touchLastProjectedEventId(eventId);
         return true;
     }
 
     public boolean markDeleted(Long eventId) {
-        if (isAlreadyProjected(eventId)) {
+        if (isAlreadyProjectedWithoutFallback(this.deletedEventId, eventId)) {
             return false;
         }
 
         this.deleted = true;
-        this.lastProjectedEventId = eventId;
+        this.deletedEventId = eventId;
+        touchLastProjectedEventId(eventId);
         return true;
     }
 
-    private boolean isAlreadyProjected(Long eventId) {
-        return this.lastProjectedEventId != null && this.lastProjectedEventId >= eventId;
+    private boolean isDeletedTerminal() {
+        return this.deleted;
+    }
+
+    private boolean isAlreadyProjected(Long projectedEventId, Long eventId) {
+        Long effectiveProjectedEventId =
+                projectedEventId != null ? projectedEventId : this.lastProjectedEventId;
+        return effectiveProjectedEventId != null && effectiveProjectedEventId >= eventId;
+    }
+
+    private boolean isAlreadyProjectedWithoutFallback(Long projectedEventId, Long eventId) {
+        return projectedEventId != null && projectedEventId >= eventId;
+    }
+
+    private void touchLastProjectedEventId(Long eventId) {
+        if (this.lastProjectedEventId == null || this.lastProjectedEventId < eventId) {
+            this.lastProjectedEventId = eventId;
+        }
+    }
+
+    private LocalDateTime maxUpdatedAt(LocalDateTime nextUpdatedAt) {
+        if (this.updatedAt == null) {
+            return nextUpdatedAt;
+        }
+        if (nextUpdatedAt == null) {
+            return this.updatedAt;
+        }
+        return this.updatedAt.isAfter(nextUpdatedAt) ? this.updatedAt : nextUpdatedAt;
     }
 }

@@ -139,8 +139,9 @@ class DocListProjectorIntegrationTest {
     }
 
     @Test
-    @DisplayName("먼저 실패한 변경 이벤트는 read model 생성 후 재시도되어 반영된다")
-    void relayProjector_success_retryAfterReadModelCreated() throws Exception {
+    @SuppressWarnings("deprecation")
+    @DisplayName("변경 이벤트 id로 relay를 깨워도 생성 이벤트부터 순서대로 처리된다")
+    void relayProjector_success_processCreatedEventBeforeChangeEventWhenWakeUpWithChangeEventId() throws Exception {
         LocalDateTime createdAt = LocalDateTime.of(2026, 1, 1, 10, 0);
         LocalDateTime initialUpdatedAt = LocalDateTime.of(2026, 1, 2, 10, 0);
         LocalDateTime titleUpdatedAt = LocalDateTime.of(2026, 1, 3, 10, 0);
@@ -185,19 +186,6 @@ class DocListProjectorIntegrationTest {
 
         domainEventOutboxRelay.run(titleOutbox.getId());
 
-        DomainEventOutbox firstRetry = domainEventOutboxRepository.findById(titleOutbox.getId()).orElseThrow();
-        assertThat(firstRetry.getStatus()).isEqualTo(OutboxStatus.OPEN);
-        assertThat(firstRetry.getRetryCount()).isEqualTo(1);
-        assertThat(firstRetry.getLastError()).contains("Doc list read model is missing");
-        jdbcTemplate.update(
-                "update domain_event_outbox set payload = ? format json where id = ?",
-                objectMapper.writeValueAsString(titlePayload),
-                titleOutbox.getId()
-        );
-
-        domainEventOutboxRelay.run(createdOutbox.getId());
-        domainEventOutboxRelay.run(titleOutbox.getId());
-
         DomainEventOutbox doneCreated = domainEventOutboxRepository.findById(createdOutbox.getId()).orElseThrow();
         DomainEventOutbox doneTitle = domainEventOutboxRepository.findById(titleOutbox.getId()).orElseThrow();
         DocListReadModel readModel = docListReadModelRepository.findById(docId).orElseThrow();
@@ -206,10 +194,70 @@ class DocListProjectorIntegrationTest {
         assertThat(doneTitle.getStatus())
                 .as("retryCount=%s, lastError=%s", doneTitle.getRetryCount(), doneTitle.getLastError())
                 .isEqualTo(OutboxStatus.DONE);
-        assertThat(doneTitle.getRetryCount()).isEqualTo(1);
+        assertThat(doneTitle.getRetryCount()).isEqualTo(0);
         assertThat(doneTitle.getLastError()).isNull();
         assertThat(readModel.getTitle()).isEqualTo("변경 제목");
         assertThat(readModel.getUpdatedAt()).isEqualTo(titleUpdatedAt);
         assertThat(readModel.getLastProjectedEventId()).isEqualTo(titleOutbox.getId());
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    @DisplayName("run(outboxId)는 특정 row만 처리하지 않고 OPEN 이벤트를 생성 순서대로 처리한다")
+    void relayProjector_processOpenEventsInCreatedOrderWhenWakeUpWithSpecificId() throws Exception {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 1, 1, 10, 0);
+        LocalDateTime initialUpdatedAt = LocalDateTime.of(2026, 1, 2, 10, 0);
+        LocalDateTime titleUpdatedAt = LocalDateTime.of(2026, 1, 3, 10, 0);
+
+        DocCreatedPayload createdPayload = new DocCreatedPayload(
+                docId,
+                2L,
+                "초기 제목",
+                createdAt,
+                initialUpdatedAt,
+                10L,
+                "thumbnail-1",
+                ThumbnailStatus.READY
+        );
+        DomainEventOutbox createdOutbox = domainEventOutboxRepository.saveAndFlush(
+                DomainEventOutbox.open(
+                        DomainEventType.DOC_CREATED,
+                        AggregateType.DOC,
+                        docId.toString(),
+                        objectMapper.writeValueAsString(createdPayload)
+                )
+        );
+        jdbcTemplate.update(
+                "update domain_event_outbox set payload = ? format json where id = ?",
+                objectMapper.writeValueAsString(createdPayload),
+                createdOutbox.getId()
+        );
+
+        DocTitleChangedPayload titlePayload = new DocTitleChangedPayload(docId, "변경 제목", titleUpdatedAt);
+        DomainEventOutbox titleOutbox = domainEventOutboxRepository.saveAndFlush(
+                DomainEventOutbox.open(
+                        DomainEventType.DOC_TITLE_CHANGED,
+                        AggregateType.DOC,
+                        docId.toString(),
+                        objectMapper.writeValueAsString(titlePayload)
+                )
+        );
+        jdbcTemplate.update(
+                "update domain_event_outbox set payload = ? format json where id = ?",
+                objectMapper.writeValueAsString(titlePayload),
+                titleOutbox.getId()
+        );
+
+        domainEventOutboxRelay.run(titleOutbox.getId());
+
+        DomainEventOutbox doneCreated = domainEventOutboxRepository.findById(createdOutbox.getId()).orElseThrow();
+        DomainEventOutbox doneTitle = domainEventOutboxRepository.findById(titleOutbox.getId()).orElseThrow();
+        DocListReadModel readModel = docListReadModelRepository.findById(docId).orElseThrow();
+
+        assertThat(doneCreated.getStatus()).isEqualTo(OutboxStatus.DONE);
+        assertThat(doneTitle.getStatus()).isEqualTo(OutboxStatus.DONE);
+        assertThat(doneTitle.getRetryCount()).isEqualTo(0);
+        assertThat(readModel.getTitle()).isEqualTo("변경 제목");
+        assertThat(readModel.getUpdatedAt()).isEqualTo(titleUpdatedAt);
     }
 }

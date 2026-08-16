@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -223,17 +224,144 @@ class DocListProjectorUnitTest {
     }
 
     @Test
-    @DisplayName("이미 처리한 eventId 이하의 이벤트는 무시한다")
-    void project_ignore_alreadyProjectedEvent() throws Exception {
-        DocListReadModel model = existingModel(10L);
+    @DisplayName("이미 처리한 삭제 eventId 이하의 삭제 이벤트는 무시한다")
+    void project_ignore_alreadyProjectedDeleteEvent() throws Exception {
+        DocListReadModel model = existingModel(1L);
         DocDeletedPayload payload = new DocDeletedPayload(docId);
         when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
 
+        docListProjector.project(message(10L, DomainEventType.DOC_DELETED, payload));
         docListProjector.project(message(9L, DomainEventType.DOC_DELETED, payload));
 
-        verify(docListReadModelRepository, never()).save(any());
-        assertThat(model.isDeleted()).isFalse();
+        verify(docListReadModelRepository, times(1)).save(model);
+        assertThat(model.isDeleted()).isTrue();
         assertThat(model.getLastProjectedEventId()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("다른 필드의 오래된 이벤트는 누락된 projection이면 반영한다")
+    void project_applyOlderActivityEventWhenActivityFieldWasNotProjected() throws Exception {
+        DocListReadModel model = existingModel(1L);
+        DocThumbnailChangedPayload thumbnailPayload =
+                new DocThumbnailChangedPayload(docId, "thumbnail-2", ThumbnailStatus.READY);
+        DocActivityChangedPayload activityPayload =
+                new DocActivityChangedPayload(docId, 20L, LocalDateTime.of(2026, 1, 4, 10, 0));
+
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
+
+        docListProjector.project(message(10L, DomainEventType.DOC_THUMBNAIL_CHANGED, thumbnailPayload));
+        docListProjector.project(message(9L, DomainEventType.DOC_ACTIVITY_CHANGED, activityPayload));
+
+        assertThat(model.getThumbnailObjectKey()).isEqualTo("thumbnail-2");
+        assertThat(model.getRecentSaveId()).isEqualTo(20L);
+        assertThat(model.getUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 1, 4, 10, 0));
+    }
+
+    @Test
+    @DisplayName("같은 activity 필드의 오래된 이벤트는 recentSaveId를 되돌리지 않는다")
+    void project_ignoreOlderActivityEventWhenActivityFieldAlreadyProjected() throws Exception {
+        DocListReadModel model = existingModel(1L);
+        DocActivityChangedPayload latestPayload =
+                new DocActivityChangedPayload(docId, 30L, LocalDateTime.of(2026, 1, 5, 10, 0));
+        DocActivityChangedPayload olderPayload =
+                new DocActivityChangedPayload(docId, 20L, LocalDateTime.of(2026, 1, 4, 10, 0));
+
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
+
+        docListProjector.project(message(12L, DomainEventType.DOC_ACTIVITY_CHANGED, latestPayload));
+        docListProjector.project(message(11L, DomainEventType.DOC_ACTIVITY_CHANGED, olderPayload));
+
+        assertThat(model.getRecentSaveId()).isEqualTo(30L);
+        assertThat(model.getUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 1, 5, 10, 0));
+    }
+
+    @Test
+    @DisplayName("오래된 독립 이벤트가 나중에 반영되어도 updatedAt은 과거로 되돌아가지 않는다")
+    void project_keepUpdatedAtMonotonicWhenOlderIndependentEventArrives() throws Exception {
+        DocListReadModel model = existingModel(1L);
+        DocTitleChangedPayload titlePayload =
+                new DocTitleChangedPayload(docId, "변경 제목", LocalDateTime.of(2026, 1, 5, 10, 0));
+        DocActivityChangedPayload activityPayload =
+                new DocActivityChangedPayload(docId, 20L, LocalDateTime.of(2026, 1, 4, 10, 0));
+
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
+
+        docListProjector.project(message(12L, DomainEventType.DOC_TITLE_CHANGED, titlePayload));
+        docListProjector.project(message(11L, DomainEventType.DOC_ACTIVITY_CHANGED, activityPayload));
+
+        assertThat(model.getTitle()).isEqualTo("변경 제목");
+        assertThat(model.getRecentSaveId()).isEqualTo(20L);
+        assertThat(model.getUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 1, 5, 10, 0));
+    }
+
+    @Test
+    @DisplayName("삭제 이후 오래된 title 이벤트는 문서를 되살리지 않는다")
+    void project_ignoreOlderTitleEventAfterDelete() throws Exception {
+        DocListReadModel model = existingModel(1L);
+        DocDeletedPayload deletedPayload = new DocDeletedPayload(docId);
+        DocTitleChangedPayload titlePayload =
+                new DocTitleChangedPayload(docId, "삭제 전 변경 제목", LocalDateTime.of(2026, 1, 4, 10, 0));
+
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
+
+        docListProjector.project(message(20L, DomainEventType.DOC_DELETED, deletedPayload));
+        docListProjector.project(message(19L, DomainEventType.DOC_TITLE_CHANGED, titlePayload));
+
+        assertThat(model.isDeleted()).isTrue();
+        assertThat(model.getTitle()).isEqualTo("초기 제목");
+    }
+
+    @Test
+    @DisplayName("삭제 이후 오래된 activity 이벤트는 문서를 되살리지 않는다")
+    void project_ignoreOlderActivityEventAfterDelete() throws Exception {
+        DocListReadModel model = existingModel(1L);
+        DocDeletedPayload deletedPayload = new DocDeletedPayload(docId);
+        DocActivityChangedPayload activityPayload =
+                new DocActivityChangedPayload(docId, 20L, LocalDateTime.of(2026, 1, 4, 10, 0));
+
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
+
+        docListProjector.project(message(20L, DomainEventType.DOC_DELETED, deletedPayload));
+        docListProjector.project(message(19L, DomainEventType.DOC_ACTIVITY_CHANGED, activityPayload));
+
+        assertThat(model.isDeleted()).isTrue();
+        assertThat(model.getRecentSaveId()).isEqualTo(10L);
+        assertThat(model.getUpdatedAt()).isEqualTo(updatedAt);
+    }
+
+    @Test
+    @DisplayName("삭제 이후 오래된 thumbnail 이벤트는 문서를 되살리지 않는다")
+    void project_ignoreOlderThumbnailEventAfterDelete() throws Exception {
+        DocListReadModel model = existingModel(1L);
+        DocDeletedPayload deletedPayload = new DocDeletedPayload(docId);
+        DocThumbnailChangedPayload thumbnailPayload =
+                new DocThumbnailChangedPayload(docId, "thumbnail-2", ThumbnailStatus.READY);
+
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
+
+        docListProjector.project(message(20L, DomainEventType.DOC_DELETED, deletedPayload));
+        docListProjector.project(message(19L, DomainEventType.DOC_THUMBNAIL_CHANGED, thumbnailPayload));
+
+        assertThat(model.isDeleted()).isTrue();
+        assertThat(model.getThumbnailObjectKey()).isEqualTo("thumbnail-1");
+        assertThat(model.getThumbnailStatus()).isEqualTo(ThumbnailStatus.READY);
+    }
+
+    @Test
+    @DisplayName("삭제 marker가 없으면 다른 필드보다 오래된 삭제 이벤트도 terminal로 반영한다")
+    void project_applyOlderDeleteEventWhenDeleteFieldWasNotProjected() throws Exception {
+        DocListReadModel model = existingModel(1L);
+        DocThumbnailChangedPayload thumbnailPayload =
+                new DocThumbnailChangedPayload(docId, "thumbnail-2", ThumbnailStatus.READY);
+        DocDeletedPayload deletedPayload = new DocDeletedPayload(docId);
+
+        when(docListReadModelRepository.findById(docId)).thenReturn(Optional.of(model));
+
+        docListProjector.project(message(21L, DomainEventType.DOC_THUMBNAIL_CHANGED, thumbnailPayload));
+        docListProjector.project(message(20L, DomainEventType.DOC_DELETED, deletedPayload));
+
+        assertThat(model.isDeleted()).isTrue();
+        assertThat(model.getLastProjectedEventId()).isEqualTo(21L);
     }
 
     private DocListReadModel existingModel(Long eventId) {

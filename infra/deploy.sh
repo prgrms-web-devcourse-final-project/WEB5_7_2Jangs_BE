@@ -27,9 +27,11 @@ ROOT="$(pwd)"
 if [[ "$TARGET" == "dev" ]]; then
   COMPOSE_FILE="$ROOT/docker-compose.yml"
   ENV_FILE="$ROOT/.env"
+  SLOW_LOG_DIR="$ROOT/mysql/logs/prod"
 else
   COMPOSE_FILE="$ROOT/docker-compose.stg.yml"
   ENV_FILE="$ROOT/.stg.env"
+  SLOW_LOG_DIR="$ROOT/mysql/logs/staging"
 fi
 
 TAG="${DEPLOY_TAG:-$TARGET}"               # ← 기본은 채널 태그(dev|staging), 입력 있으면 우선
@@ -53,6 +55,10 @@ ARGS+=(--env-file "$ENV_FILE")
 echo "[deploy] target=$TARGET tag=$TAG"
 echo "[deploy] compose=$COMPOSE_FILE env=$ENV_FILE service=$SERVICE"
 
+# MySQL 컨테이너 UID가 새 bind mount에도 slow log를 쓸 수 있게 준비한다.
+install -d -m 0777 "$SLOW_LOG_DIR"
+chmod 0777 "$SLOW_LOG_DIR"
+
 # 1) 유효성 검사(문법/치환 확인)
 docker compose "${ARGS[@]}" config >/dev/null
 
@@ -75,6 +81,11 @@ for _ in $(seq 1 "$ITER"); do
   if [[ "$status" == "healthy" ]]; then ok=1; echo -e "\n$SERVICE healthy"; break; fi
   sleep 2; echo -n "."
 done
+
+# staging 공개 헬스체크는 9091 management upstream을 쓰므로, 새 Nginx 설정을 먼저 반영한다.
+if [[ "$TARGET" == "staging" && $ok -eq 1 ]]; then
+  docker compose "${ARGS[@]}" up -d --force-recreate nginx
+fi
 
 # 5) 임시 override 청소 + 이미지 정리
 [[ -n "$OVR" ]] && rm -f "$OVR" || true

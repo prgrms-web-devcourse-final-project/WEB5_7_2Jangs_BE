@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Read Model Projection 순서 안정화 설계</title><link rel="stylesheet" href="../document.css"></head>
+<body><main>
+<header><p class="eyebrow">DESIGN · 2026-06-06</p><h1>Read Model Projection 순서 안정화</h1><p class="lead">범용 Domain Event Outbox는 유지하면서 첫 consumer인 문서 목록 projector의 중복·역순 처리 정책을 보완한다.</p></header>
+<section><h2>선택한 설계</h2><ul><li>Wakeup은 정확성 보장이 아닌 relay를 깨우는 지연 감소 신호로 제한한다.</li><li>Relay는 OPEN 이벤트를 <code>createdAt ASC, id ASC</code> 순으로 처리한다.</li><li>title·activity·thumbnail·삭제에 각각 projection marker를 둔다.</li><li>삭제는 terminal event로 처리하고 <code>updatedAt</code>은 과거로 되돌리지 않는다.</li></ul></section>
+<section><h2>제외한 범위</h2><p>message broker, CDC, aggregate version, consumer checkpoint, 문서 목록 API 계약 변경, 기존 백필 삭제는 이번 범위에 포함하지 않는다.</p></section>
+<section><h2>검증 기준</h2><p>같은 필드의 오래된 이벤트는 막고, 다른 필드의 누락 이벤트는 필요한 범위에서 허용한다. 삭제 이후 이벤트는 문서를 되살리지 않아야 하며, wakeup 인자로 오래된 이벤트를 받아도 relay는 생성 이벤트부터 처리해야 한다.</p></section>
+<section><h2>한계</h2><p class="note">다중 relay 인스턴스에서 완전한 per-aggregate ordering은 보장하지 않는다. 현재 구조에서 데이터 손상을 줄이는 방어 정책이며, 더 큰 확장은 별도 설계가 필요하다.</p></section>
+<footer>세부 정책과 구현 결과는 <a href="2026-06-06-read-model-projection-ordering-design.md">Markdown 설계</a>에서 확인한다.</footer>
+</main></body></html>

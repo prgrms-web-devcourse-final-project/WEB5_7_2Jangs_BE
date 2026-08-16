@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface DomainEventOutboxRepository extends JpaRepository<DomainEventOutbox, Long> {
 
-    List<DomainEventOutbox> findTop100ByStatusOrderByCreatedAtAsc(OutboxStatus status);
+    List<DomainEventOutbox> findTop100ByStatusOrderByCreatedAtAscIdAsc(OutboxStatus status);
 
     List<DomainEventOutbox> findTop100ByStatusAndUpdatedAtBeforeOrderByUpdatedAtAsc(
             OutboxStatus status,

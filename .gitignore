@@ -50,8 +50,17 @@ infra/mysql/logs/
 .*.swp
 
 # Perf benchmark outputs
-perf/**/results/*
+perf/**/results/**
+!perf/**/results/**/
 !perf/**/results/.gitkeep
+!perf/**/results/**/.gitkeep
+!perf/**/results/evidence/
+!perf/**/results/evidence/**
+
+# macOS Finder metadata
+.DS_Store
 
 # Local documentation and portfolio drafts
 docs/local/
+perf/**/local/
+_workspace/

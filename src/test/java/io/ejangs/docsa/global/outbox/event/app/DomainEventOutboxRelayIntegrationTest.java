@@ -3,6 +3,7 @@ package io.ejangs.docsa.global.outbox.event.app;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.ejangs.docsa.global.outbox.OutboxStatus;
@@ -12,12 +13,17 @@ import io.ejangs.docsa.global.outbox.event.dto.DomainEventMessage;
 import io.ejangs.docsa.global.outbox.event.entity.DomainEventOutbox;
 import io.ejangs.docsa.global.outbox.event.model.AggregateType;
 import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -30,6 +36,9 @@ class DomainEventOutboxRelayIntegrationTest {
 
     @Autowired
     private DomainEventOutboxRepository domainEventOutboxRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @MockitoBean
     private DomainEventDispatcher domainEventDispatcher;
@@ -52,6 +61,30 @@ class DomainEventOutboxRelayIntegrationTest {
         assertThat(done.getRetryCount()).isEqualTo(0);
         assertThat(done.getDoneAt()).isNotNull();
         verify(domainEventDispatcher).dispatch(any(DomainEventMessage.class));
+    }
+
+    @Test
+    @DisplayName("Domain event relay는 createdAt이 같으면 id 오름차순으로 처리한다")
+    void relayDispatchesByCreatedAtAndId() {
+        DomainEventOutbox firstOutbox = createOpenOutbox();
+        DomainEventOutbox secondOutbox = createOpenOutbox();
+        LocalDateTime sameCreatedAt = LocalDateTime.of(2026, 1, 1, 10, 0);
+        jdbcTemplate.update(
+                "update domain_event_outbox set created_at = ? where id in (?, ?)",
+                Timestamp.valueOf(sameCreatedAt),
+                firstOutbox.getId(),
+                secondOutbox.getId()
+        );
+
+        domainEventOutboxRelay.run();
+
+        ArgumentCaptor<DomainEventMessage> captor = ArgumentCaptor.forClass(DomainEventMessage.class);
+        verify(domainEventDispatcher, times(2)).dispatch(captor.capture());
+
+        List<Long> dispatchedEventIds = captor.getAllValues().stream()
+                .map(DomainEventMessage::eventId)
+                .toList();
+        assertThat(dispatchedEventIds).containsExactly(firstOutbox.getId(), secondOutbox.getId());
     }
 
     @Test
