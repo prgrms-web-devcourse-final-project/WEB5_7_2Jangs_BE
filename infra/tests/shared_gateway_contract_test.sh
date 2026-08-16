@@ -42,6 +42,15 @@ staging_exporter_config=$(printf '%s\n' "$staging_config" | awk '
 printf '%s\n' "$staging_exporter_config" | grep -Fq 'docsa_monitoring_net' ||
   fail "스테이징 MySQL Exporter가 공용 모니터링 네트워크를 사용해야 함"
 
+staging_mysql_config=$(printf '%s\n' "$staging_config" | awk '
+  /^  mysql:/ { in_mysql = 1; next }
+  in_mysql && /^  [[:alnum:]_-]+:/ { exit }
+  in_mysql { print }
+')
+if printf '%s\n' "$staging_mysql_config" | grep -Fq 'docsa_monitoring_net'; then
+  fail "스테이징 MySQL은 공용 모니터링 네트워크에 연결하면 안 됨"
+fi
+
 prod_config=$(docker compose -f "$INFRA_DIR/docker-compose.yml" config --no-interpolate)
 printf '%s\n' "$prod_config" | grep -Fq 'docsa_monitoring_net' ||
   fail "운영 Prometheus가 공용 모니터링 네트워크를 사용해야 함"
@@ -64,6 +73,10 @@ grep -Fq './mysql/logs/prod:/var/log/mysql' "$INFRA_DIR/docker-compose.yml" ||
   fail "운영 MySQL slow log 경로를 분리해야 함"
 grep -Fq './mysql/logs/staging:/var/log/mysql' "$INFRA_DIR/docker-compose.stg.yml" ||
   fail "스테이징 MySQL slow log 경로를 분리해야 함"
+grep -Fq 'install -d -m 0777 "$SLOW_LOG_DIR"' "$INFRA_DIR/deploy.sh" ||
+  fail "배포 전에 MySQL slow log 디렉터리를 쓰기 가능하게 준비해야 함"
+grep -Fq 'up -d --force-recreate nginx' "$INFRA_DIR/deploy.sh" ||
+  fail "스테이징 공개 헬스체크 전에 Nginx를 재생성해야 함"
 
 grep -Fq 'return 302 https://api.docsa.o-r.kr$request_uri;' "$INFRA_DIR/nginx/nginx.stg.conf" ||
   fail "스테이징 Grafana 경로를 통합 Grafana로 redirect해야 함"
