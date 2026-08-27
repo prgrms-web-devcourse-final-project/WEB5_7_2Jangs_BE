@@ -1,3 +1,12 @@
+export function benchmarkTargetCount(userCount, docsPerUser, mainCommits) {
+  return userCount * docsPerUser * mainCommits;
+}
+
+export function mixedTargetIndex(iteration, commitCount, hotCount) {
+  if (iteration % 5 < 4) return iteration % hotCount;
+  return hotCount + (Math.floor(iteration / 5) % (commitCount - hotCount));
+}
+
 export function utf8ByteLength(value) {
   let bytes = 0;
   for (let index = 0; index < value.length; index += 1) {
