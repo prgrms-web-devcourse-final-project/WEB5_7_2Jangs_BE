@@ -60,6 +60,13 @@ mongo:
   test-cleanup:
     enabled: true
 
+  create:
+    operation:
+      worker:
+        fixed-delay: PT1M
+        initial-delay: PT24H
+        pending-timeout: PT5M
+
   delete:
     outbox:
       worker:

@@ -22,7 +22,8 @@ import org.springframework.transaction.PlatformTransactionManager;
         "io.ejangs.docsa.global.outbox.mongo.dao.mysql",
         "io.ejangs.docsa.domain.image.dao",
         "io.ejangs.docsa.global.outbox.event.dao",
-        "io.ejangs.docsa.global.outbox.s3.dao"
+        "io.ejangs.docsa.global.outbox.s3.dao",
+        "io.ejangs.docsa.global.saga.create.dao"
 })
 public class JpaConfig {
 

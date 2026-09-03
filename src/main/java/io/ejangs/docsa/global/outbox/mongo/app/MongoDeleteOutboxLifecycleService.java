@@ -4,6 +4,9 @@ import io.ejangs.docsa.global.outbox.OutboxStatus;
 import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
+import io.ejangs.docsa.global.saga.create.dao.MongoCreateOperationRepository;
+import io.ejangs.docsa.global.saga.create.entity.MongoCreateOperation;
+import io.ejangs.docsa.global.saga.create.entity.MongoCreateOperationStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MongoDeleteOutboxLifecycleService {
 
     private final MongoDeleteOutboxRepository mongoDeleteOutboxRepository;
+    private final MongoCreateOperationRepository mongoCreateOperationRepository;
 
     public MongoIdsDto claimOpen(Long outboxId) {
         int claimed = mongoDeleteOutboxRepository.claimOpenById(outboxId);
@@ -48,6 +52,7 @@ public class MongoDeleteOutboxLifecycleService {
         }
 
         targetOutbox.markDone();
+        markCreateOperationCompensated(targetOutbox);
         mongoDeleteOutboxRepository.save(targetOutbox);
     }
 
@@ -60,6 +65,9 @@ public class MongoDeleteOutboxLifecycleService {
         }
 
         targetOutbox.markRetry(errorMessage);
+        if (targetOutbox.getStatus() == OutboxStatus.FAILED) {
+            markCreateOperationFailed(targetOutbox, errorMessage);
+        }
         mongoDeleteOutboxRepository.save(targetOutbox);
     }
 
@@ -76,5 +84,23 @@ public class MongoDeleteOutboxLifecycleService {
         stuckOutboxes.forEach(outbox -> outbox.recoverProcessingTimeout("PROCESSING timeout recovered"));
         mongoDeleteOutboxRepository.saveAll(stuckOutboxes);
         return stuckOutboxes.size();
+    }
+
+    private void markCreateOperationCompensated(MongoDeleteOutbox outbox) {
+        if (outbox.getTriggerType() != MongoDeleteOutbox.TriggerType.COMPENSATE) {
+            return;
+        }
+        mongoCreateOperationRepository.findWithLockByOperationId(outbox.getOriginId())
+                .filter(operation -> operation.getStatus() == MongoCreateOperationStatus.COMPENSATING)
+                .ifPresent(MongoCreateOperation::markCompensated);
+    }
+
+    private void markCreateOperationFailed(MongoDeleteOutbox outbox, String errorMessage) {
+        if (outbox.getTriggerType() != MongoDeleteOutbox.TriggerType.COMPENSATE) {
+            return;
+        }
+        mongoCreateOperationRepository.findWithLockByOperationId(outbox.getOriginId())
+                .filter(operation -> operation.getStatus() == MongoCreateOperationStatus.COMPENSATING)
+                .ifPresent(operation -> operation.markCompensationFailed(errorMessage));
     }
 }
