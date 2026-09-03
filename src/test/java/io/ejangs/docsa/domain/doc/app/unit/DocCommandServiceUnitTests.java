@@ -29,7 +29,12 @@ import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import io.ejangs.docsa.global.outbox.event.model.AggregateType;
 import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
+import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreatePlanFactory;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateRequestHasher;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,6 +76,15 @@ public class DocCommandServiceUnitTests {
     @Mock
     private DomainEventOutboxPublisher domainEventOutboxPublisher;
 
+    @Mock
+    private MongoCreateOperationService mongoCreateOperationService;
+
+    @Mock
+    private MongoCreatePlanFactory mongoCreatePlanFactory;
+
+    @Mock
+    private MongoCreateRequestHasher mongoCreateRequestHasher;
+
     @Test
     @DisplayName("문서 생성 성공 - QueryService 검증 후 Orchestrator 호출(CQRS 분리)")
     void createDoc_delegatesToQueryServiceAndOrchestrator() {
@@ -80,17 +94,22 @@ public class DocCommandServiceUnitTests {
         User user = DocTestUtils.createUser();
         ReflectionTestUtils.setField(user, "id", userId);
         DocCreateResponse expected = new DocCreateResponse(10L, 100L);
+        String operationId = "550e8400-e29b-41d4-a716-446655440000";
+        MongoIdsDto plan = new MongoIdsDto(List.of("save-1"), List.of(), List.of());
 
         when(docReader.getUserOrThrow(userId)).thenReturn(user);
-        when(docCreateOrchestrator.create(title, user)).thenReturn(expected);
+        when(mongoCreateRequestHasher.hash(any())).thenReturn("hash");
+        when(mongoCreatePlanFactory.singleSaveContent()).thenReturn(plan);
+        when(docCreateOrchestrator.create(title, user, operationId, "hash", plan))
+                .thenReturn(expected);
 
-        DocCreateResponse result = docCommandService.create(request, userId);
+        DocCreateResponse result = docCommandService.create(request, userId, operationId);
 
         assertEquals(expected.id(), result.id());
         assertEquals(expected.saveId(), result.saveId());
         verify(docReader).getUserOrThrow(userId);
         verify(docReader).checkTitleDuplicate(userId, title);
-        verify(docCreateOrchestrator).create(title, user);
+        verify(docCreateOrchestrator).create(title, user, operationId, "hash", plan);
         verifyNoInteractions(docRepository, branchRepository, commitRepository, edgeRepository);
     }
 
@@ -102,12 +121,15 @@ public class DocCommandServiceUnitTests {
         DocTitleRequest request = new DocTitleRequest(title);
         User user = DocTestUtils.createUser();
         ReflectionTestUtils.setField(user, "id", userId);
+        String operationId = "550e8400-e29b-41d4-a716-446655440001";
 
         when(docReader.getUserOrThrow(userId)).thenReturn(user);
+        when(mongoCreateRequestHasher.hash(any())).thenReturn("hash");
         doThrow(new CustomException(DocErrorCode.TITLE_DUPLICATION))
                 .when(docReader).checkTitleDuplicate(userId, title);
 
-        CustomException exception = assertThrows(CustomException.class, () -> docCommandService.create(request, userId));
+        CustomException exception = assertThrows(CustomException.class,
+                () -> docCommandService.create(request, userId, operationId));
 
         assertEquals(DocErrorCode.TITLE_DUPLICATION, exception.getErrorCode());
         verifyNoInteractions(docCreateOrchestrator);

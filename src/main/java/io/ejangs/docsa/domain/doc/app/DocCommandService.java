@@ -20,6 +20,11 @@ import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
 import java.util.List;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationStart;
+import io.ejangs.docsa.global.saga.create.app.MongoCreatePlanFactory;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateRequestHasher;
+import io.ejangs.docsa.global.saga.create.entity.MongoCreateOperationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,12 +45,29 @@ public class DocCommandService {
     private final MongoIdsCollector mongoIdsCollector;
 
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
+    private final MongoCreateOperationService mongoCreateOperationService;
+    private final MongoCreatePlanFactory mongoCreatePlanFactory;
+    private final MongoCreateRequestHasher mongoCreateRequestHasher;
 
-    public DocCreateResponse create(DocTitleRequest request, Long userId) {
+    public DocCreateResponse create(DocTitleRequest request, Long userId, String operationId) {
+        String requestHash = mongoCreateRequestHasher.hash(
+                List.of(MongoCreateOperationType.DOC, userId, request)
+        );
+        MongoCreateOperationStart existing = mongoCreateOperationService.findExisting(
+                operationId,
+                userId,
+                MongoCreateOperationType.DOC,
+                requestHash
+        ).orElse(null);
+        if (existing != null) {
+            return new DocCreateResponse(existing.resultEntityId(), existing.resultSaveId());
+        }
+
         User user = docReader.getUserOrThrow(userId);
         String title = request.title();
         docReader.checkTitleDuplicate(userId, title);
-        return docCreateOrchestrator.create(title, user);
+        MongoIdsDto plan = mongoCreatePlanFactory.singleSaveContent();
+        return docCreateOrchestrator.create(title, user, operationId, requestHash, plan);
     }
 
     @Transactional(rollbackFor = Exception.class)

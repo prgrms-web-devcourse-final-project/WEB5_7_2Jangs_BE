@@ -20,6 +20,11 @@ import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoDeleteMapper;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationStart;
+import io.ejangs.docsa.global.saga.create.app.MongoCreatePlanFactory;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateRequestHasher;
+import io.ejangs.docsa.global.saga.create.entity.MongoCreateOperationType;
 
 import java.util.*;
 
@@ -42,13 +47,29 @@ public class BranchService {
     private final EdgeService edgeService;
     private final BranchCreateOrchestrator branchCreateOrchestrator;
     private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
+    private final MongoCreateOperationService mongoCreateOperationService;
+    private final MongoCreatePlanFactory mongoCreatePlanFactory;
+    private final MongoCreateRequestHasher mongoCreateRequestHasher;
 
     public BranchCreateResponse createBranch(Long documentId, BranchCreateRequest request,
-            Long userId) {
+            Long userId, String operationId) {
+
+        String requestHash = mongoCreateRequestHasher.hash(
+                List.of(MongoCreateOperationType.BRANCH, userId, documentId, request)
+        );
+        MongoCreateOperationStart existing = mongoCreateOperationService.findExisting(
+                operationId, userId, MongoCreateOperationType.BRANCH, requestHash
+        ).orElse(null);
+        if (existing != null) {
+            return new BranchCreateResponse(existing.resultEntityId(), existing.resultSaveId());
+        }
 
         BranchCreateContext context = prepareBranchCreateContext(documentId, request, userId);
+        MongoIdsDto plan = mongoCreatePlanFactory.singleSaveContent();
 
-        return branchCreateOrchestrator.create(context);
+        return branchCreateOrchestrator.create(
+                context, userId, operationId, requestHash, plan
+        );
     }
 
     private BranchCreateContext prepareBranchCreateContext(Long documentId,

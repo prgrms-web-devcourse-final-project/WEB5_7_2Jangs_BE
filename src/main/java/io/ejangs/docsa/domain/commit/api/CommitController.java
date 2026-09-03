@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,10 +35,13 @@ public class CommitController {
     public ResponseEntity<CreateCommitResponse> createCommit(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
+            @RequestHeader("Idempotency-Key") UUID operationId,
             @RequestBody @Valid CreateCommitRequest commitRequest) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(commitService.createCommit(docId, commitRequest, userDetails.getId()));
+                .body(commitService.createCommit(
+                        docId, commitRequest, userDetails.getId(), operationId.toString()
+                ));
     }
 
     @GetMapping("/api/document/{docId}/commit/{commitId}")

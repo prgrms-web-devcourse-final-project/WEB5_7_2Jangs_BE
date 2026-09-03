@@ -2,13 +2,14 @@ package io.ejangs.docsa.domain.doc.app.create;
 
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.domain.save.app.SaveWriter;
-import io.ejangs.docsa.domain.save.document.SaveContent;
 import io.ejangs.docsa.domain.user.entity.User;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
-import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
-import java.util.List;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateCompensationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationStart;
+import io.ejangs.docsa.global.saga.create.entity.MongoCreateOperationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,30 +21,49 @@ public class DocCreateOrchestrator {
 
     private final SaveWriter saveWriter;
     private final DocCreateMySqlTxService docCreateMySqlTxService;
-    private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
+    private final MongoCreateOperationService operationService;
+    private final MongoCreateCompensationService compensationService;
 
-    public DocCreateResponse create(String title, User user) {
-        // 문서 생성에 경우 SaveContent 1개의 문서만 insert하여 단일 문서 트랜잭션은 보장되어 별도의 트랜잭션 처리 필요없음.
-        // 다른 도메인에서는 다중 문서 트랜잭션을 위해 트랜잭션 설정 필요.
-        SaveContent defaultSaveContent = saveWriter.createSaveContent();
-        String saveContentId = defaultSaveContent.getId();
+    public DocCreateResponse create(
+            String title,
+            User user,
+            String operationId,
+            String requestHash,
+            MongoIdsDto plan
+    ) {
+        MongoCreateOperationStart start = operationService.start(
+                operationId,
+                user.getId(),
+                MongoCreateOperationType.DOC,
+                requestHash,
+                plan
+        );
+        if (!start.started()) {
+            return new DocCreateResponse(start.resultEntityId(), start.resultSaveId());
+        }
 
         try {
-            return docCreateMySqlTxService.createMySqlPart(title, user, saveContentId);
+            String saveContentId = plan.saveContentsIds().getFirst();
+            saveWriter.insertSaveContent(saveContentId);
+            return docCreateMySqlTxService.createMySqlPart(
+                    title, user, saveContentId, operationId
+            );
         } catch (CustomException e) {
-            log.warn("[SAGA] 문서 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
-            compensateMongo(saveContentId);
+            requestCompensation(operationId, e);
             throw e;
         } catch (Exception e) {
-            log.warn("[SAGA] 문서 생성 실패 -> Mongo 삭제 Outbox 기록.", e);
-            compensateMongo(saveContentId);
+            requestCompensation(operationId, e);
             throw new CustomException(DocErrorCode.FAIL_CREATE_DOCUMENT);
         }
     }
 
-    private void compensateMongo(String saveContentId) {
-
-        MongoIdsDto dto = new MongoIdsDto(List.of(saveContentId), null, null);
-        mongoDeleteJobEnqueuer.enqueueDocCreateCompensation(saveContentId, dto);
+    private void requestCompensation(String operationId, Exception cause) {
+        log.warn("[SAGA] 문서 생성 실패 -> 생성 작업 보상 요청.", cause);
+        try {
+            compensationService.request(operationId, cause.getMessage());
+        } catch (Exception compensationError) {
+            log.error("[SAGA] 문서 생성 보상 요청 실패. Worker가 PENDING 작업을 복구합니다: operationId={}",
+                    operationId, compensationError);
+        }
     }
 }

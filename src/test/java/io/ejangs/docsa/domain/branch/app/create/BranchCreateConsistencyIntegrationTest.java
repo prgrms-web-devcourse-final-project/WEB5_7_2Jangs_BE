@@ -31,6 +31,8 @@ import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.DomainType;
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox.TriggerType;
+import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
+import org.bson.types.ObjectId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +125,8 @@ class BranchCreateConsistencyIntegrationTest {
     void createBranch_success_persistsMongoAndMySqlWithoutCompensateOutbox() {
         Fixture fixture = createSingleCommitFixture(unique("main"));
         Set<String> beforeSaveContentIds = currentSaveContentIds();
+        String operationId = UUID.randomUUID().toString();
+        MongoIdsDto plan = savePlan();
 
         BranchCreateResponse response = branchCreateOrchestrator.create(new BranchCreateContext(
                 fixture.doc(),
@@ -130,7 +134,7 @@ class BranchCreateConsistencyIntegrationTest {
                 fixture.commit(),
                 unique("feature"),
                 fixture.commit().getCommitMongoId()
-        ));
+        ), fixture.user().getId(), operationId, "hash-" + operationId, plan);
 
         Save createdSave = saveRepository.findById(response.saveId()).orElseThrow();
 
@@ -152,11 +156,13 @@ class BranchCreateConsistencyIntegrationTest {
             long beforeBranchCount = branchRepository.count();
             long beforeSaveCount = saveRepository.count();
             Set<String> beforeSaveContentIds = currentSaveContentIds();
+            String operationId = UUID.randomUUID().toString();
+            MongoIdsDto plan = savePlan();
 
             doAnswer(invocation -> {
                 invocation.callRealMethod();
                 throw new RuntimeException("force mysql rollback after persist");
-            }).when(branchCreateMySqlTxService).createMySqlPart(any(), anyString());
+            }).when(branchCreateMySqlTxService).createMySqlPart(any(), anyString(), anyString());
 
             assertThatThrownBy(() -> branchCreateOrchestrator.create(new BranchCreateContext(
                     fixture.doc(),
@@ -164,7 +170,8 @@ class BranchCreateConsistencyIntegrationTest {
                     fixture.commit(),
                     unique("feature"),
                     fixture.commit().getCommitMongoId()
-            ))).isInstanceOf(CustomException.class)
+            ), fixture.user().getId(), operationId, "hash-" + operationId, plan))
+                    .isInstanceOf(CustomException.class)
                     .hasMessage(BranchErrorCode.FAIL_CREATE_BRANCH.getMessage());
 
             Set<String> afterSaveContentIds = currentSaveContentIds();
@@ -179,7 +186,7 @@ class BranchCreateConsistencyIntegrationTest {
 
             assertThat(outbox.getTriggerType()).isEqualTo(TriggerType.COMPENSATE);
             assertThat(outbox.getDomainType()).isEqualTo(DomainType.BRANCH);
-            assertThat(outbox.getOriginId()).isEqualTo(persistedSaveContentId);
+            assertThat(outbox.getOriginId()).isEqualTo(operationId);
             assertThat(loadOutboxSaveContentIds(outbox.getId())).containsExactly(persistedSaveContentId);
         }
     }
@@ -189,17 +196,19 @@ class BranchCreateConsistencyIntegrationTest {
     class MongoRollbackTest {
 
         @Test
-        @DisplayName("SaveContent와 Branch/Save 모두 롤백되고 보상 Outbox도 생성되지 않는다")
-        void createBranch_mongoFailure_rollsBackEverythingWithoutCompensateOutbox() {
+        @DisplayName("SaveContent와 Branch/Save는 남지 않고 사전 확정 대상을 담은 보상 Outbox가 생성된다")
+        void createBranch_mongoFailureEnqueuesPlannedCompensation() {
             Fixture fixture = createSingleCommitFixture(unique("main"));
             long beforeBranchCount = branchRepository.count();
             long beforeSaveCount = saveRepository.count();
             Set<String> beforeSaveContentIds = currentSaveContentIds();
+            String operationId = UUID.randomUUID().toString();
+            MongoIdsDto plan = savePlan();
 
             doAnswer(invocation -> {
                 invocation.callRealMethod();
                 throw new RuntimeException("force mongo rollback after save");
-            }).when(branchCreateMongoTxService).createSaveContentFromCommit(anyString());
+            }).when(branchCreateMongoTxService).createSaveContentFromCommit(anyString(), anyString());
 
             assertThatThrownBy(() -> branchCreateOrchestrator.create(new BranchCreateContext(
                     fixture.doc(),
@@ -207,14 +216,22 @@ class BranchCreateConsistencyIntegrationTest {
                     fixture.commit(),
                     unique("feature"),
                     fixture.commit().getCommitMongoId()
-            ))).isInstanceOf(RuntimeException.class)
-                    .hasMessage("force mongo rollback after save");
+            ), fixture.user().getId(), operationId, "hash-" + operationId, plan))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(BranchErrorCode.FAIL_CREATE_BRANCH.getMessage());
 
             assertThat(branchRepository.count()).isEqualTo(beforeBranchCount);
             assertThat(saveRepository.count()).isEqualTo(beforeSaveCount);
             assertThat(currentSaveContentIds()).isEqualTo(beforeSaveContentIds);
-            assertThat(mongoDeleteOutboxRepository.findAll()).isEmpty();
+            MongoDeleteOutbox outbox = mongoDeleteOutboxRepository.findAll().getFirst();
+            assertThat(outbox.getOriginId()).isEqualTo(operationId);
+            assertThat(loadOutboxSaveContentIds(outbox.getId()))
+                    .containsExactly(plan.saveContentsIds().getFirst());
         }
+    }
+
+    private MongoIdsDto savePlan() {
+        return new MongoIdsDto(List.of(new ObjectId().toHexString()), List.of(), List.of());
     }
 
     private Fixture createSingleCommitFixture(String branchName) {

@@ -5,7 +5,6 @@ import io.ejangs.docsa.domain.block.document.Block;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.document.CommitBlockSequence;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
-import io.ejangs.docsa.domain.commit.util.CommitBlockSequenceMapper;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
@@ -26,9 +25,13 @@ public class CommitMongoTxService {
     private final CommitBlockSequenceRepository cbsRepository;
 
     @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
-    public MongoIdsDto createMongoPart(CreateCommitRequest request, String baseCommitCbsMongoId) {
+    public MongoIdsDto createMongoPart(
+            CreateCommitRequest request,
+            String baseCommitCbsMongoId,
+            MongoIdsDto plan
+    ) {
         // 이번 커밋에서 "새로 저장된" 블록들 (Mongo insert)
-        List<Block> newBlocks = blockService.saveBlocks(request.blocks());
+        List<Block> newBlocks = blockService.insertBlocks(request.blocks(), plan.blockIds());
 
         // 이전 커밋(CBS)에 포함된 블록들 조회
         List<Block> baseCommitBlocks = getBaseCommitBlocks(baseCommitCbsMongoId);
@@ -37,14 +40,8 @@ public class CommitMongoTxService {
         List<String> orderedBlockMongoIds =
                 resolveOrderedBlockMongoIds(request.blockOrders(), newBlocks, baseCommitBlocks);
 
-        CommitBlockSequence newCbs = saveCommitBlockSequence(orderedBlockMongoIds);
-
-        List<String> createdBlockMongoIds = newBlocks.stream()
-                .map(Block::getId)
-                .toList();
-
-        // MySQL실패시 보상 삭제 대상 return
-        return new MongoIdsDto(null, List.of(newCbs.getId()), createdBlockMongoIds);
+        saveCommitBlockSequence(plan.commitBlockSequenceIds().getFirst(), orderedBlockMongoIds);
+        return plan;
     }
 
     private List<Block> getBaseCommitBlocks(String baseCommitCbsMongoId) {
@@ -101,9 +98,15 @@ public class CommitMongoTxService {
                 .findFirst();
     }
 
-    private CommitBlockSequence saveCommitBlockSequence(List<String> orderedBlockMongoIds) {
-        CommitBlockSequence cbs = CommitBlockSequenceMapper.toDocument(orderedBlockMongoIds);
-        return cbsRepository.save(cbs);
+    private CommitBlockSequence saveCommitBlockSequence(
+            String commitBlockSequenceId,
+            List<String> orderedBlockMongoIds
+    ) {
+        CommitBlockSequence cbs = CommitBlockSequence.builder()
+                .id(commitBlockSequenceId)
+                .blockOrders(orderedBlockMongoIds)
+                .build();
+        return cbsRepository.insert(cbs);
     }
 
 

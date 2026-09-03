@@ -19,7 +19,8 @@ public class Block {
     private Map<String, Object> content;
 
     @Builder
-    private Block(Map<String, Object> content) {
+    private Block(String id, Map<String, Object> content) {
+        this.id = id;
         this.content = content;
     }
 }

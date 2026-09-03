@@ -2,6 +2,7 @@ package io.ejangs.docsa.domain.doc.api.unit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -44,6 +45,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @AutoConfigureMockMvc(addFilters = false)
 class DocControllerUnitTests {
 
+    private static final String IDEMPOTENCY_KEY = "550e8400-e29b-41d4-a716-446655440000";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -66,10 +69,11 @@ class DocControllerUnitTests {
         Long saveId = 2L;
 
         //when, then
-        when(docCommandService.create(any(DocTitleRequest.class), anyLong()))
+        when(docCommandService.create(any(DocTitleRequest.class), anyLong(), anyString()))
                 .thenReturn(new DocCreateResponse(documentId, saveId));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
+                        .header("Idempotency-Key", IDEMPOTENCY_KEY)
                         .content(objectMapper.writeValueAsString(request))
                         .contentType(MediaType.APPLICATION_JSON)
                         .with(csrf()))
@@ -84,10 +88,23 @@ class DocControllerUnitTests {
         DocTitleRequest request = new DocTitleRequest("");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
+                        .header("Idempotency-Key", IDEMPOTENCY_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("문서제목을 입력해주세요."));
+    }
+
+    @Test
+    @DisplayName("문서 생성 - Idempotency-Key가 없으면 400을 반환한다")
+    void createDocFailsWithoutIdempotencyKey() throws Exception {
+        DocTitleRequest request = new DocTitleRequest("문서");
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/document")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("IDEMPOTENCY_KEY_REQUIRED"));
     }
 
     @Test

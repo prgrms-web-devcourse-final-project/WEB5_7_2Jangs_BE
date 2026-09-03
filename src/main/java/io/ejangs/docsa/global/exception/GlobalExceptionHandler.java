@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -46,6 +47,22 @@ public class GlobalExceptionHandler {
         log.error("MethodArgumentTypeMismatchException 발생 : {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.from("요청 파라미터 타입이 올바르지 않습니다."));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestHeaderException(
+            MissingRequestHeaderException e
+    ) {
+        if ("Idempotency-Key".equalsIgnoreCase(e.getHeaderName())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ErrorResponse.from(
+                            HttpStatus.BAD_REQUEST,
+                            "Idempotency-Key 헤더가 필요합니다.",
+                            "IDEMPOTENCY_KEY_REQUIRED"
+                    ));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.from("필수 요청 헤더가 누락되었습니다."));
     }
 
     @ExceptionHandler(AuthenticationException.class)
