@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>생성 Saga 로컬 성능 측정</title><link rel="stylesheet" href="performance-document.css"></head>
+<body><main>
+<header><p class="eyebrow">DOCSA · 2026-09-04</p><h1>생성 Saga 로컬 성능 측정</h1></header>
+<section><p>작성일: 2026-09-04. 측정 대상은 커밋 생성이다. 스테이징 서버에는 요청하지 않았다.</p>
+</section>
+<section><h2>판정</h2>
+<p>ID 목록을 자식 행 대신 JSON 한 컬럼에 저장하고 중복 조회를 제거한 뒤, 최적화 전 Saga 대비 중앙값이 50블록에서 27.0%, 200블록에서 51.3% 줄었다.</p>
+<p>Saga를 적용하기 전 기준 코드보다는 중앙값이 각각 5.72ms, 5.27ms 늘었다. 사전 작업 기록과 완료 처리를 추가한 비용이 남아 있다. 현재 표본에서는 로컬 단일 요청 비용을 줄였다고 판단할 수 있지만 운영 부하에서도 괜찮다고 단정할 근거는 아니다.</p>
+</section>
+<section><h2>조건</h2>
+<p>비교 대상은 기준 코드 <code>78c3cb3</code>, 최적화 전 Saga, 최적화 후 작업 트리다. 결과 폴더의 <code>staging</code>은 기준 코드의 이름이며 실행 서버는 모두 로컬이다.</p>
+<p>각 버전에서 50블록과 200블록을 각각 한 차례 측정했다. 한 차례는 1 VU, 워밍업 3회, 본 측정 20회다. 총 본 측정 120회와 워밍업 18회가 성공했다. 로그인·문서 생성·그래프 조회는 setup으로 제외했다. 매 요청은 새 블록과 새 Idempotency-Key를 사용하므로 완료 결과 재사용 속도를 측정한 것이 아니다.</p>
+<p>공용 블록 생성기와 <code>perf/create/commit/commit_create_benchmark.js</code>를 사용했다. 처음 요청별 2회만 실행했던 탐색 결과는 표본이 작아 최종 비교에서 제외했다. 추가 성능 실행 없이 기존 raw 파일의 <code>commit_create_ms</code> 값을 다시 확인해 이 보고서에 옮겼다.</p>
+</section>
+<section><h2>HTTP 응답 시간</h2>
+<p>단위는 ms다. 표는 소수 셋째 자리로 반올림했다.</p>
+<div style="overflow-x:auto"><table><thead><tr><th>블록 수</th><th>버전</th><th>표본 수</th><th>평균</th><th>중앙값</th><th>p90</th><th>p95</th></tr></thead><tbody><tr><td>50</td><td>기준 코드</td><td>20</td><td>20.139</td><td>18.662</td><td>24.464</td><td>26.142</td></tr>
+<tr><td>50</td><td>최적화 전 Saga</td><td>20</td><td>34.134</td><td>33.405</td><td>37.938</td><td>39.097</td></tr>
+<tr><td>50</td><td>최적화 후 Saga</td><td>20</td><td>24.690</td><td>24.387</td><td>29.339</td><td>31.483</td></tr>
+<tr><td>200</td><td>기준 코드</td><td>20</td><td>21.169</td><td>20.706</td><td>22.010</td><td>26.056</td></tr>
+<tr><td>200</td><td>최적화 전 Saga</td><td>20</td><td>54.026</td><td>53.327</td><td>57.404</td><td>58.451</td></tr>
+<tr><td>200</td><td>최적화 후 Saga</td><td>20</td><td>26.544</td><td>25.978</td><td>28.772</td><td>29.307</td></tr></tbody></table></div>
+<div style="overflow-x:auto"><table><thead><tr><th>블록 수</th><th>최적화 전 대비 중앙값 감소</th><th>최적화 전 대비 p90 감소</th><th>기준 코드 대비 중앙값 증가</th><th>기준 코드 대비 p90 증가</th></tr></thead><tbody><tr><td>50</td><td>27.0%</td><td>22.7%</td><td>30.7%</td><td>19.9%</td></tr>
+<tr><td>200</td><td>51.3%</td><td>49.9%</td><td>25.5%</td><td>30.7%</td></tr></tbody></table></div>
+<p>감소율은 <code>(최적화 전 - 최적화 후) / 최적화 전</code>, 증가율은 <code>(최적화 후 - 기준) / 기준</code>으로 계산했다. 백분율은 반올림 전 값을 사용했다.</p>
+</section>
+<section><h2>DB 기록으로 확인한 차이</h2>
+<p>최적화 전·후 Saga에서 각각 작업 행 48개를 확인했다. 커밋 46개와 setup에서 만든 문서 2개이며 모두 COMPLETED였다.</p>
+<p>최적화 전에는 커밋 46건의 블록 ID 5,750개와 CommitBlockSequence ID 46개가 총 5,796개 자식 행으로 저장됐다. 최적화 후에는 해당 자식 테이블이 없고 JSON의 블록 배열 길이 50인 작업 23개와 길이 200인 작업 23개가 기록됐다. 23개에는 워밍업 3회가 포함된다.</p>
+<p>이번 최적화는 JSON 전환과 정상 시작 경로의 중복 조회 제거를 함께 적용했다. 두 변경을 따로 측정하지 않았으므로 개선분을 각각 몇 ms라고 나눠 말할 수는 없다.</p>
+</section>
+<section><h2>근거 파일</h2>
+<p>모두 저장소 루트 기준 경로다. raw 결과는 기본적으로 Git에서 제외된다.</p>
+<div style="overflow-x:auto"><table><thead><tr><th>버전</th><th>50블록</th><th>200블록</th></tr></thead><tbody><tr><td>기준 코드</td><td>perf/create/commit/results/staging/blocks-50/run-2/summary.json</td><td>perf/create/commit/results/staging/blocks-200/run-2/summary.json</td></tr>
+<tr><td>최적화 전</td><td>perf/create/commit/results/preoptimized/blocks-50/run-1/summary.json</td><td>perf/create/commit/results/preoptimized/blocks-200/run-1/summary.json</td></tr>
+<tr><td>최적화 후</td><td>perf/create/commit/results/optimized/blocks-50/run-1/summary.json</td><td>perf/create/commit/results/optimized/blocks-200/run-1/summary.json</td></tr></tbody></table></div>
+<p>실행 조건과 데이터 정리는 <a href="../../perf/create/commit/README.md">시나리오 README</a>, 정합성 구조와 수용한 위험은 <a href="../superpowers/specs/2026-09-04-mongo-create-durable-saga-design.md">설계 기록</a>을 참고한다.</p>
+</section>
+<section><h2>해석 범위</h2>
+<p>20개 표본에서는 중앙값과 p90을 우선 보고 p95는 참고값으로만 본다. 무작위 순서의 반복 라운드나 신뢰구간 검증을 하지 않아 실행 순서·JIT·캐시·로컬 자원 경쟁의 영향을 분리하지 못했다. 동일 프로세스 내 순차 요청이므로 표본이 서로 독립이라고 가정하지 않는다.</p>
+<p>동시 부하, 장시간 실행, 운영 데이터 크기, 보상 적체, MySQL 장애 상황의 처리량은 측정하지 않았다. 문서·브랜치·병합 생성 성능에도 이 수치를 그대로 적용하지 않는다. 복구 Worker와 지연된 요청의 P1 경합은 별도 문제이며 이 응답 시간 측정으로 안전성을 입증하지 않는다.</p>
+</section>
+</main></body>
+</html>
