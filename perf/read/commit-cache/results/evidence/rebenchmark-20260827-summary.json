@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-08-27",
+  "condition": {
+    "userCount": 20,
+    "docsPerUser": 5,
+    "mainCommits": 20,
+    "targetCount": 2000,
+    "blocksPerCommit": 500,
+    "cacheMaximumSize": 400,
+    "vus": 50,
+    "durationSeconds": 60,
+    "runsPerProvider": 5,
+    "providerOrder": {
+      "1": ["none", "caffeine"],
+      "2": ["caffeine", "none"],
+      "3": ["none", "caffeine"],
+      "4": ["caffeine", "none"],
+      "5": ["none", "caffeine"]
+    }
+  },
+  "runFields": [
+    "p50Ms",
+    "p95Ms",
+    "p99Ms",
+    "iterations",
+    "cacheHitDelta",
+    "cacheMissDelta",
+    "cacheEvictionDelta",
+    "assembleDelta",
+    "commitGetFailureRate",
+    "droppedIterations"
+  ],
+  "runs": {
+    "hot": {
+      "none": [
+        [33.642, 102.0165, 298.7043, 18923, null, null, null, 18923, 0, 0],
+        [32.471, 107.638, 300.6394, 19261, null, null, null, 19261, 0, 0],
+        [32.348, 107.4862, 307.78788, 19537, null, null, null, 19537, 0, 0],
+        [33.0325, 119.5181, 340.89406, 18660, null, null, null, 18660, 0, 0],
+        [30.95, 117.27875, 332.60325, 20076, null, null, null, 20076, 0, 0]
+      ],
+      "caffeine": [
+        [25.172, 103.8691, 277.64328, 21459, 21459, 0, 0, 0, 0, 0],
+        [25.651, 90.44045, 260.61489, 21464, 21464, 0, 0, 0, 0, 0],
+        [25.119, 91.4827, 269.48966, 21544, 21544, 0, 0, 0, 0, 0],
+        [25.354, 94.6484, 258.99726, 21867, 21867, 0, 0, 0, 0, 0],
+        [24.592, 100.807, 276.37058, 22483, 22483, 0, 0, 0, 0, 0]
+      ]
+    },
+    "mixed": {
+      "none": [
+        [35.254, 102.496, 263.3046, 18621, null, null, null, 18621, 0, 0],
+        [35.607, 96.423, 269.442, 18676, null, null, null, 18676, 0, 0],
+        [35.331, 97.35235, 275.19667, 18770, null, null, null, 18770, 0, 0],
+        [34.924, 104.4355, 291.72144, 18507, null, null, null, 18507, 0, 0],
+        [34.1715, 99.6364, 278.50464, 19282, null, null, null, 19282, 0, 0]
+      ],
+      "caffeine": [
+        [30.0605, 94.39225, 271.24305, 19656, 15939, 3717, 3397, 3717, 0, 0],
+        [29.263, 100.2732, 257.845, 20205, 16381, 3824, 3504, 3824, 0, 0],
+        [30.2405, 102.0827, 279.25218, 19134, 15529, 3605, 3285, 3605, 0, 0],
+        [29.409, 99.7553, 275.51232, 20315, 16503, 3812, 3492, 3812, 0, 0],
+        [28.75, 96.23675, 250.86178, 20858, 16993, 3865, 3545, 3865, 0, 0]
+      ]
+    }
+  },
+  "calculation": {
+    "throughput": "iterations / 60 seconds",
+    "pairedLatencyImprovement": "(none - caffeine) / none * 100",
+    "pairedThroughputImprovement": "(caffeine iterations - none iterations) / none iterations * 100",
+    "repeatVariation": "(max(none) - min(none)) / mean(none) * 100",
+    "minimumMeaningfulDelta": "max(10%, repeatVariation)"
+  },
+  "derived": {
+    "hot": {
+      "p50PairedImprovementPercent": [25.1769, 21.0034, 22.3476, 23.2453, 20.5428],
+      "p50PairedMeanPercent": 22.4632,
+      "p95PairedImprovementPercent": [-1.816, 15.9772, 14.8889, 20.8083, 14.045],
+      "p95PairedMeanPercent": 12.7807,
+      "throughputPairedImprovementPercent": [13.4017, 11.4376, 10.2728, 17.1865, 11.9894],
+      "throughputPairedMeanPercent": 12.8576,
+      "noneP50RepeatVariationPercent": 8.286,
+      "noneP95RepeatVariationPercent": 15.7974,
+      "cacheHitRatioPercentRange": [100, 100]
+    },
+    "mixed": {
+      "p50PairedImprovementPercent": [14.7317, 17.8167, 14.408, 15.7914, 15.8656],
+      "p50PairedMeanPercent": 15.7227,
+      "p95PairedImprovementPercent": [7.9064, -3.993, -4.859, 4.4814, 3.4121],
+      "p95PairedMeanPercent": 1.3896,
+      "throughputPairedImprovementPercent": [5.5582, 8.187, 1.9393, 9.7693, 8.1734],
+      "throughputPairedMeanPercent": 6.7254,
+      "noneP50RepeatVariationPercent": 4.0947,
+      "noneP95RepeatVariationPercent": 8.007,
+      "cacheHitRatioPercentRange": [81.07, 81.47],
+      "assembleReductionPercent": 79.94
+    },
+    "allRuns": {
+      "commitGetFailureRate": 0,
+      "droppedIterations": 0
+    }
+  }
+}

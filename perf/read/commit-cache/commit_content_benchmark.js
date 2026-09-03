@@ -3,6 +3,8 @@ import exec from 'k6/execution';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 import {
+  benchmarkTargetCount,
+  mixedTargetIndex,
   summaryDataWithoutAuth,
   summaryLoad,
   utf8ByteLength,
@@ -14,28 +16,37 @@ const USER_PREFIX = __ENV.USER_PREFIX || 'perfuser';
 const USER_DOMAIN = __ENV.USER_DOMAIN || 'test.com';
 const USER_PASSWORD = __ENV.USER_PASSWORD || 'Testtest1';
 const USER_COUNT = Number(__ENV.USER_COUNT || 20);
-const DOCS_PER_USER = Number(__ENV.DOCS_PER_USER || 2);
-const MAIN_COMMITS = Number(__ENV.MAIN_COMMITS || 10);
+const DOCS_PER_USER = Number(__ENV.DOCS_PER_USER || 5);
+const MAIN_COMMITS = Number(__ENV.MAIN_COMMITS || 20);
 const BLOCKS_PER_COMMIT = Number(__ENV.BLOCKS_PER_COMMIT || 20);
 const RUN_ID = __ENV.RUN_ID;
 const SCENARIO = __ENV.SCENARIO || 'hot';
 const PROVIDER = __ENV.PROVIDER || 'local';
 const RUN_NUMBER = Number(__ENV.RUN_NUMBER || 1);
 const RESULT_ROOT = __ENV.RESULT_ROOT || 'perf/read/commit-cache/results';
-const COLD_TARGET_COUNT = 400;
+const COLD_TARGET_COUNT = benchmarkTargetCount(USER_COUNT, DOCS_PER_USER, MAIN_COMMITS);
+const HOT_TARGETS_PER_USER = 4;
 const MEASUREMENT_GATE_URL = __ENV.MEASUREMENT_GATE_URL;
 const MEASUREMENT_GATE_RETRIES = Number(__ENV.MEASUREMENT_GATE_RETRIES || 120);
 const MEASUREMENT_GATE_INTERVAL_SECONDS = Number(__ENV.MEASUREMENT_GATE_INTERVAL_SECONDS || 0.5);
 
-if (!['verify', 'cold', 'hot', 'mixed', 'cold_burst', 'saturation'].includes(SCENARIO)) {
+if (!['verify', 'warm_hot', 'cold', 'hot', 'mixed', 'cold_burst', 'saturation'].includes(SCENARIO)) {
   throw new Error(`Unsupported SCENARIO=${SCENARIO}`);
 }
-if (RUN_NUMBER < 1 || RUN_NUMBER > 3) {
-  throw new Error('RUN_NUMBER must be 1, 2, or 3');
+if (RUN_NUMBER < 1 || RUN_NUMBER > 5) {
+  throw new Error('RUN_NUMBER must be between 1 and 5');
 }
 function scenarioOptions() {
   if (SCENARIO === 'verify') {
     return { executor: 'shared-iterations', vus: 1, iterations: 1, exec: 'verifyResponses' };
+  }
+  if (SCENARIO === 'warm_hot') {
+    return {
+      executor: 'constant-vus',
+      vus: Number(__ENV.WARMUP_VUS || 50),
+      duration: __ENV.WARMUP_DURATION || '10s',
+      exec: 'runWarmHot',
+    };
   }
   if (SCENARIO === 'cold') {
     return {
@@ -49,7 +60,7 @@ function scenarioOptions() {
   if (SCENARIO === 'hot') {
     return {
       executor: 'constant-vus',
-      vus: Number(__ENV.HOT_VUS || 10),
+      vus: Number(__ENV.HOT_VUS || 50),
       duration: __ENV.HOT_DURATION || '60s',
       exec: 'runHot',
     };
@@ -57,7 +68,7 @@ function scenarioOptions() {
   if (SCENARIO === 'mixed') {
     return {
       executor: 'constant-vus',
-      vus: Number(__ENV.MIXED_VUS || 10),
+      vus: Number(__ENV.MIXED_VUS || 50),
       duration: __ENV.MIXED_DURATION || '60s',
       exec: 'runMixed',
     };
@@ -246,16 +257,16 @@ export function setup() {
     }
     users.push({ userNo, cookie, commits });
     allTargets.push(...commits);
-    hotTargets.push(...commits.slice(0, 2));
+    hotTargets.push(...commits.slice(0, HOT_TARGETS_PER_USER));
   }
-  if (USER_COUNT !== 20 || DOCS_PER_USER !== 2 || MAIN_COMMITS !== 10 || allTargets.length !== COLD_TARGET_COUNT) {
-    throw new Error(`commit_setup requires 20 users, 2 docs per user, 10 main commits per doc, and ${COLD_TARGET_COUNT} targets`);
+  if (allTargets.length !== COLD_TARGET_COUNT) {
+    throw new Error(`commit_setup expected ${COLD_TARGET_COUNT} total targets, got ${allTargets.length}`);
   }
-  if (hotTargets.length !== 40) throw new Error(`commit_setup expected 40 hot targets, got ${hotTargets.length}`);
-  const mixedHotTargets = users.flatMap((user) => user.commits.slice(0, 4));
-  if (mixedHotTargets.length !== 80) throw new Error(`commit_setup expected 80 mixed hot targets, got ${mixedHotTargets.length}`);
-  if (SCENARIO === 'mixed') warmup(mixedHotTargets);
-  if (['hot', 'saturation'].includes(SCENARIO)) warmup(hotTargets);
+  const expectedHotTargets = USER_COUNT * HOT_TARGETS_PER_USER;
+  if (hotTargets.length !== expectedHotTargets) {
+    throw new Error(`commit_setup expected ${expectedHotTargets} hot targets, got ${hotTargets.length}`);
+  }
+  if (['warm_hot', 'hot', 'mixed', 'saturation'].includes(SCENARIO)) warmup(hotTargets);
   awaitMeasurementRelease();
   return { users, allTargets, hotTargets };
 }
@@ -308,16 +319,19 @@ export function runCold(data) {
 
 export function runHot(data) {
   const { user, localIteration } = userIteration(data);
-  const target = user.commits[localIteration % 2];
+  const target = user.commits[localIteration % HOT_TARGETS_PER_USER];
   requestCommit(target, true);
+}
+
+export function runWarmHot(data) {
+  const { user, localIteration } = userIteration(data);
+  const target = user.commits[localIteration % HOT_TARGETS_PER_USER];
+  requestCommit(target, false);
 }
 
 export function runMixed(data) {
   const { user, localIteration } = userIteration(data);
-  const hotCount = 4;
-  const target = localIteration % 5 < 4
-    ? user.commits[localIteration % hotCount]
-    : user.commits[hotCount + (Math.floor(localIteration / 5) % (user.commits.length - hotCount))];
+  const target = user.commits[mixedTargetIndex(localIteration, user.commits.length, HOT_TARGETS_PER_USER)];
   requestCommit(target, true);
 }
 

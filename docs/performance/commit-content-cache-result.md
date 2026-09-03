@@ -1,8 +1,8 @@
 # 커밋 본문 캐시 로컬 벤치마크 최종 판정
 
-- 판정일: 2026-08-04 (KST)
+- 최초 판정일: 2026-08-04 (KST), 최종 구현 재측정: 2026-08-27 (KST)
 - 최종 판정: **단일 인스턴스 Caffeine 조건부 채택 (DONE_WITH_CONCERNS)**
-- 결론 한 줄: 수동 Caffeine 비교 실험에서 반복 조회 이득을 확인해 Caffeine을 선택했고, 최종 운영 구현은 Spring Cache 어노테이션으로 단순화했다. Hot/Mixed 개선율은 수동 구현의 측정 근거이며 최종 어노테이션 구현의 성능으로 일반화하지 않는다. 어노테이션 전환 과정의 API 관측에서는 동일 키 Cold Burst 50건에서 본문 조립 1회를 확인했고, 최종 코드의 재현 가능한 근거는 동시성 테스트다. JVM 조건을 대칭으로 맞춘 Cold는 `INCONCLUSIVE`로 판정했다.
+- 결론 한 줄: 최종 `@Cacheable(sync = true)` 구현을 2,000 commit working set에서 다시 측정해 Hot p50 22.5% 개선과 처리량 12.9% 증가를 확인했다. Hot p95는 평균 12.8% 감소해 보조 지표로 사용한다. Mixed는 p50 15.7% 개선과 본문 조립 79.9% 감소를 확인했고, 20% miss가 포함되는 p95는 직접 효과 평가에서 제외한다. 기존 Hot p95 17.8%와 Mixed p95 19.4%는 잘못된 warm-up과 구현 revision 차이 때문에 성과 근거에서 철회한다.
 
 ## 범위와 재현성
 
@@ -14,7 +14,28 @@
 - dataset: 사용자 20명 × 사용자당 문서 2개 × main commit 10개, 핵심 비교 block 500, main 데이터셋 `run_id=task10-20260802-c-b500-r01` 계열이다. 환경 파일은 `base_url`, health endpoint 및 비민감 구성만 저장하며 민감값은 기록하지 않는다.
 - staging 부하 테스트는 사용자 지시로 실행하지 않았고, 이번 작업에서도 실행하지 않았다.
 
-## 2026-08-03 Caffeine 비교 실험과 최종 구현 재검증
+## 2026-08-27 최종 구현 재측정과 정정
+
+- 상세 결과: [`commit-content-cache-rebenchmark-20260827.md`](./commit-content-cache-rebenchmark-20260827.md)
+- 최소 evidence: `perf/read/commit-cache/results/evidence/rebenchmark-20260827-summary.json`
+- 조건: 20 users × 5 docs × 20 commits = 2,000 targets, cache maximum size 400, 500 blocks, VU50, 60초, none/Caffeine 각 5회
+- Hot은 총 80개 key만 사전 적재했고, Mixed는 80%를 이 Hot set에, 20%를 나머지 1,920개 key에 요청했다.
+- 실행 순서는 1·3·5회 `none → caffeine`, 2·4회 `caffeine → none`으로 교대했다.
+
+| 조건 | No Cache | Caffeine | paired 변화 | cache 관측 | 판정 |
+| --- | ---: | ---: | ---: | --- | --- |
+| Hot p50 | 32.49 ms | 25.18 ms | **평균 22.5% 개선, 5/5** | hit 100%, miss·assemble 0 | 성과 근거 채택 |
+| Hot 처리량 | 321.52 req/s | 362.72 req/s | **평균 12.9% 증가, 5/5** | 측정 완료 count / 60초 | 성과 근거 채택 |
+| Mixed p50 | 35.06 ms | 29.54 ms | **평균 15.7% 개선, 5/5** | hit 81.07~81.47% | 성과 근거 채택 |
+| Mixed assemble | 평균 18,771회 | 평균 3,765회 | **79.9% 감소** | miss·eviction 5/5 발생 | 인과 검산 통과 |
+| Hot p95 | 110.79 ms | 96.25 ms | 평균 12.8%, 4/5 개선 | Hot hit 100% | 보조 성과 |
+| Mixed p95 | 100.07 ms | 98.55 ms | 참고값 | 20% miss 포함 | 직접 효과 평가 제외 |
+
+Hot은 측정 요청이 모두 캐시에 적중하므로 p95를 tail latency 보조 지표로 사용한다. Mixed는 요청의 20%가 cache miss이며 p95가 miss 경로에 포함되므로 캐시 적중의 직접 효과를 나타내는 지표로 사용하지 않는다.
+
+처리량은 setup과 measurement gate 대기가 포함된 `iterations.values.rate`가 아니라 `iterations.values.count / 60초`로 계산한다. 오류율과 dropped iteration은 20개 run 모두 0이다. 기존 수동 Caffeine 결과는 실험 이력으로만 남기며 현재 구현의 성과나 포트폴리오 수치로 사용하지 않는다.
+
+## 2026-08-03 과거 Caffeine 비교 실험 이력
 
 비교 실험에서는 수동 캐시 경계와 Caffeine을 사용했고, 이후 최종 운영 코드는 이를 `@Cacheable(sync = true)` 및 `@CacheEvict`로 단순화했다. 캐시 구현은 Caffeine 하나만 남겼고 Redis runtime 의존성·Compose 서비스·통합 테스트를 제거했다. Caffeine은 `expireAfterAccess=10분`, `maximumSize=400`, `recordStats()`를 사용한다. `commit.content.cache.enabled=false`는 성능 baseline과 운영상 즉시 비활성화를 위한 `NoOpCacheManager` 경로다.
 
@@ -29,13 +50,13 @@ MongoDB 조회 및 본문 조립 시간은 캐시 miss에서만 실행되는 `Co
 
 | 조건 | none p95 | 수동 Caffeine p95 | 3회 평균 p95 변화 | 반복 일관성 | cache 관측 |
 | --- | ---: | ---: | ---: | --- | --- |
-| Hot VU50 | 182.02 ms | 149.58 ms | **17.8% 개선** | p95 3/3 개선 | hit 19,797~21,467, miss·assemble 0 |
-| Mixed VU50 | 187.77 ms | 151.35 ms | **19.4% 개선** | p95 3/3 개선 | hit 20,484~21,689, miss·assemble 0 |
+| Hot VU50 | 182.02 ms | 149.58 ms | 과거 17.8% 관측 · **성과 근거 철회** | p95 3/3 개선 | hit 19,797~21,467, miss·assemble 0 |
+| Mixed VU50 | 187.77 ms | 151.35 ms | 과거 19.4% 관측 · **성과 근거 철회** | p95 3/3 개선 | hit 20,484~21,689, miss·assemble 0 |
 | Cold VU50 | 505.06 ms | 422.34 ms | 평균 16.4% 개선이나 **INCONCLUSIVE** | p95 2/3 개선, baseline 변동폭 약 26% | hit 0, miss·assemble 400, eviction 0 |
 
 `summary.json`의 `iterations.values.rate`는 k6 setup과 measurement gate 대기까지 포함한 전체 실행시간 기준이라 실제 조회 구간 처리량으로 사용하지 않는다. 위 최종 판정은 gate 해제 뒤 요청에 tag된 `op_commit_get_ms` p95만 사용한다.
 
-위 Hot/Mixed 수치는 최종 어노테이션 구현의 재측정 결과가 아니라 `62a2d19`의 수동 Caffeine 비교 실험 결과다. 최종 구현의 성능 개선율로 주장하지 않고, Caffeine 채택을 위한 사전 비교 근거로만 사용한다. 새 checkout에서는 커밋된 evidence 파일로 p95 평균과 개선율을 재계산할 수 있다.
+위 Hot/Mixed 수치는 최종 어노테이션 구현의 재측정 결과가 아니라 `62a2d19`의 수동 Caffeine 비교 실험 결과다. 현재 선택의 성과 근거로 사용하지 않고 실험 이력으로만 보존한다.
 
 Mixed는 80/20 대상 분포를 사용하지만 runner의 10초 사전 warm-up 동안 전체 working set이 채워져 본 측정 cache miss가 0이었다. 따라서 이 결과는 부분 miss 상황이 아니라 **더 넓은 working set의 steady-state warm 성능**으로 해석한다.
 
@@ -56,7 +77,7 @@ Mixed는 80/20 대상 분포를 사용하지만 runner의 10초 사전 warm-up �
 
 최초 최종 측정과 이전 수동 Caffeine 측정은 Cold에서 Caffeine만 verify 후 앱을 재시작해 `none`에 JVM/JIT 예열 이점이 남는 비대칭이 있었다. 따라서 해당 53.7% 및 약 56% 회귀 수치는 최종 Cold 근거에서 제외한다. 대칭 재측정은 2/3 개선, 1/3 악화였고 평균 개선폭도 baseline 변동폭보다 작아, one-hit 경로는 **체계적 회귀가 확인된 것이 아니라 아직 결론을 낼 수 없는 위험**으로 남긴다.
 
-최종 판정은 **Caffeine 조건부 채택**이다. 반복 조회에서는 3회 모두 의미 있는 개선을 유지했고, 단일 인스턴스에서 Redis의 네트워크·운영 복잡도를 추가할 근거는 없었다. 다만 실제 hit ratio가 낮거나 cold p95가 중요한 서비스라면 캐시가 손해이므로 다음 gate를 둔다.
+최종 판정은 **Caffeine 조건부 채택**이다. 최종 구현 재측정에서 Hot과 Mixed의 p50, Hot 처리량, assemble 감소를 확인했다. Hot p95는 보조 지표로 사용하고 Mixed p95는 20% miss 조건의 tail latency로 해석한다. 단일 인스턴스에서 Redis의 네트워크 경로와 운영 복잡도를 추가할 근거는 없었다. 실제 hit ratio가 낮거나 cold p95가 중요한 서비스라면 캐시가 손해일 수 있어 다음 gate를 둔다.
 
 - Grafana/Prometheus: `cache_gets_total`, `cache_evictions_total`, `cache_size`, `cache_puts_total`, `commit_content_assemble_seconds`
 - 경고 관점: hit ratio 하락, eviction 증가, assemble count 재상승, cold p95 상승을 함께 본다.

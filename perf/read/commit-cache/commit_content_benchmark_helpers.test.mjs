@@ -1,11 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  benchmarkTargetCount,
+  mixedTargetIndex,
   summaryDataWithoutAuth,
   summaryLoad,
   utf8ByteLength,
   validBlock,
 } from './commit_content_benchmark_helpers.mjs';
+
+test('확장 데이터셋은 캐시 최대 크기보다 충분히 크다', () => {
+  assert.equal(benchmarkTargetCount(20, 5, 20), 2000);
+  assert.ok(benchmarkTargetCount(20, 5, 20) > 400);
+});
+
+test('Mixed는 요청의 80%를 4개 hot key로 보내고 20%는 cold pool 전체를 순회한다', () => {
+  const indexes = Array.from({ length: 480 }, (_, iteration) => mixedTargetIndex(iteration, 100, 4));
+  const hotIndexes = indexes.filter((index) => index < 4);
+  const coldIndexes = indexes.filter((index) => index >= 4);
+
+  assert.equal(hotIndexes.length, 384);
+  assert.equal(coldIndexes.length, 96);
+  assert.deepEqual([...new Set(hotIndexes)].sort((a, b) => a - b), [0, 1, 2, 3]);
+  assert.deepEqual(
+    [...new Set(coldIndexes)].sort((a, b) => a - b),
+    Array.from({ length: 96 }, (_, index) => index + 4),
+  );
+});
 
 test('UTF-8 바이트 길이는 ASCII, 한글, 보충 평면 문자를 정확히 계산한다', () => {
   assert.equal(utf8ByteLength('abc'), 3);

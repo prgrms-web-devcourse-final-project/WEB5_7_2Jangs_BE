@@ -25,6 +25,7 @@ services:
       LOCAL_MINIO_ROOT_PASSWORD: ${LOCAL_MINIO_ROOT_PASSWORD:-docsa-local-password}
       LOCAL_MINIO_BUCKET: ${LOCAL_MINIO_BUCKET:-docsa-local}
       COMMIT_CONTENT_CACHE_ENABLED: ${COMMIT_CONTENT_CACHE_ENABLED:-true}
+      COMMIT_CONTENT_CACHE_MAXIMUM_SIZE: ${COMMIT_CONTENT_CACHE_MAXIMUM_SIZE:-400}
     depends_on:
       mysql:
         condition: service_healthy
