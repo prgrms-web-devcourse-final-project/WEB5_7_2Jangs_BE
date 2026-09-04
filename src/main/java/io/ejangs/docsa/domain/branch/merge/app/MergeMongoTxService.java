@@ -15,12 +15,13 @@ public class MergeMongoTxService {
     private final SaveWriter saveWriter;
 
     @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
-    public String createMongoPart(List<Map<String, Object>> content) {
+    public String createMongoPart(List<Map<String, Object>> content, String saveContentId) {
         SaveContent saveContent = SaveContent.builder()
+                .id(saveContentId)
                 .content(content)
                 .build();
 
-        SaveContent saved = saveWriter.saveSaveContent(saveContent);
+        SaveContent saved = saveWriter.insertSaveContent(saveContent);
         return saved.getId();
     }
 }

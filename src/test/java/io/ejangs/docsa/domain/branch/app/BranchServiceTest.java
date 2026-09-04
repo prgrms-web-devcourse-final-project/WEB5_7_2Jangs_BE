@@ -19,6 +19,11 @@ import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreatePlanFactory;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateRequestHasher;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +41,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BranchServiceTest {
+
+    private static final MongoIdsDto CREATE_PLAN = new MongoIdsDto(
+            List.of("save-1"), List.of(), List.of());
 
     @InjectMocks
     private BranchService branchService;
@@ -64,6 +72,21 @@ class BranchServiceTest {
     @Mock
     private MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
 
+    @Mock
+    private MongoCreateOperationService mongoCreateOperationService;
+
+    @Mock
+    private MongoCreatePlanFactory mongoCreatePlanFactory;
+
+    @Mock
+    private MongoCreateRequestHasher mongoCreateRequestHasher;
+
+    @BeforeEach
+    void setUpCreateSaga() {
+        lenient().when(mongoCreateRequestHasher.hash(any())).thenReturn("hash");
+        lenient().when(mongoCreatePlanFactory.singleSaveContent()).thenReturn(CREATE_PLAN);
+    }
+
     @Test
     @DisplayName("새 브랜치 이름이 중복되면 BRANCH_NAME_DUPLICATED")
     void createBranch_fail_whenDifferentNameButDuplicated() {
@@ -88,7 +111,7 @@ class BranchServiceTest {
 
         // when & then
         CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranch(documentId, request, userId));
+                () -> branchService.createBranch(documentId, request, userId, operationId()));
         assertEquals(BranchErrorCode.BRANCH_NAME_DUPLICATED, ex.getErrorCode());
         verifyNoInteractions(branchCreateOrchestrator);
     }
@@ -114,11 +137,12 @@ class BranchServiceTest {
         when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
         doNothing().when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
-        when(branchCreateOrchestrator.create(any()))
+        when(branchCreateOrchestrator.create(any(), eq(userId), anyString(), eq("hash"), eq(CREATE_PLAN)))
                 .thenReturn(new BranchCreateResponse(101L, 201L));
 
         // when
-        BranchCreateResponse response = branchService.createBranch(documentId, request, userId);
+        BranchCreateResponse response = branchService.createBranch(
+                documentId, request, userId, operationId());
 
         // then
         assertNotNull(response);
@@ -126,7 +150,8 @@ class BranchServiceTest {
         assertEquals(201L, response.saveId());
         ArgumentCaptor<BranchCreateContext> contextCaptor = ArgumentCaptor.forClass(
                 BranchCreateContext.class);
-        verify(branchCreateOrchestrator).create(contextCaptor.capture());
+        verify(branchCreateOrchestrator).create(
+                contextCaptor.capture(), eq(userId), anyString(), eq("hash"), eq(CREATE_PLAN));
 
         BranchCreateContext context = contextCaptor.getValue();
         assertSame(doc, context.doc());
@@ -158,12 +183,12 @@ class BranchServiceTest {
         when(commitReader.getById(commitId)).thenReturn(commit);
         doNothing().when(docReader).checkByIdAndUserId(documentId, userId);
         doNothing().when(branchReader).checkDuplicatedWithBranchName(documentId, "new-branch");
-        when(branchCreateOrchestrator.create(any()))
+        when(branchCreateOrchestrator.create(any(), eq(userId), anyString(), eq("hash"), eq(CREATE_PLAN)))
                 .thenReturn(new BranchCreateResponse(100L, 200L));
 
         // when
         BranchCreateResponse response =
-                branchService.createBranch(documentId, request, userId);
+                branchService.createBranch(documentId, request, userId, operationId());
 
         // then
         assertNotNull(response);
@@ -171,7 +196,8 @@ class BranchServiceTest {
         assertEquals(200L, response.saveId());
         ArgumentCaptor<BranchCreateContext> contextCaptor = ArgumentCaptor.forClass(
                 BranchCreateContext.class);
-        verify(branchCreateOrchestrator).create(contextCaptor.capture());
+        verify(branchCreateOrchestrator).create(
+                contextCaptor.capture(), eq(userId), anyString(), eq("hash"), eq(CREATE_PLAN));
 
         BranchCreateContext context = contextCaptor.getValue();
         assertSame(doc, context.doc());
@@ -203,7 +229,7 @@ class BranchServiceTest {
 
         // when & then
         CustomException ex = assertThrows(CustomException.class,
-                () -> branchService.createBranch(documentId, request, userId));
+                () -> branchService.createBranch(documentId, request, userId, operationId()));
         assertEquals(DocErrorCode.COMMIT_NOT_IN_DOCUMENT, ex.getErrorCode());
         verify(branchReader, never()).checkDuplicatedWithBranchName(anyLong(), anyString());
         verifyNoInteractions(branchCreateOrchestrator);
@@ -291,6 +317,10 @@ class BranchServiceTest {
         assertEquals(List.of("seq1", "seq2"), emitted.commitBlockSequenceIds());
         assertTrue(emitted.blockIds().containsAll(List.of("block1", "block2", "block3")));
         assertEquals(3, emitted.blockIds().size()); // block 중복 없이 수집되었는지도 검증
+    }
+
+    private static String operationId() {
+        return UUID.randomUUID().toString();
     }
 
 

@@ -16,7 +16,10 @@ import io.ejangs.docsa.global.outbox.event.app.DomainEventOutboxPublisher;
 import io.ejangs.docsa.global.outbox.event.model.AggregateType;
 import io.ejangs.docsa.global.outbox.event.model.DomainEventType;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationCompletionService;
+import io.ejangs.docsa.global.saga.create.entity.MongoCreateOperation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -31,15 +34,19 @@ public class DocCreateMySqlTxService {
     private final ThumbnailRepository thumbnailRepository;
 
     private final DomainEventOutboxPublisher domainEventOutboxPublisher;
+    private final MongoCreateOperationCompletionService operationCompletionService;
 
     @Value("${default.branch}")
     private String defaultBranchName;
 
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public DocCreateResponse createMySqlPart(String title, User user,
-            String saveContentId) {
+            String saveContentId, String operationId) {
 
-        Doc doc = docReader.create(user, title);
+        MongoCreateOperation operation = operationCompletionService.lockPending(operationId);
+        User managedUser = docReader.getUserOrThrow(user.getId());
+
+        Doc doc = docReader.create(managedUser, title);
         Branch defaultBranch = branchWriter.createBranch(doc, defaultBranchName);
         Save defaultSave = saveWriter.createSave(defaultBranch, saveContentId);
         RenewUpdatedAtHelper.touch(defaultSave);
@@ -48,7 +55,9 @@ public class DocCreateMySqlTxService {
                 .build());
 
         domainEventOutboxPublisher.publish(DomainEventType.DOC_CREATED, AggregateType.DOC,
-                doc.getId(), DocPayloadFactory.created(doc, user.getId(), defaultSave.getId()));
+                doc.getId(), DocPayloadFactory.created(doc, managedUser.getId(), defaultSave.getId()));
+
+        operationCompletionService.complete(operation, doc.getId(), defaultSave.getId());
 
         return DocMapper.toCreateResponse(doc, defaultSave);
     }

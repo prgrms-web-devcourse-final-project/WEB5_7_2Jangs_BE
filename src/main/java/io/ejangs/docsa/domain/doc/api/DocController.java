@@ -33,7 +33,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,10 +50,11 @@ public class DocController {
     @CreateDocDocs
     public ResponseEntity<DocCreateResponse> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestHeader("Idempotency-Key") UUID operationId,
             @Valid @RequestBody DocTitleRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(docCommandService.create(request, userDetails.getId()));
+                .body(docCommandService.create(request, userDetails.getId(), operationId.toString()));
     }
 
     @GetMapping("/sidebar")

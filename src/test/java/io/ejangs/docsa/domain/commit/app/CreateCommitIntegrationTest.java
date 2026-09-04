@@ -42,14 +42,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class CreateCommitIntegrationTest {
 
@@ -135,7 +134,8 @@ public class CreateCommitIntegrationTest {
                         blockOrders);
 
         CreateCommitResponse response =
-                commitService.createCommit(testDoc.getId(), request, testUser.getId());
+                commitService.createCommit(
+                        testDoc.getId(), request, testUser.getId(), UUID.randomUUID().toString());
 
         CommitResponse commit =
                 commitService.getCommit(testDoc.getId(), response.id(), testUser.getId());
@@ -162,27 +162,32 @@ public class CreateCommitIntegrationTest {
                         blockOrders);
 
         CreateCommitResponse response =
-                commitService.createCommit(doc.getId(), request, testUser.getId());
+                commitService.createCommit(
+                        doc.getId(), request, testUser.getId(), UUID.randomUUID().toString());
 
         Commit savedCommit = commitRepository.findById(response.id()).orElseThrow();
-        assertThat(savedCommit.getBranch().getRootCommit()).isNotNull();
-        assertThat(savedCommit.getBranch().getLeafCommit()).isNotNull();
+        Branch savedBranch = branchRepository.findById(savedCommit.getBranch().getId()).orElseThrow();
+        assertThat(savedBranch.getRootCommit()).isNotNull();
+        assertThat(savedBranch.getLeafCommit()).isNotNull();
     }
 
     @Test
-    @DisplayName("동일 요청 2회 재시도 시 커밋은 중복 생성된다(멱등키 미적용 상태)")
-    void create_Commit_DuplicateRequest_CreatesTwoCommits() {
+    @DisplayName("동일 Idempotency-Key 요청을 재시도하면 기존 커밋 결과를 반환한다")
+    void createCommitSameOperationReturnsExistingCommit() {
         long beforeCommitCount = commitRepository.count();
 
         CreateCommitRequest request =
                 new CreateCommitRequest("duplicate title", "description", baseBranch.getId(), blocks,
                         blockOrders);
 
-        CreateCommitResponse first = commitService.createCommit(testDoc.getId(), request, testUser.getId());
-        CreateCommitResponse second = commitService.createCommit(testDoc.getId(), request, testUser.getId());
+        String operationId = UUID.randomUUID().toString();
+        CreateCommitResponse first = commitService.createCommit(
+                testDoc.getId(), request, testUser.getId(), operationId);
+        CreateCommitResponse second = commitService.createCommit(
+                testDoc.getId(), request, testUser.getId(), operationId);
 
-        assertThat(first.id()).isNotEqualTo(second.id());
-        assertThat(commitRepository.count()).isEqualTo(beforeCommitCount + 2);
+        assertThat(first.id()).isEqualTo(second.id());
+        assertThat(commitRepository.count()).isEqualTo(beforeCommitCount + 1);
     }
 
     @Test
@@ -199,7 +204,8 @@ public class CreateCommitIntegrationTest {
                         List.of("aa1", "aa2", "aa3", "aa4", "not-exist-editor-id")
                 );
 
-        assertThatThrownBy(() -> commitService.createCommit(testDoc.getId(), request, testUser.getId()))
+        assertThatThrownBy(() -> commitService.createCommit(
+                testDoc.getId(), request, testUser.getId(), UUID.randomUUID().toString()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(BlockSequenceErrorCode.BLOCK_SEQUENCE_INVALID.getMessage());
 
@@ -208,8 +214,10 @@ public class CreateCommitIntegrationTest {
 
     @Nested
     @DisplayName("MySQL 실패 + Mongo 보상")
-    @Transactional
     class MySqlFailureCompensationTest {
+
+        @Autowired
+        private CommitService commitService;
 
         @MockitoBean
         private CommitMySqlTxService commitMySqlTxService;
@@ -224,10 +232,11 @@ public class CreateCommitIntegrationTest {
             CreateCommitRequest request =
                     new CreateCommitRequest("mysql fail", "description", baseBranch.getId(), blocks, blockOrders);
 
-            when(commitMySqlTxService.createMySqlPart(any(), any(), any(), anyString()))
+            when(commitMySqlTxService.createMySqlPart(any(), any(), any(), anyString(), anyString()))
                     .thenThrow(new RuntimeException("mysql fail"));
 
-            assertThatThrownBy(() -> commitService.createCommit(testDoc.getId(), request, testUser.getId()))
+            assertThatThrownBy(() -> commitService.createCommit(
+                    testDoc.getId(), request, testUser.getId(), UUID.randomUUID().toString()))
                     .isInstanceOf(CustomException.class)
                             .hasMessage(CommitErrorCode.FAIL_CREATE_COMMIT.getMessage());
 

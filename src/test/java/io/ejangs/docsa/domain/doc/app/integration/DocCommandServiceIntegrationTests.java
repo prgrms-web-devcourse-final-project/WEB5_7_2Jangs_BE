@@ -35,6 +35,7 @@ import io.ejangs.docsa.global.outbox.mongo.dao.mysql.MongoDeleteOutboxRepository
 import io.ejangs.docsa.global.outbox.mongo.entity.MongoDeleteOutbox;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 @SpringBootTest
-@Transactional
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class DocCommandServiceIntegrationTests {
@@ -94,7 +94,7 @@ public class DocCommandServiceIntegrationTests {
         DocTitleRequest request = new DocTitleRequest(title);
 
         // when: 문서 생성 요청
-        DocCreateResponse response = docCommandService.create(request, user.getId());
+        DocCreateResponse response = docCommandService.create(request, user.getId(), operationId());
 
         // then: 문서 저장 검증
         Doc savedDoc = docRepository.findById(response.id())
@@ -150,10 +150,10 @@ public class DocCommandServiceIntegrationTests {
             User user = userRepository.save(DocTestUtils.createUser());
             DocTitleRequest request = new DocTitleRequest("Mongo 실패 케이스");
 
-            when(saveContentRepository.save(any()))
+            when(saveContentRepository.insert(any(SaveContent.class)))
                     .thenThrow(new MongoTimeoutException("Mongo 연결 실패"));
 
-            assertThatThrownBy(() -> docCommandService.create(request, user.getId()))
+            assertThatThrownBy(() -> docCommandService.create(request, user.getId(), operationId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(DatabaseErrorCode.DATABASE_ERROR.getMessage());
         }
@@ -187,11 +187,11 @@ public class DocCommandServiceIntegrationTests {
             long beforeSaveContentCount = saveContentRepository.count();
 
             // Mongo는 정상 저장되고, MySQL 파트에서 예외가 터진 상황
-            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
+            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString(), anyString()))
                     .thenThrow(new RuntimeException("MySQL 생성 실패"));
 
             // when & then
-            assertThatThrownBy(() -> docCommandService.create(request, user.getId()))
+            assertThatThrownBy(() -> docCommandService.create(request, user.getId(), operationId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
@@ -232,11 +232,11 @@ public class DocCommandServiceIntegrationTests {
             DocTitleRequest request = new DocTitleRequest("보상 실패 케이스");
 
             // MySQL 파트 실패
-            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString()))
+            when(docCreateMySqlTxService.createMySqlPart(any(), any(), anyString(), anyString()))
                     .thenThrow(new RuntimeException("MySQL 생성 실패"));
 
             // when & then
-            assertThatThrownBy(() -> docCommandService.create(request, user.getId()))
+            assertThatThrownBy(() -> docCommandService.create(request, user.getId(), operationId()))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(DocErrorCode.FAIL_CREATE_DOCUMENT.getMessage());
 
@@ -254,10 +254,11 @@ public class DocCommandServiceIntegrationTests {
         // given
         User user = userRepository.save(DocTestUtils.createUser());
         String title = "중복 제목 테스트";
-        docCommandService.create(new DocTitleRequest(title), user.getId()); // 첫 번째 저장
+        docCommandService.create(new DocTitleRequest(title), user.getId(), operationId()); // 첫 번째 저장
 
         // when & then
-        assertThatThrownBy(() -> docCommandService.create(new DocTitleRequest(title), user.getId()))
+        assertThatThrownBy(() -> docCommandService.create(
+                new DocTitleRequest(title), user.getId(), operationId()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("이미 사용중인 제목입니다.");
     }
@@ -271,10 +272,14 @@ public class DocCommandServiceIntegrationTests {
 
         // when & then
         CustomException ex = assertThrows(CustomException.class, () ->
-                docCommandService.create(request, nonexistentUserId)
+                docCommandService.create(request, nonexistentUserId, operationId())
         );
 
         assertEquals(UserErrorCode.USER_NOT_FOUND, ex.getErrorCode());
+    }
+
+    private static String operationId() {
+        return UUID.randomUUID().toString();
     }
 
 }

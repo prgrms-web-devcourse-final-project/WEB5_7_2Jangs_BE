@@ -19,11 +19,17 @@ public class SaveWriter {
     private final SaveContentRepository saveContentRepository;
     private final SaveRepository saveRepository;
 
-    public SaveContent createSaveContent() {
+    public SaveContent insertSaveContent(String saveContentId) {
+        return insertSaveContent(SaveContent.builder()
+                .id(saveContentId)
+                .build());
+    }
+
+    public SaveContent insertSaveContent(SaveContent saveContent) {
         try {
-            return saveContentRepository.save(SaveContent.builder().build());
+            return saveContentRepository.insert(saveContent);
         } catch (Exception e) {
-            log.error("[Mongo] DefaultSaveContent 생성 실패 - {}", e.getMessage(), e);
+            log.error("[Mongo] SaveContent 생성 실패 - {}", e.getMessage(), e);
             throw new CustomException(DatabaseErrorCode.DATABASE_ERROR);
         }
     }

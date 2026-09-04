@@ -22,7 +22,8 @@ public class MongoDeleteJobEnqueuer {
      * originId는 outbox 중복 생성을 막기 위한 기준 ID다.
      * 실제 값의 의미는 각 생성 메서드의 파라미터 이름으로 표현한다.
      * - 삭제 outbox: 삭제 요청의 기준이 된 MySQL id
-     * - 보상 outbox: Mongo에 먼저 생성된 데이터의 id
+     * - 기존 보상 outbox: Mongo에 먼저 생성된 데이터의 id
+     * - Durable Saga 보상 outbox: 생성 작업의 operationId
      */
     public MongoDeleteOutbox enqueueDocDeletion(Long docId, MongoIdsDto ids) {
         return enqueue(TriggerType.DELETE, DomainType.DOC, docId, ids);
@@ -50,6 +51,14 @@ public class MongoDeleteJobEnqueuer {
 
     public MongoDeleteOutbox enqueueMergeCompensation(String saveMongoId, MongoIdsDto ids) {
         return enqueue(TriggerType.COMPENSATE, DomainType.MERGE, saveMongoId, ids);
+    }
+
+    public MongoDeleteOutbox enqueueCreateCompensation(
+            String operationId,
+            DomainType domainType,
+            MongoIdsDto ids
+    ) {
+        return enqueue(TriggerType.COMPENSATE, domainType, operationId, ids);
     }
 
     private MongoDeleteOutbox enqueue(

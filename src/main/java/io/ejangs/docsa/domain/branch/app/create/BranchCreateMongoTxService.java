@@ -17,13 +17,14 @@ public class BranchCreateMongoTxService {
     private final SaveContentRepository saveContentRepository;
 
     @Transactional(transactionManager = "mongoTransactionManager", rollbackFor = Exception.class)
-    public String createSaveContentFromCommit(String commitMongoId) {
+    public String createSaveContentFromCommit(String commitMongoId, String saveContentId) {
         List<Map<String, Object>> blockContents = commitContentAssembler.assemble(commitMongoId);
 
         SaveContent saveContent = SaveContent.builder()
+                .id(saveContentId)
                 .content(blockContents)
                 .build();
 
-        return saveContentRepository.save(saveContent).getId();
+        return saveContentRepository.insert(saveContent).getId();
     }
 }
