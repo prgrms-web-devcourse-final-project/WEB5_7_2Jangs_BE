@@ -53,6 +53,13 @@ cloud:
       public-base-url: ${CDN_URL}
 
 mongo:
+  create:
+    operation:
+      worker:
+        enabled: true
+        fixed-delay: PT1M
+        initial-delay: PT0S
+        pending-timeout: PT5M
   delete:
     outbox:
       worker:

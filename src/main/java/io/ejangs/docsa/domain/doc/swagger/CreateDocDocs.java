@@ -4,6 +4,8 @@ import io.ejangs.docsa.domain.doc.dto.request.DocTitleRequest;
 import io.ejangs.docsa.domain.doc.dto.response.DocCreateResponse;
 import io.ejangs.docsa.global.exception.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,6 +22,14 @@ import org.springframework.http.MediaType;
 @Operation(
         summary = "문서 생성",
         description = "문서를 생성하면 기본 브랜치와 저장을 생성하고, 생성된 문서와 저장의 ID를 반환",
+        parameters = @Parameter(
+                name = "Idempotency-Key",
+                description = "생성 요청을 식별하는 UUID. 같은 요청을 재시도할 때 같은 값을 사용합니다.",
+                example = "550e8400-e29b-41d4-a716-446655440000",
+                required = true,
+                in = ParameterIn.HEADER,
+                schema = @Schema(type = "string", format = "uuid")
+        ),
         requestBody = @RequestBody(
                 content = @Content(
                         schema = @Schema(implementation = DocTitleRequest.class),
@@ -35,7 +45,7 @@ import org.springframework.http.MediaType;
         ),
         responses = {
                 @ApiResponse(
-                        responseCode = "200",
+                        responseCode = "201",
                         description = "문서 생성 성공(기본 브랜치/저장 생성)",
                         content = @Content(
                                 schema = @Schema(implementation = DocCreateResponse.class),
@@ -106,6 +116,12 @@ import org.springframework.http.MediaType;
                                                 """
                                 )
                         )
+                ),
+                @ApiResponse(
+                        responseCode = "409",
+                        description = "생성 작업 충돌 - CREATE_OPERATION_IN_PROGRESS, "
+                                + "CREATE_OPERATION_CANCELLED 또는 IDEMPOTENCY_KEY_REUSED",
+                        content = @Content(schema = @Schema(implementation = ErrorResponse.class))
                 ),
                 @ApiResponse(
                         responseCode = "500",

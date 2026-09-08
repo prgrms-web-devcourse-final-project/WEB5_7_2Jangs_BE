@@ -21,7 +21,8 @@ public class SaveContent {
     private List<Map<String, Object>> content;
 
     @Builder
-    private SaveContent(List<Map<String, Object>> content) {
+    private SaveContent(String id, List<Map<String, Object>> content) {
+        this.id = id;
         this.content = content != null ? content : new ArrayList<>();
     }
 

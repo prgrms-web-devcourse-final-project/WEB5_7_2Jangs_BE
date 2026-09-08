@@ -19,7 +19,8 @@ public class CommitBlockSequence {
     private List<String> blockOrders;
 
     @Builder
-    private CommitBlockSequence(List<String> blockOrders) {
+    private CommitBlockSequence(String id, List<String> blockOrders) {
+        this.id = id;
         this.blockOrders = blockOrders;
     }
 }

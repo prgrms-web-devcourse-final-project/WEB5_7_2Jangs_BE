@@ -18,6 +18,11 @@ import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
 import io.ejangs.docsa.global.outbox.mongo.app.MongoDeleteJobEnqueuer;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
 import io.ejangs.docsa.global.util.RenewUpdatedAtHelper;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationStart;
+import io.ejangs.docsa.global.saga.create.app.MongoCreatePlanFactory;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateRequestHasher;
+import io.ejangs.docsa.global.saga.create.entity.MongoCreateOperationType;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -40,10 +45,24 @@ public class CommitService {
     private final CommitContentCache commitContentCache;
     private final MongoIdsCollector mongoIdsCollector;
     private final MongoDeleteJobEnqueuer mongoDeleteJobEnqueuer;
+    private final MongoCreateOperationService mongoCreateOperationService;
+    private final MongoCreatePlanFactory mongoCreatePlanFactory;
+    private final MongoCreateRequestHasher mongoCreateRequestHasher;
 
     public CreateCommitResponse createCommit(Long docId,
             CreateCommitRequest request,
-            Long userId) {
+            Long userId,
+            String operationId) {
+
+        String requestHash = mongoCreateRequestHasher.hash(
+                List.of(MongoCreateOperationType.COMMIT, userId, docId, request)
+        );
+        MongoCreateOperationStart existing = mongoCreateOperationService.findExisting(
+                operationId, userId, MongoCreateOperationType.COMMIT, requestHash
+        ).orElse(null);
+        if (existing != null) {
+            return new CreateCommitResponse(existing.resultEntityId());
+        }
 
         branchReader.checkBranchInDocOwnedByUser(docId, request.branchId(), userId);
 
@@ -52,10 +71,12 @@ public class CommitService {
 
         String baseCommitCbsMongoId = commitReader.resolveBaseCommitCbsMongoId(branch);
 
-        Commit newCommit = commitCreateOrchestrator.create(request, baseCommitCbsMongoId, doc,
-                branch);
-
-        return CommitMapper.toCreateCommitResponse(newCommit);
+        int newBlockCount = request.blocks() == null ? 0 : request.blocks().size();
+        MongoIdsDto plan = mongoCreatePlanFactory.commit(newBlockCount);
+        return commitCreateOrchestrator.create(
+                request, baseCommitCbsMongoId, doc, branch,
+                userId, operationId, requestHash, plan
+        );
     }
 
     public CommitResponse getCommit(Long docId, Long commitId, Long userId) {

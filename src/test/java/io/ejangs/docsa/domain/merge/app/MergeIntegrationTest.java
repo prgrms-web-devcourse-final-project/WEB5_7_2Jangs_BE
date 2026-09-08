@@ -25,16 +25,15 @@ import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
-@Transactional
 @ActiveProfiles("test")
 class MergeIntegrationTest {
 
@@ -115,7 +114,8 @@ class MergeIntegrationTest {
 
         // when
         MergeResponse response =
-                mergeService.merge(testDoc.getId(), request, userDetails.getId());
+                mergeService.merge(
+                        testDoc.getId(), request, userDetails.getId(), UUID.randomUUID().toString());
 
         assertThat(response).isNotNull();
         assertThat(response.branchId()).isNotNull();
@@ -150,7 +150,8 @@ class MergeIntegrationTest {
 
         // when
         MergeResponse response =
-                mergeService.merge(testDoc.getId(), request, userDetails.getId());
+                mergeService.merge(
+                        testDoc.getId(), request, userDetails.getId(), UUID.randomUUID().toString());
 
         assertThat(response).isNotNull();
         Save createdSave = saveRepository.findById(response.saveId()).orElse(null);
@@ -168,7 +169,8 @@ class MergeIntegrationTest {
 
         // when & then
         assertThatThrownBy(
-                () -> mergeService.merge(nonExistentDocId, request, userDetails.getId())
+                () -> mergeService.merge(
+                        nonExistentDocId, request, userDetails.getId(), UUID.randomUUID().toString())
         )
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(DocErrorCode.DOCUMENT_NOT_FOUND.getMessage());
@@ -187,7 +189,8 @@ class MergeIntegrationTest {
 
         // when & then
         assertThatThrownBy(
-                () -> mergeService.merge(testDoc.getId(), request, userDetails.getId())
+                () -> mergeService.merge(
+                        testDoc.getId(), request, userDetails.getId(), UUID.randomUUID().toString())
         )
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
@@ -206,7 +209,8 @@ class MergeIntegrationTest {
 
         // when & then
         assertThatThrownBy(
-                () -> mergeService.merge(testDoc.getId(), request, userDetails.getId())
+                () -> mergeService.merge(
+                        testDoc.getId(), request, userDetails.getId(), UUID.randomUUID().toString())
         )
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(CommitErrorCode.COMMIT_NOT_FOUND.getMessage());
@@ -222,7 +226,8 @@ class MergeIntegrationTest {
                 blockContent
         );
 
-        assertThatThrownBy(() -> mergeService.merge(testDoc.getId(), request, userDetails.getId()))
+        assertThatThrownBy(() -> mergeService.merge(
+                testDoc.getId(), request, userDetails.getId(), UUID.randomUUID().toString()))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(CommitErrorCode.INVALID_MERGE_REQUEST.getMessage());
     }

@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,9 +33,12 @@ public class MergeController {
     public ResponseEntity<MergeResponse> merge(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable("docId") Long docId,
+            @RequestHeader("Idempotency-Key") UUID operationId,
             @RequestBody @Valid MergeRequest mergeRequest) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(mergeService.merge(docId, mergeRequest, userDetails.getId()));
+                .body(mergeService.merge(
+                        docId, mergeRequest, userDetails.getId(), operationId.toString()
+                ));
     }
 }

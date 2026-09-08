@@ -28,6 +28,11 @@ import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BranchErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.CommitErrorCode;
 import io.ejangs.docsa.global.exception.errorcode.DocErrorCode;
+import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreatePlanFactory;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateRequestHasher;
+import java.util.List;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +44,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MergeServiceMockTest {
+
+    private static final String OPERATION_ID = "550e8400-e29b-41d4-a716-446655440000";
+    private static final MongoIdsDto PLAN = new MongoIdsDto(List.of("save-1"), List.of(), List.of());
 
     @Mock
     private DocReader docReader;
@@ -54,6 +62,15 @@ class MergeServiceMockTest {
 
     @Mock
     private MergeOrchestrator mergeOrchestrator;
+
+    @Mock
+    private MongoCreateOperationService mongoCreateOperationService;
+
+    @Mock
+    private MongoCreatePlanFactory mongoCreatePlanFactory;
+
+    @Mock
+    private MongoCreateRequestHasher mongoCreateRequestHasher;
 
     @InjectMocks
     private MergeService mergeService;
@@ -72,6 +89,8 @@ class MergeServiceMockTest {
         doc = CommitMockTestUtils.createDoc(user);
         baseCommit = org.mockito.Mockito.mock(Commit.class);
         targetCommit = org.mockito.Mockito.mock(Commit.class);
+        org.mockito.Mockito.lenient().when(mongoCreateRequestHasher.hash(any())).thenReturn("hash");
+        org.mockito.Mockito.lenient().when(mongoCreatePlanFactory.singleSaveContent()).thenReturn(PLAN);
     }
 
     @Test
@@ -88,7 +107,8 @@ class MergeServiceMockTest {
         MergeResponse expected = new MergeResponse(999L, 1001L);
         doReturn(expected)
                 .when(mergeOrchestrator)
-                .merge(any(MergeContext.class), any(MergeRequest.class));
+                .merge(any(MergeContext.class), any(MergeRequest.class), eq(userId),
+                        eq(OPERATION_ID), eq("hash"), eq(PLAN));
 
         MergeRequest request = new MergeRequest(
                 "merged-branch",
@@ -97,7 +117,7 @@ class MergeServiceMockTest {
                 Collections.emptyList()
         );
 
-        var response = mergeService.merge(docId, request, userId);
+        var response = mergeService.merge(docId, request, userId, OPERATION_ID);
 
         assertThat(response).isEqualTo(expected);
         verify(branchReader).checkDuplicatedWithBranchName(docId, "merged-branch");
@@ -108,7 +128,7 @@ class MergeServiceMockTest {
                         context.doc().equals(doc)
                                 && context.baseCommit().equals(baseCommit)
                                 && context.targetCommit().equals(targetCommit)),
-                eq(request)
+                eq(request), eq(userId), eq(OPERATION_ID), eq("hash"), eq(PLAN)
         );
     }
 
@@ -128,7 +148,7 @@ class MergeServiceMockTest {
                 Collections.emptyList()
         );
 
-        assertThatThrownBy(() -> mergeService.merge(docId, request, userId))
+        assertThatThrownBy(() -> mergeService.merge(docId, request, userId, OPERATION_ID))
                 .isInstanceOf(CustomException.class);
 
         verifyNoInteractions(commitReader);
@@ -154,7 +174,7 @@ class MergeServiceMockTest {
                 Collections.emptyList()
         );
 
-        assertThatThrownBy(() -> mergeService.merge(docId, request, userId))
+        assertThatThrownBy(() -> mergeService.merge(docId, request, userId, OPERATION_ID))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("동일한 커밋을 병합할 수 없습니다.");
 
@@ -177,7 +197,7 @@ class MergeServiceMockTest {
         doThrow(new CustomException(DocErrorCode.DOCUMENT_NOT_FOUND))
                 .when(docReader).getByIdAndUserId(docId, userId);
 
-        assertThatThrownBy(() -> mergeService.merge(docId, request, userId))
+        assertThatThrownBy(() -> mergeService.merge(docId, request, userId, OPERATION_ID))
                 .isInstanceOf(CustomException.class);
 
         verifyNoInteractions(mergeOrchestrator);

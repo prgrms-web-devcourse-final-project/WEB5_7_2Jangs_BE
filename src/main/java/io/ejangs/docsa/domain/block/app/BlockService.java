@@ -19,6 +19,19 @@ public class BlockService {
         return blockRepository.saveAll(blocks);
     }
 
+    public List<Block> insertBlocks(List<Map<String, Object>> blockDataList, List<String> blockIds) {
+        if (blockDataList.size() != blockIds.size()) {
+            throw new IllegalArgumentException("block data and planned ids must have the same size");
+        }
+        List<Block> blocks = java.util.stream.IntStream.range(0, blockDataList.size())
+                .mapToObj(index -> Block.builder()
+                        .id(blockIds.get(index))
+                        .content(blockDataList.get(index))
+                        .build())
+                .toList();
+        return blockRepository.insert(blocks);
+    }
+
     public void deleteAll(List<Block> savedBlock) {
         blockRepository.deleteAll(savedBlock);
     }

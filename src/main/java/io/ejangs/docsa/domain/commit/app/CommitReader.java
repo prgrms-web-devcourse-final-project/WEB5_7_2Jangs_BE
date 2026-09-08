@@ -20,7 +20,7 @@ public class CommitReader {
 
     @Transactional(readOnly = true)
     public Commit getById(Long commitId) {
-        return commitRepository.findById(commitId)
+        return commitRepository.findWithBranchAndDocById(commitId)
                 .orElseThrow(() -> new CustomException(CommitErrorCode.COMMIT_NOT_FOUND));
     }
 

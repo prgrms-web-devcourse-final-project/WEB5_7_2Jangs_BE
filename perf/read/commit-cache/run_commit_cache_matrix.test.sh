@@ -108,6 +108,8 @@ STUB
 set -euo pipefail
 printf 'k6 scenario=%s result_root=%s provider=%s blocks=%s run=%s\n' \
   "$SCENARIO" "$RESULT_ROOT" "$PROVIDER" "$BLOCKS_PER_COMMIT" "$RUN_NUMBER" >>"$COMMAND_LOG"
+printf 'k6 dataset users=%s docs=%s commits=%s cache_max=%s\n' \
+  "$USER_COUNT" "$DOCS_PER_USER" "$MAIN_COMMITS" "$COMMIT_CONTENT_CACHE_MAXIMUM_SIZE" >>"$COMMAND_LOG"
 if [[ -n "${MEASUREMENT_GATE_URL:-}" ]]; then
   printf 'k6 gate_url=%s\n' "$MEASUREMENT_GATE_URL" >>"$COMMAND_LOG"
 fi
@@ -125,6 +127,7 @@ output_dir="$RESULT_ROOT/$PROVIDER/blocks-$BLOCKS_PER_COMMIT/$SCENARIO/$LOAD_PRO
 mkdir -p "$output_dir"
 printf '{"scenario":"%s"}\n' "$SCENARIO" >"$output_dir/summary.json"
 if [[ "$SCENARIO" == verify ]]; then printf 'verify_complete\n' >>"$ORDER_LOG"; fi
+if [[ "$SCENARIO" == warm_hot ]]; then printf 'warm_hot_complete\n' >>"$ORDER_LOG"; fi
 if [[ -n "${MEASUREMENT_GATE_URL:-}" && -n "${K6_MAIN_EXIT:-}" ]]; then exit "$K6_MAIN_EXIT"; fi
 STUB
 
@@ -205,10 +208,35 @@ test_redis_provider_and_invalid_run_are_rejected() {
   fi
   [[ ! -s "$case_dir/commands.log" ]] || fail 'provider 검증 전에 외부 명령을 실행했습니다'
 
-  if run_runner "$case_dir" PROVIDER=none BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=4 BASE_URL=http://localhost:8080 >/dev/null 2>&1; then
+  if run_runner "$case_dir" PROVIDER=none BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=6 BASE_URL=http://localhost:8080 >/dev/null 2>&1; then
     fail '허용하지 않은 run 번호를 허용했습니다'
   fi
   [[ ! -s "$case_dir/commands.log" ]] || fail 'run 번호 검증 전에 외부 명령을 실행했습니다'
+}
+
+test_run_five_and_expanded_dataset_are_supported() {
+  local case_dir="$TMP_ROOT/run-five"
+  run_runner "$case_dir" PROVIDER=none BLOCKS_PER_COMMIT=500 PATTERN=mixed RUN_NO=5 \
+    BASE_URL=http://localhost:8080 >/dev/null
+
+  assert_contains "$case_dir/commands.log" 'k6 dataset users=20 docs=5 commits=20 cache_max=400'
+  assert_contains "$case_dir/results/none/blocks-500/mixed/vus-50/run-5/environment.txt" 'target_count=2000'
+  assert_contains "$case_dir/results/none/blocks-500/mixed/vus-50/run-5/environment.txt" 'cache_maximum_size=400'
+}
+
+test_canonical_rebenchmark_rejects_workload_drift() {
+  local valid_dir="$TMP_ROOT/canonical-valid"
+  local invalid_dir="$TMP_ROOT/canonical-invalid"
+  run_runner "$valid_dir" PROVIDER=none BLOCKS_PER_COMMIT=500 PATTERN=mixed RUN_NO=5 \
+    BASE_URL=http://localhost:8080 CANONICAL_REBENCHMARK=true >/dev/null
+  assert_contains "$valid_dir/results/none/blocks-500/mixed/vus-50/run-5/environment.txt" \
+    'canonical_rebenchmark=true'
+
+  if run_runner "$invalid_dir" PROVIDER=none BLOCKS_PER_COMMIT=500 PATTERN=mixed RUN_NO=5 \
+      BASE_URL=http://localhost:8080 CANONICAL_REBENCHMARK=true USER_COUNT=10 >/dev/null 2>&1; then
+    fail 'canonical 재측정에서 변경된 user count를 허용했습니다'
+  fi
+  [[ ! -s "$invalid_dir/commands.log" ]] || fail 'canonical 조건 검증 전에 외부 명령을 실행했습니다'
 }
 
 test_snapshot_fields_reject_embedded_credentials() {
@@ -233,6 +261,16 @@ test_none_and_caffeine_set_cache_enabled_flag() {
       assert_contains "$case_dir/commands.log" 'cache_enabled=true'
     fi
   done
+}
+
+test_prebuilt_image_can_skip_network_rebuild() {
+  local case_dir="$TMP_ROOT/prebuilt"
+  run_runner "$case_dir" PROVIDER=none BLOCKS_PER_COMMIT=100 PATTERN=cold RUN_NO=1 \
+    BASE_URL=http://localhost:8080 REBUILD_APP=false >/dev/null
+
+  assert_contains "$case_dir/commands.log" 'compose -f '
+  assert_contains "$case_dir/commands.log" 'up -d --force-recreate app'
+  assert_not_contains "$case_dir/commands.log" 'up -d --build --force-recreate app'
 }
 
 test_stale_result_directory_is_rejected() {
@@ -287,9 +325,10 @@ test_cold_has_no_warmup_and_hot_mixed_use_isolated_warmup() {
     warm_dir="$TMP_ROOT/$pattern-order"
     run_runner "$warm_dir" PROVIDER=caffeine BLOCKS_PER_COMMIT=100 PATTERN="$pattern" RUN_NO=1 BASE_URL=http://localhost:8080 >/dev/null
     assert_count "$warm_dir/commands.log" 1 'k6 scenario=verify'
-    assert_count "$warm_dir/commands.log" 2 "k6 scenario=$pattern"
+    assert_count "$warm_dir/commands.log" 1 'k6 scenario=warm_hot'
+    assert_count "$warm_dir/commands.log" 1 "k6 scenario=$pattern"
     assert_contains "$warm_dir/commands.log" 'commit-cache-warmup.'
-    [[ -f "$warm_dir/results/caffeine/blocks-100/$pattern/vus-10/run-1/summary.json" ]] || fail '본 측정 summary가 없습니다'
+    [[ -f "$warm_dir/results/caffeine/blocks-100/$pattern/vus-50/run-1/summary.json" ]] || fail '본 측정 summary가 없습니다'
   done
 }
 
@@ -308,6 +347,19 @@ test_caffeine_cold_resets_after_verify_before_main_setup() {
   [[ -n "$verify_line" && -n "$reset_line" && -n "$setup_line" \
       && "$verify_line" -lt "$reset_line" && "$reset_line" -lt "$setup_line" ]] \
     || fail 'Caffeine reset 순서가 verify → reset → 본 setup이 아닙니다'
+}
+
+test_caffeine_mixed_resets_verify_cache_before_hot_only_warmup() {
+  local case_dir="$TMP_ROOT/caffeine-mixed-reset"
+  local verify_line reset_line warm_line setup_line
+  run_runner "$case_dir" PROVIDER=caffeine BLOCKS_PER_COMMIT=100 PATTERN=mixed RUN_NO=1 BASE_URL=http://localhost:8080 >/dev/null
+  verify_line="$(line_number "$case_dir/order.log" 'verify_complete')"
+  reset_line="$(line_number "$case_dir/order.log" 'caffeine_reset')"
+  warm_line="$(line_number "$case_dir/order.log" 'warm_hot_complete')"
+  setup_line="$(line_number "$case_dir/order.log" 'main_setup_complete')"
+  [[ -n "$verify_line" && -n "$reset_line" && -n "$warm_line" && -n "$setup_line" \
+      && "$verify_line" -lt "$reset_line" && "$reset_line" -lt "$warm_line" && "$warm_line" -lt "$setup_line" ]] \
+    || fail 'Mixed 준비 순서가 verify → cache reset → hot-only warmup → 본 setup이 아닙니다'
 }
 
 test_measurement_gate_orders_before_snapshot_and_scenario() {
@@ -372,6 +424,7 @@ test_compose_config() {
   assert_not_contains "$default_services" 'redis'
   assert_contains "$rendered" 'container_name: docsa-app-local'
   assert_contains "$rendered" 'COMMIT_CONTENT_CACHE_ENABLED: "true"'
+  assert_contains "$rendered" 'COMMIT_CONTENT_CACHE_MAXIMUM_SIZE: "400"'
   assert_contains "$rendered" 'MONGO_LOCAL_CLEANUP_ENABLED: "false"'
   assert_contains "$rendered" 'PERF_SEED_USER_COUNT: "0"'
   assert_contains "$rendered" 'SPRING_JPA_HIBERNATE_DDL_AUTO: update'
@@ -380,13 +433,17 @@ test_compose_config() {
 
 test_required_input_fails_before_external_command
 test_redis_provider_and_invalid_run_are_rejected
+test_run_five_and_expanded_dataset_are_supported
+test_canonical_rebenchmark_rejects_workload_drift
 test_snapshot_fields_reject_embedded_credentials
 test_none_and_caffeine_set_cache_enabled_flag
+test_prebuilt_image_can_skip_network_rebuild
 test_stale_result_directory_is_rejected
 test_load_profile_separates_hot_vu_results
 test_snapshots_do_not_persist_secret_values
 test_cold_has_no_warmup_and_hot_mixed_use_isolated_warmup
 test_caffeine_cold_resets_after_verify_before_main_setup
+test_caffeine_mixed_resets_verify_cache_before_hot_only_warmup
 test_measurement_gate_orders_before_snapshot_and_scenario
 test_gate_uses_dynamic_port_and_own_ready_file
 test_gate_child_death_is_rejected_before_http_or_k6

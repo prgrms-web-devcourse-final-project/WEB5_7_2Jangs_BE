@@ -33,12 +33,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BranchCreateIntegrationTest {
 
     @Autowired
@@ -97,7 +97,7 @@ class BranchCreateIntegrationTest {
 
         CustomException ex = assertThrows(CustomException.class,
                 () -> branchService.createBranch(fixture.doc().getId(), request,
-                        fixture.user().getId()));
+                        fixture.user().getId(), UUID.randomUUID().toString()));
 
         assertThat(ex.getErrorCode()).isEqualTo(BranchErrorCode.BRANCH_NAME_DUPLICATED);
         assertThat(saveRepository.findByBranchId(fixture.branch().getId())).isPresent();
@@ -112,7 +112,8 @@ class BranchCreateIntegrationTest {
         BranchCreateResponse response = branchService.createBranch(
                 fixture.doc().getId(),
                 new BranchCreateRequest(newBranchName, fixture.commit().getId()),
-                fixture.user().getId());
+                fixture.user().getId(),
+                UUID.randomUUID().toString());
 
         assertThat(response).isNotNull();
         assertThat(response.branchId()).isNotEqualTo(fixture.branch().getId());
@@ -142,7 +143,8 @@ class BranchCreateIntegrationTest {
                 () -> branchService.createBranch(
                         fixture.doc().getId(),
                         new BranchCreateRequest(duplicatedName, fixture.commit().getId()),
-                        fixture.user().getId()));
+                        fixture.user().getId(),
+                        UUID.randomUUID().toString()));
 
         assertThat(ex.getErrorCode()).isEqualTo(BranchErrorCode.BRANCH_NAME_DUPLICATED);
     }

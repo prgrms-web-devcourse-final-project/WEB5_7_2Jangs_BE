@@ -45,11 +45,12 @@ class BranchControllerTest {
         BranchCreateRequest request = new BranchCreateRequest("기능 브랜치", 100L);
         BranchCreateResponse response = new BranchCreateResponse(200L, 300L);
 
-        Mockito.when(branchService.createBranch(eq(documentId), any(), eq(mockUserId)))
+        Mockito.when(branchService.createBranch(eq(documentId), any(), eq(mockUserId), anyString()))
                 .thenReturn(response);
 
         // when + then
         mockMvc.perform(post("/api/document/{documentId}/branch", documentId)
+                        .header("Idempotency-Key", "550e8400-e29b-41d4-a716-446655440000")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())

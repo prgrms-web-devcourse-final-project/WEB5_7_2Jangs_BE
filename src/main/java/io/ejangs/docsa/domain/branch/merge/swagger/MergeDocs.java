@@ -34,6 +34,14 @@ import org.springframework.http.MediaType;
                         example = "1",
                         required = true,
                         in = ParameterIn.PATH
+                ),
+                @Parameter(
+                        name = "Idempotency-Key",
+                        description = "생성 요청을 식별하는 UUID. 같은 요청을 재시도할 때 같은 값을 사용합니다.",
+                        example = "550e8400-e29b-41d4-a716-446655440000",
+                        required = true,
+                        in = ParameterIn.HEADER,
+                        schema = @Schema(type = "string", format = "uuid")
                 )
         },
         requestBody = @RequestBody(
@@ -194,6 +202,12 @@ import org.springframework.http.MediaType;
                                         )
                                 }
                         )
+                ),
+                @ApiResponse(
+                        responseCode = "409",
+                        description = "생성 작업 충돌 - CREATE_OPERATION_IN_PROGRESS, "
+                                + "CREATE_OPERATION_CANCELLED 또는 IDEMPOTENCY_KEY_REUSED",
+                        content = @Content(schema = @Schema(implementation = ErrorResponse.class))
                 ),
                 @ApiResponse(
                         responseCode = "500",

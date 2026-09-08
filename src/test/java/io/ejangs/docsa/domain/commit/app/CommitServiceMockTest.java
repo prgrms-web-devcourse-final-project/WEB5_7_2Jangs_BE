@@ -15,6 +15,7 @@ import io.ejangs.docsa.domain.commit.app.create.CommitCreateOrchestrator;
 import io.ejangs.docsa.domain.commit.dao.mongodb.CommitBlockSequenceRepository;
 import io.ejangs.docsa.domain.commit.dao.mysql.CommitRepository;
 import io.ejangs.docsa.domain.commit.dto.request.CreateCommitRequest;
+import io.ejangs.docsa.domain.commit.dto.response.CreateCommitResponse;
 import io.ejangs.docsa.domain.commit.entity.Commit;
 import io.ejangs.docsa.domain.commit.util.CommitMockTestUtils;
 import io.ejangs.docsa.domain.doc.app.DocReader;
@@ -26,6 +27,11 @@ import io.ejangs.docsa.domain.user.security.CustomUserDetails;
 import io.ejangs.docsa.global.exception.CustomException;
 import io.ejangs.docsa.global.exception.errorcode.BlockSequenceErrorCode;
 import io.ejangs.docsa.global.outbox.mongo.util.MongoIdsCollector;
+import io.ejangs.docsa.global.outbox.mongo.dto.MongoIdsDto;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateOperationService;
+import io.ejangs.docsa.global.saga.create.app.MongoCreatePlanFactory;
+import io.ejangs.docsa.global.saga.create.app.MongoCreateRequestHasher;
+import java.util.List;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +44,10 @@ import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class CommitServiceMockTest {
+
+    private static final String OPERATION_ID = "550e8400-e29b-41d4-a716-446655440000";
+    private static final MongoIdsDto PLAN = new MongoIdsDto(
+            List.of(), List.of("cbs-1"), List.of());
 
     @Mock
     private CommitRepository commitRepository;
@@ -75,6 +85,15 @@ class CommitServiceMockTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private MongoCreateOperationService mongoCreateOperationService;
+
+    @Mock
+    private MongoCreatePlanFactory mongoCreatePlanFactory;
+
+    @Mock
+    private MongoCreateRequestHasher mongoCreateRequestHasher;
+
     @InjectMocks
     private CommitService commitService;
 
@@ -106,6 +125,9 @@ class CommitServiceMockTest {
 
         branch = org.mockito.Mockito.mock(Branch.class);
         createdCommit = org.mockito.Mockito.mock(Commit.class);
+        org.mockito.Mockito.lenient().when(mongoCreateRequestHasher.hash(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("hash");
+        org.mockito.Mockito.lenient().when(mongoCreatePlanFactory.commit(0)).thenReturn(PLAN);
     }
 
     @Test
@@ -114,15 +136,19 @@ class CommitServiceMockTest {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchReader.getById(branchId)).thenReturn(branch);
         when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn("leaf-cbs-id");
-        when(createdCommit.getId()).thenReturn(101L);
-        when(commitCreateOrchestrator.create(createCommitRequest, "leaf-cbs-id", doc, branch))
-                .thenReturn(createdCommit);
+        when(commitCreateOrchestrator.create(
+                createCommitRequest, "leaf-cbs-id", doc, branch,
+                userDetails.getId(), OPERATION_ID, "hash", PLAN))
+                .thenReturn(new CreateCommitResponse(101L));
 
-        var result = commitService.createCommit(docId, createCommitRequest, userDetails.getId());
+        var result = commitService.createCommit(
+                docId, createCommitRequest, userDetails.getId(), OPERATION_ID);
 
         assertThat(result.id()).isEqualTo(101L);
         verify(branchReader).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
-        verify(commitCreateOrchestrator).create(createCommitRequest, "leaf-cbs-id", doc, branch);
+        verify(commitCreateOrchestrator).create(
+                createCommitRequest, "leaf-cbs-id", doc, branch,
+                userDetails.getId(), OPERATION_ID, "hash", PLAN);
 
         verifyNoInteractions(cbsRepository, blockService, saveService, edgeService, commitRepository);
     }
@@ -133,14 +159,18 @@ class CommitServiceMockTest {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchReader.getById(branchId)).thenReturn(branch);
         when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn("from-cbs-id");
-        when(createdCommit.getId()).thenReturn(101L);
-        when(commitCreateOrchestrator.create(createCommitRequest, "from-cbs-id", doc, branch))
-                .thenReturn(createdCommit);
+        when(commitCreateOrchestrator.create(
+                createCommitRequest, "from-cbs-id", doc, branch,
+                userDetails.getId(), OPERATION_ID, "hash", PLAN))
+                .thenReturn(new CreateCommitResponse(101L));
 
-        var result = commitService.createCommit(docId, createCommitRequest, userDetails.getId());
+        var result = commitService.createCommit(
+                docId, createCommitRequest, userDetails.getId(), OPERATION_ID);
 
         assertThat(result.id()).isEqualTo(101L);
-        verify(commitCreateOrchestrator).create(createCommitRequest, "from-cbs-id", doc, branch);
+        verify(commitCreateOrchestrator).create(
+                createCommitRequest, "from-cbs-id", doc, branch,
+                userDetails.getId(), OPERATION_ID, "hash", PLAN);
     }
 
     @Test
@@ -149,14 +179,18 @@ class CommitServiceMockTest {
         when(docReader.getById(docId)).thenReturn(doc);
         when(branchReader.getById(branchId)).thenReturn(branch);
         when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn(null);
-        when(createdCommit.getId()).thenReturn(101L);
-        when(commitCreateOrchestrator.create(createCommitRequest, null, doc, branch))
-                .thenReturn(createdCommit);
+        when(commitCreateOrchestrator.create(
+                createCommitRequest, null, doc, branch,
+                userDetails.getId(), OPERATION_ID, "hash", PLAN))
+                .thenReturn(new CreateCommitResponse(101L));
 
-        var result = commitService.createCommit(docId, createCommitRequest, userDetails.getId());
+        var result = commitService.createCommit(
+                docId, createCommitRequest, userDetails.getId(), OPERATION_ID);
 
         assertThat(result.id()).isEqualTo(101L);
-        verify(commitCreateOrchestrator).create(createCommitRequest, null, doc, branch);
+        verify(commitCreateOrchestrator).create(
+                createCommitRequest, null, doc, branch,
+                userDetails.getId(), OPERATION_ID, "hash", PLAN);
     }
 
     @Test
@@ -165,7 +199,8 @@ class CommitServiceMockTest {
         doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
                 .when(branchReader).checkBranchInDocOwnedByUser(docId, branchId, userDetails.getId());
 
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
+        assertThatThrownBy(() -> commitService.createCommit(
+                docId, createCommitRequest, userDetails.getId(), OPERATION_ID))
                 .isInstanceOf(CustomException.class);
 
         verify(docReader, never()).getById(docId);
@@ -180,7 +215,8 @@ class CommitServiceMockTest {
         doThrow(new CustomException(BlockSequenceErrorCode.BLOCK_SEQUENCE_NOT_FOUND))
                 .when(branchReader).getById(branchId);
 
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
+        assertThatThrownBy(() -> commitService.createCommit(
+                docId, createCommitRequest, userDetails.getId(), OPERATION_ID))
                 .isInstanceOf(CustomException.class);
 
         verifyNoInteractions(commitRepository, commitCreateOrchestrator);
@@ -194,7 +230,8 @@ class CommitServiceMockTest {
         doThrow(new RuntimeException("repo fail"))
                 .when(commitReader).resolveBaseCommitCbsMongoId(branch);
 
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
+        assertThatThrownBy(() -> commitService.createCommit(
+                docId, createCommitRequest, userDetails.getId(), OPERATION_ID))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("repo fail");
 
@@ -208,9 +245,12 @@ class CommitServiceMockTest {
         when(branchReader.getById(branchId)).thenReturn(branch);
         when(commitReader.resolveBaseCommitCbsMongoId(branch)).thenReturn("base-cbs-id");
         doThrow(new RuntimeException("orchestrator fail"))
-                .when(commitCreateOrchestrator).create(createCommitRequest, "base-cbs-id", doc, branch);
+                .when(commitCreateOrchestrator).create(
+                        createCommitRequest, "base-cbs-id", doc, branch,
+                        userDetails.getId(), OPERATION_ID, "hash", PLAN);
 
-        assertThatThrownBy(() -> commitService.createCommit(docId, createCommitRequest, userDetails.getId()))
+        assertThatThrownBy(() -> commitService.createCommit(
+                docId, createCommitRequest, userDetails.getId(), OPERATION_ID))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("orchestrator fail");
     }

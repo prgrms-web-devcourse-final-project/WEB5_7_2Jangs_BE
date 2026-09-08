@@ -26,8 +26,8 @@ case "$PATTERN" in
   *) die "PATTERN은 cold, hot, mixed, cold_burst, saturation 중 하나여야 합니다" ;;
 esac
 case "$RUN_NO" in
-  1|2|3) ;;
-  *) die "RUN_NO는 1, 2, 3 중 하나여야 합니다" ;;
+  1|2|3|4|5) ;;
+  *) die "RUN_NO는 1~5 중 하나여야 합니다" ;;
 esac
 
 [[ "$BLOCKS_PER_COMMIT" =~ ^[1-9][0-9]*$ ]] || die "BLOCKS_PER_COMMIT은 양의 정수여야 합니다"
@@ -39,6 +39,13 @@ ACTUATOR_HEALTH_URL="${ACTUATOR_HEALTH_URL:-http://localhost:9091/actuator/healt
 HEALTH_RETRIES="${HEALTH_RETRIES:-60}"
 HEALTH_INTERVAL_SECONDS="${HEALTH_INTERVAL_SECONDS:-2}"
 WARMUP_DURATION="${WARMUP_DURATION:-10s}"
+REBUILD_APP="${REBUILD_APP:-true}"
+CANONICAL_REBENCHMARK="${CANONICAL_REBENCHMARK:-false}"
+WARMUP_VUS="${WARMUP_VUS:-50}"
+USER_COUNT="${USER_COUNT:-20}"
+DOCS_PER_USER="${DOCS_PER_USER:-5}"
+MAIN_COMMITS="${MAIN_COMMITS:-20}"
+COMMIT_CONTENT_CACHE_MAXIMUM_SIZE="${COMMIT_CONTENT_CACHE_MAXIMUM_SIZE:-400}"
 MEASUREMENT_GATE_RETRIES="${MEASUREMENT_GATE_RETRIES:-120}"
 MEASUREMENT_GATE_INTERVAL_SECONDS="${MEASUREMENT_GATE_INTERVAL_SECONDS:-0.5}"
 
@@ -50,16 +57,25 @@ MEASUREMENT_GATE_INTERVAL_SECONDS="${MEASUREMENT_GATE_INTERVAL_SECONDS:-0.5}"
 [[ "$MEASUREMENT_GATE_RETRIES" =~ ^[1-9][0-9]*$ ]] || die "MEASUREMENT_GATE_RETRIES는 양의 정수여야 합니다"
 [[ "$MEASUREMENT_GATE_INTERVAL_SECONDS" =~ ^(0|[0-9]+)(\.[0-9]+)?$ ]] \
   || die "MEASUREMENT_GATE_INTERVAL_SECONDS는 0 이상의 숫자여야 합니다"
+[[ "$REBUILD_APP" == true || "$REBUILD_APP" == false ]] || die "REBUILD_APP은 true 또는 false여야 합니다"
+[[ "$CANONICAL_REBENCHMARK" == true || "$CANONICAL_REBENCHMARK" == false ]] \
+  || die "CANONICAL_REBENCHMARK는 true 또는 false여야 합니다"
+for positive_integer in WARMUP_VUS USER_COUNT DOCS_PER_USER MAIN_COMMITS COMMIT_CONTENT_CACHE_MAXIMUM_SIZE; do
+  [[ "${!positive_integer}" =~ ^[1-9][0-9]*$ ]] || die "$positive_integer 는 양의 정수여야 합니다"
+done
+TARGET_COUNT=$((USER_COUNT * DOCS_PER_USER * MAIN_COMMITS))
+(( TARGET_COUNT > COMMIT_CONTENT_CACHE_MAXIMUM_SIZE )) \
+  || die "전체 target 수는 캐시 maximum size보다 커야 합니다"
 
 case "$PATTERN" in
   cold)
     LOAD_VALUE="${COLD_VUS:-50}"
     ;;
   hot)
-    LOAD_VALUE="${HOT_VUS:-10}"
+    LOAD_VALUE="${HOT_VUS:-50}"
     ;;
   mixed)
-    LOAD_VALUE="${MIXED_VUS:-10}"
+    LOAD_VALUE="${MIXED_VUS:-50}"
     ;;
   cold_burst)
     LOAD_VALUE="${COLD_BURST_VUS:-10}"
@@ -76,6 +92,19 @@ if [[ "$PATTERN" != saturation ]]; then
 fi
 [[ "$LOAD_PROFILE" =~ ^(vus-[1-9][0-9]*|rate-[1-9][0-9]*(-[1-9][0-9]*)+)$ ]] \
   || die "계산된 load profile이 안전하지 않습니다"
+if [[ "$CANONICAL_REBENCHMARK" == true ]]; then
+  [[ "$PATTERN" == hot || "$PATTERN" == mixed ]] \
+    || die "canonical 재측정은 hot 또는 mixed만 허용합니다"
+  [[ "$BLOCKS_PER_COMMIT" == 500 && "$USER_COUNT" == 20 && "$DOCS_PER_USER" == 5 \
+      && "$MAIN_COMMITS" == 20 && "$COMMIT_CONTENT_CACHE_MAXIMUM_SIZE" == 400 \
+      && "$WARMUP_VUS" == 50 && "$WARMUP_DURATION" == 10s && "$LOAD_VALUE" == 50 ]] \
+    || die "canonical 재측정 조건이 변경되었습니다"
+  if [[ "$PATTERN" == hot ]]; then
+    [[ "${HOT_DURATION:-60s}" == 60s ]] || die "canonical Hot duration은 60s여야 합니다"
+  else
+    [[ "${MIXED_DURATION:-60s}" == 60s ]] || die "canonical Mixed duration은 60s여야 합니다"
+  fi
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
@@ -148,13 +177,16 @@ run_workload() {
   scenario_load_profile="$LOAD_PROFILE"
   if [[ "$scenario" == verify ]]; then
     scenario_load_profile='vus-1'
+  elif [[ "$scenario" == warm_hot ]]; then
+    scenario_load_profile="vus-$WARMUP_VUS"
   fi
   mkdir -p "$output_root/$PROVIDER/blocks-$BLOCKS_PER_COMMIT/$scenario/$scenario_load_profile/run-$RUN_NO"
   env \
     BASE_URL="$BASE_URL" RUN_ID="$RUN_ID" \
     USER_PREFIX="${USER_PREFIX:-perfuser}" USER_DOMAIN="${USER_DOMAIN:-test.com}" \
     USER_PASSWORD="${USER_PASSWORD:-Testtest1}" \
-    USER_COUNT=20 DOCS_PER_USER=2 MAIN_COMMITS=10 \
+    USER_COUNT="$USER_COUNT" DOCS_PER_USER="$DOCS_PER_USER" MAIN_COMMITS="$MAIN_COMMITS" \
+    COMMIT_CONTENT_CACHE_MAXIMUM_SIZE="$COMMIT_CONTENT_CACHE_MAXIMUM_SIZE" \
     BLOCKS_PER_COMMIT="$BLOCKS_PER_COMMIT" PROVIDER="$PROVIDER" RUN_NUMBER="$RUN_NO" \
     RESULT_ROOT="$output_root" SCENARIO="$scenario" LOAD_PROFILE="$scenario_load_profile" \
     "$@" k6 run "$WORKLOAD"
@@ -205,8 +237,13 @@ if [[ "$PROVIDER" == caffeine ]]; then
 else
   export COMMIT_CONTENT_CACHE_ENABLED=false
 fi
+export COMMIT_CONTENT_CACHE_MAXIMUM_SIZE
 
-compose up -d --build --force-recreate app >>"$RUN_LOG" 2>&1
+if [[ "$REBUILD_APP" == true ]]; then
+  compose up -d --build --force-recreate app >>"$RUN_LOG" 2>&1
+else
+  compose up -d --force-recreate app >>"$RUN_LOG" 2>&1
+fi
 wait_for_app
 
 git rev-parse HEAD >"$RESULT_DIR/git-revision.txt"
@@ -219,23 +256,27 @@ run_no=$RUN_NO
 base_url=$BASE_URL
 actuator_health_url=$ACTUATOR_HEALTH_URL
 run_id=$RUN_ID
-user_count=20
-docs_per_user=2
-main_commits=10
+user_count=$USER_COUNT
+docs_per_user=$DOCS_PER_USER
+main_commits=$MAIN_COMMITS
+target_count=$TARGET_COUNT
+cache_maximum_size=$COMMIT_CONTENT_CACHE_MAXIMUM_SIZE
 cache_enabled=$COMMIT_CONTENT_CACHE_ENABLED
+canonical_rebenchmark=$CANONICAL_REBENCHMARK
 sensitive_values=not_recorded
 EOF
 
 VERIFY_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/commit-cache-verify.XXXXXX")"
 run_workload verify "$VERIFY_ROOT" >>"$RUN_LOG" 2>&1
 
-if [[ "$PATTERN" == cold || "$PATTERN" == cold_burst ]]; then
+if [[ "$PROVIDER" == caffeine || "$PATTERN" == cold || "$PATTERN" == cold_burst ]]; then
   compose up -d --force-recreate --no-deps app >>"$RUN_LOG" 2>&1
   wait_for_app
-elif [[ "$PATTERN" == hot || "$PATTERN" == mixed ]]; then
+fi
+if [[ "$PATTERN" == hot || "$PATTERN" == mixed ]]; then
   WARMUP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/commit-cache-warmup.XXXXXX")"
-  run_workload "$PATTERN" "$WARMUP_ROOT" \
-    HOT_DURATION="$WARMUP_DURATION" MIXED_DURATION="$WARMUP_DURATION" \
+  run_workload warm_hot "$WARMUP_ROOT" \
+    WARMUP_DURATION="$WARMUP_DURATION" WARMUP_VUS="$WARMUP_VUS" \
     >>"$RUN_LOG" 2>&1
 fi
 
